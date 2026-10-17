@@ -1,0 +1,28 @@
+:root {
+  /* Três tintas de risograph sobre papel, mais a penumbra do quarto onde a fita está. */
+  --room: #0D0C11;
+  --paper: #F2E8CF;
+  --mustard: #F2B630;
+  --tomato: #E0453A;
+  --navy: #1E1F5C;
+  --line: #1A1414;
+  --paper-soft: #C9C0A8;
+
+  /* Tipo: condensada das capas, manuscrita dos títulos, e uma sans de leitura */
+  --cond: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --hand: 'Gloria Hallelujah', 'Comic Sans MS', cursive;
+  --text: 'Barlow', 'Helvetica Neue', Arial, sans-serif;
+  --step-small: clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem);
+  --step-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --step-lead: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
+  --step-head: clamp(2.75rem, 1.5rem + 5vw, 6.5rem);
+
+  --gutter: max(20px, 3vw);
+
+  --fast: 160ms;
+  --base: 420ms;
+  --settle: cubic-bezier(0.16, 1, 0.3, 1);
+  --cut: cubic-bezier(0.7, 0, 0.84, 0);
+
+  color-scheme: dark;
+}
