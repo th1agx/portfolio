@@ -34,6 +34,7 @@ export function Nav() {
         <button onClick={() => jump('cover')}>Capa</button>
         <button onClick={() => jump('tracklist')}>Faixas</button>
         <button onClick={() => jump('back')}>Verso</button>
+        <button onClick={() => jump('sideA')}>Tocar</button>
         <button onClick={() => useSite.getState().setMuted(!muted)} aria-pressed={!muted}>{muted ? 'Som desligado' : 'Som ligado'}</button>
       </nav>
     </header>

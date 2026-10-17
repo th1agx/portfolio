@@ -8,15 +8,22 @@ A fonte da verdade visual do portfólio do Thiago Antunes. Arquivos irmãos: [AN
 
 **O site é uma fita cassete num quarto escuro.** O scroll abre a caixa de acrílico, puxa o encarte e o desdobra painel por painel enquanto a câmera passeia por ele:
 
-| Ponto da viagem | Âncora | O que se vê |
+| Lugar | Âncora | O que se vê |
 | --- | --- | --- |
-| Entrada | `intro` (0) | A fita fechada sob a luz do abajur, capa visível pelo acrílico |
-| Abrir | `opened` (0,14) | A tampa cai, o encarte sai de dentro da caixa |
-| Capa | `cover` (0,28) | Quem ele é: o nome manuscrito, engenheiro de software |
-| Lombada | `spine` (0,42) | O nome na vertical, como na estante, e os créditos |
-| Faixas | `tracklist` (0,62) | Os projetos como Lado A e Lado B. Clicar numa faixa toca a faixa |
-| Verso | `back` (0,84) | GitHub e LinkedIn |
-| Fim | `end` (1) | O encarte inteiro aberto ao lado da fita, e "Rebobinar a fita" |
+| Mesa | `intro` (0) | A fita fechada sob o abajur, capa visível pelo acrílico |
+| Mesa | `opened` (0,07) | A tampa cai, o encarte sai de dentro da caixa |
+| Encarte | `cover` (0,13) | Quem ele é: o nome manuscrito, engenheiro de software |
+| Encarte | `spine` (0,19) | O nome na vertical, como na estante |
+| Encarte | `tracklist` (0,26) | Lado A e Lado B. Clicar numa faixa toca a faixa |
+| Encarte | `back` (0,33) | GitHub e LinkedIn |
+| Toca-fitas | `player` (0,42) | A fita sai da caixa num arco, encaixa no toca-fitas tomate, a tampa fecha, o play afunda |
+| Mergulho | `dive` (0,50) | A câmera encosta na janela da fita; o corte para dentro acontece no escuro |
+| Dentro da fita | `sideA` (0,60) | A fita magnética vira uma pista entre carretéis gigantes; as páginas do Lado A em pé na beira, cada uma com a sua luz |
+| A virada | `flip` (0,72) | A câmera gira 180° em torno da fita e a luz passa de quente a fria |
+| Dentro da fita | `sideB` (0,84) | Embaixo da fita, as páginas do Lado B |
+| Mesa | `end` (1) | De volta à mesa, vista de longe, e "Rebobinar a fita" |
+
+Cada passagem tem uma transição diferente: deslize do encarte, dobradiças, arco até o toca-fitas, corte no escuro, giro da virada, rebobinada com véu.
 
 A experiência segue o Aengel (ver docs/AENGEL_REA.md): **um mundo só** que nunca desmonta, rotas como lugares desse mundo, câmera em curva entre repousos, loader com as etapas reais, véu nos saltos longos, som que só começa no play.
 

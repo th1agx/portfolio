@@ -222,3 +222,59 @@ function wrap(g: CanvasRenderingContext2D, text: string, x: number, y: number, m
   }
   if (line && n < lines) g.fillText(line, x, y)
 }
+
+/** Página de uma faixa, impressa como uma folha do encarte, que fica em pé ao lado da pista. */
+export function drawProjectPanel(spec: PanelSpec, row: TrackRow) {
+  const [c, g] = canvas(spec)
+  const W = c.width, H = c.height
+  const p = row.project
+  const dark = row.side === 'B'
+  g.fillStyle = dark ? INK.navy : INK.paper; g.fillRect(0, 0, W, H)
+  misregister(g, (dx, dy) => halftoneDisc(g, W * 0.82 + dx, H * 0.16 + dy, W * 0.3, dark ? INK.mustard : INK.tomato, 18))
+  g.fillStyle = INK.tomato; g.font = `800 ${W * 0.09}px ${COND}`; g.textBaseline = 'alphabetic'
+  g.fillText(`LADO ${row.side}  ·  ${row.code}`, W * 0.08, H * 0.1)
+  g.fillStyle = dark ? INK.mustard : INK.navy; g.font = `800 ${W * 0.16}px ${COND}`
+  let y = H * 0.22
+  for (const word of wrapWords(g, p.name.toUpperCase(), W * 0.84)) { g.fillText(word, W * 0.08, y); y += W * 0.15 }
+  g.fillStyle = dark ? INK.paper : INK.line; g.font = `400 ${W * 0.048}px ${HAND}`
+  y += W * 0.02
+  for (const l of wrapWords(g, p.line, W * 0.84)) { g.fillText(l, W * 0.08, y); y += W * 0.07 }
+  y += W * 0.04
+  g.font = `800 ${W * 0.058}px ${COND}`
+  for (const [k, v] of p.facts.slice(0, 4)) {
+    g.fillStyle = dark ? '#B9B3C9' : '#5B5560'; g.fillText(k.toUpperCase(), W * 0.08, y)
+    g.fillStyle = dark ? INK.paper : INK.navy; g.fillText(v.toUpperCase(), W * 0.08, y + W * 0.065)
+    y += W * 0.15
+  }
+  g.fillStyle = dark ? '#B9B3C9' : '#5B5560'; g.font = `400 ${W * 0.04}px ${HAND}`
+  for (const l of wrapWords(g, p.stack.join(', '), W * 0.84)) { g.fillText(l, W * 0.08, y); y += W * 0.06 }
+  g.fillStyle = INK.tomato; g.font = `800 ${W * 0.07}px ${COND}`
+  g.fillText('TOCAR A FAIXA', W * 0.08, H * 0.94)
+  wobblyLine(g, [[W * 0.08, H * 0.955], [W * 0.5, H * 0.955]], 5, INK.tomato, 99)
+  grain(g, 26, 17 + row.code.charCodeAt(1))
+  return texture(c)
+}
+
+function wrapWords(g: CanvasRenderingContext2D, text: string, max: number) {
+  const out: string[] = []
+  let line = ''
+  for (const w of text.split(' ')) {
+    const test = line ? `${line} ${w}` : w
+    if (g.measureText(test).width > max && line) { out.push(line); line = w } else line = test
+  }
+  if (line) out.push(line)
+  return out
+}
+
+/** A fita magnética vista de pertinho: faixas finas no sentido do comprimento, marrom brilhante. */
+export function drawTapeSurface() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 64
+  const g = c.getContext('2d')!
+  g.fillStyle = '#3A241D'; g.fillRect(0, 0, 512, 64)
+  const r = rand(5)
+  for (let y = 0; y < 64; y += 2) { g.fillStyle = `rgba(${90 + r() * 40},${55 + r() * 25},${40 + r() * 20},${0.25 + r() * 0.3})`; g.fillRect(0, y, 512, 1) }
+  g.fillStyle = 'rgba(242,182,48,0.55)'; g.fillRect(0, 2, 512, 2); g.fillRect(0, 60, 512, 2)
+  for (let x = 0; x < 512; x += 64) { g.fillStyle = 'rgba(242,232,207,0.5)'; g.fillRect(x, 30, 26, 4) }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 8
+  return t
+}

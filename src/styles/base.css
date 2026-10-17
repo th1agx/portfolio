@@ -8,7 +8,7 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 
 /* o mundo atrás de tudo; o trilho de scroll é o que faz a câmera andar */
 .scene { position: fixed !important; inset: 0; z-index: 0; }
-.track { height: 900vh; pointer-events: none; }
+.track { height: 1400vh; pointer-events: none; }
 .dim { position: fixed; inset: 0; z-index: 2; background: var(--room); opacity: 0; pointer-events: none; transition: opacity var(--base) var(--settle); }
 .dim.on { opacity: 0.82; }
 
@@ -29,6 +29,9 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .rewind { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 7vh); transform: translateX(-50%); z-index: 4;
   font: 800 var(--step-lead)/1 var(--cond); text-transform: uppercase; letter-spacing: 0.04em; color: var(--mustard); text-decoration: underline; text-underline-offset: 6px; }
 .rewind:hover { color: var(--paper); }
+
+/* o escuro da janela da fita, no corte para dentro dela */
+.blackout { position: fixed; inset: 0; z-index: 2; background: #050407; pointer-events: none; }
 
 /* véu de transição */
 .veil { position: fixed; inset: 0; z-index: 20; background: var(--tomato); }

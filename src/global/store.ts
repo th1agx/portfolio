@@ -47,16 +47,32 @@ export const useSite = create<SiteState>((set) => ({
 }))
 
 /**
- * Pontos da viagem no scroll, como as rotas-âncora do Aengel: cada nome é um lugar da fita.
+ * Pontos da viagem no scroll, como as rotas-âncora do Aengel: cada nome é um lugar do mundo.
  * O número é a fração do scroll total onde a câmera repousa.
+ *
+ * Mesa → encarte (capa, lombada, faixas, verso) → toca-fitas → dentro da fita (Lado A)
+ * → a fita vira (Lado B, embaixo da fita) → rebobinar.
  */
 export const ANCHORS = {
   intro: 0,
-  opened: 0.14,
-  cover: 0.28,
-  spine: 0.42,
-  tracklist: 0.62,
-  back: 0.84,
+  opened: 0.07,
+  cover: 0.13,
+  spine: 0.19,
+  tracklist: 0.26,
+  back: 0.33,
+  player: 0.42,
+  dive: 0.5,
+  sideA: 0.6,
+  flip: 0.72,
+  sideB: 0.84,
   end: 1,
 } as const
 export type Anchor = keyof typeof ANCHORS
+
+/** Trechos do scroll que pertencem a cada lugar. */
+export const PLACES = {
+  /** a mesa: encarte e toca-fitas */
+  desk: [0, ANCHORS.dive] as const,
+  /** dentro da fita: a pista de fita magnética, Lado A em cima e Lado B embaixo */
+  road: [ANCHORS.dive, 0.95] as const,
+}

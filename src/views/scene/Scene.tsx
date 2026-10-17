@@ -4,6 +4,8 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { Tape } from './Tape'
 import { CameraRig } from './CameraRig'
 import { Dust } from './Dust'
+import { Desk } from './Desk'
+import { Road } from './Road'
 import type { TrackRow } from './art'
 import { tracklist } from '../../models/content/pt'
 import { device } from '../../global/device'
@@ -34,13 +36,13 @@ function World({ container, onOpenTrack }: { container: Container; onOpenTrack: 
   return (
     <>
       <color attach="background" args={['#0D0C11']} />
-      <fog attach="fog" args={['#0D0C11', 4, 11]} />
-      {/* uma luz quente de cima, como abajur sobre a mesa; o resto é penumbra */}
-      <spotLight position={[0.9, 3.4, 3.4]} angle={0.95} penumbra={0.9} intensity={34} color="#FFE2B8" castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} />
-      <pointLight position={[2.4, 0.6, 2.2]} intensity={2.2} distance={5} color="#FFD9A8" />
-      <ambientLight intensity={0.32} color="#8A86B8" />
-      <directionalLight position={[-3, 1, -2]} intensity={0.6} color="#7C80D6" />
+      <fog attach="fog" args={['#0D0C11', 5, 26]} />
+      {/* penumbra fria de base; a luz quente vem do abajur, dentro da Desk */}
+      <ambientLight intensity={0.3} color="#8A86B8" />
+      <directionalLight position={[-3, 1, -2]} intensity={0.5} color="#7C80D6" />
+      <Desk />
       <Tape rows={rows} onOpenTrack={onOpenTrack} />
+      <Road rows={rows} onOpenTrack={onOpenTrack} />
       <Dust />
       <CameraRig container={container} />
       <Warmup />

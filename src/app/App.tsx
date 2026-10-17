@@ -8,6 +8,7 @@ import { Nav } from '../views/system/Nav'
 import { Loader } from '../views/system/Loader'
 import { Narration } from '../views/system/Narration'
 import { Veil } from '../views/system/Veil'
+import { Blackout } from '../views/system/Blackout'
 import { Home } from '../views/pages/Home'
 import { ProjectPage } from '../views/pages/ProjectPage'
 import { useSite } from '../global/store'
@@ -36,6 +37,7 @@ function Layout({ container }: { container: Container }) {
       {fontsReady && <Scene container={container} onOpenTrack={open} />}
       <div className={playing ? 'dim on' : 'dim'} aria-hidden />
       <Home />
+      <Blackout />
       <Narration />
       <Nav />
       <AnimatePresence mode="wait">{outlet && <div key={location.pathname}>{outlet}</div>}</AnimatePresence>

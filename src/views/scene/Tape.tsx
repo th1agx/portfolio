@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame, type ThreeEvent } from '@react-three/fiber'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
-import { useSite } from '../../global/store'
+import { ANCHORS, PLACES, useSite } from '../../global/store'
+import { PLAYER, PLAYER_TIMING } from './Desk'
 import { drawBack, drawCover, drawCredits, drawLabel, drawSpine, drawTracklist, INK, trackLayout, type TrackRow } from './art'
 import { person } from '../../models/content/pt'
 
@@ -25,6 +26,8 @@ export function Tape({ rows, onOpenTrack }: Props) {
   const backHinge = useRef<THREE.Group>(null)
   const tracksHinge = useRef<THREE.Group>(null)
   const reels = useRef<THREE.Group[]>([])
+  const root = useRef<THREE.Group>(null)
+  const cassette = useRef<THREE.Group>(null)
 
   const tex = useMemo(() => ({
     cover: drawCover({ w: CARD.cover, h: CARD.h }),
@@ -63,25 +66,35 @@ export function Tape({ rows, onOpenTrack }: Props) {
   useFrame((_, delta) => {
     const s = useSite.getState()
     const p = s.progress
+    // tudo isso mora na mesa: some quando a câmera está dentro da fita
+    if (root.current) root.current.visible = p < PLACES.desk[1] + 0.01 || p > PLACES.road[1]
     // tampa abre para frente e para baixo
-    if (lid.current) lid.current.rotation.x = -1.75 * smooth(0.02, 0.11, p)
+    if (lid.current) lid.current.rotation.x = -1.75 * smooth(0.005, 0.05, p)
     // o encarte sai de dentro da caixa e vai para a direita
-    const slide = smooth(0.05, 0.16, p)
+    const slide = smooth(0.025, 0.075, p)
     if (card.current) {
       card.current.position.set(THREE.MathUtils.lerp(CASE.x, CARD.x, slide), Math.sin(slide * Math.PI) * 0.18, THREE.MathUtils.lerp(0.06, CARD.z, slide))
       card.current.rotation.set(0, Math.sin(slide * Math.PI) * -0.5, Math.sin(slide * Math.PI) * 0.06)
     }
     // dobradiças: cada painel abre quando a câmera chega perto dele
-    if (spineHinge.current) spineHinge.current.rotation.y = -Math.PI / 2 * (1 - smooth(0.3, 0.4, p))
-    const side = smooth(0.66, 0.78, p)
+    if (spineHinge.current) spineHinge.current.rotation.y = -Math.PI / 2 * (1 - smooth(ANCHORS.spine - 0.04, ANCHORS.spine - 0.005, p))
+    const side = smooth(ANCHORS.back - 0.045, ANCHORS.back - 0.008, p)
     if (creditsHinge.current) creditsHinge.current.rotation.y = -Math.PI / 2 * (1 - side)
     // o verso só aparece quando começa a abrir: dobrado, ele ficaria para fora da capa
     if (backHinge.current) { backHinge.current.rotation.y = -Math.PI * 0.985 * (1 - side); backHinge.current.visible = side > 0.02 }
-    if (creditsHinge.current) creditsHinge.current.visible = side > 0.02 || p < 0.3
+    if (creditsHinge.current) creditsHinge.current.visible = side > 0.02 || p < ANCHORS.spine + 0.02
     // a tracklist fica dobrada atrás da capa (z negativo) e gira para a direita
-    if (tracksHinge.current) tracksHinge.current.rotation.y = Math.PI * 0.985 * (1 - smooth(0.48, 0.58, p))
-    // carretéis giram devagar sempre, e rápido quando uma faixa está em foco
-    const speed = s.hoverTrack || s.activeProject ? 6 : 0.6
+    if (tracksHinge.current) tracksHinge.current.rotation.y = Math.PI * 0.985 * (1 - smooth(ANCHORS.tracklist - 0.045, ANCHORS.tracklist - 0.008, p))
+    // a fita sai da caixa num arco, deita na horizontal e encaixa no toca-fitas
+    if (cassette.current) {
+      const k = smooth(...PLAYER_TIMING.tapeIn, p)
+      const from = new THREE.Vector3(CASE.x, 0, -0.04), to = new THREE.Vector3(PLAYER.x, PLAYER.y + 0.02, 0.02)
+      cassette.current.position.lerpVectors(from, to, k).add(new THREE.Vector3(0, Math.sin(k * Math.PI) * 0.7, Math.sin(k * Math.PI) * 0.6))
+      cassette.current.rotation.set(Math.sin(k * Math.PI) * 0.4, Math.sin(k * Math.PI) * -0.6, (1 - k) * Math.PI / 2)
+    }
+    // carretéis giram devagar sempre, rápido com uma faixa em foco ou depois do play
+    const playing = p >= PLAYER_TIMING.play[0]
+    const speed = s.hoverTrack || s.activeProject || playing ? 6 : 0.6
     reels.current.forEach((r, i) => { if (r) r.rotation.z -= delta * speed * (i ? 1.15 : 1) })
   })
 
@@ -112,15 +125,16 @@ export function Tape({ rows, onOpenTrack }: Props) {
   )
 
   return (
-    <group>
+    <group ref={root}>
       {/* caixa de acrílico: bandeja de trás + tampa articulada embaixo */}
       <group position={[CASE.x, 0, 0]}>
         <mesh material={mats.acrylic} geometry={geo.tray} position-z={-CASE.d / 4} />
         <group ref={lid} position={[0, -CASE.h / 2, CASE.d / 4]}>
           <mesh material={mats.acrylic} geometry={geo.lid} position={[0, CASE.h / 2, 0.02]} />
         </group>
-        {/* a fita, deitada de lado dentro da caixa */}
-        <group rotation-z={Math.PI / 2} position-z={-0.04}>
+      </group>
+      {/* a fita: começa deitada de lado dentro da caixa e viaja até o toca-fitas */}
+      <group ref={cassette} position={[CASE.x, 0, -0.04]} rotation-z={Math.PI / 2}>
           <mesh material={mats.shell} geometry={geo.shell} castShadow />
           <mesh material={mats.label} position={[0, 0.1, 0.052]}><planeGeometry args={[0.86, 0.34]} /></mesh>
           <mesh material={mats.window} position={[0, -0.02, 0.053]}><planeGeometry args={[0.46, 0.13]} /></mesh>
@@ -130,7 +144,6 @@ export function Tape({ rows, onOpenTrack }: Props) {
               <mesh material={mats.hub} rotation-x={Math.PI / 2} position-z={0.035}><cylinderGeometry args={[0.045, 0.045, 0.01, 6]} /></mesh>
             </group>
           ))}
-        </group>
       </group>
 
       {/* encarte: capa no centro; à esquerda lombada → créditos → verso; à direita a tracklist */}
