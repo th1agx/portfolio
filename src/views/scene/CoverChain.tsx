@@ -77,7 +77,11 @@ void main(){
     // como a tela vai ver B quando a viagem terminar
     vec2 bs = (iuv - pc) / vs1 + 0.5;
     vec2 buv = 0.5 + (bs - 0.5) * coverSize(uAspB);
-    col = inkify(sampleImg(uB, uDB, uHasDB, buv, drift * 0.6), uPalB, px);
+    // fora do pedaço da imagem B que cabe no portal: espelha em vez de esticar, e escurece como o fundo de um vão
+    vec2 over = max(vec2(0.0), max(-buv, buv - 1.0));
+    vec2 m = 1.0 - abs(1.0 - mod(buv + 2.0, 2.0));
+    col = inkify(sampleImg(uB, uDB, uHasDB, m, drift * 0.6), uPalB, px);
+    col *= 1.0 - smoothstep(0.0, 0.12, max(over.x, over.y)) * 0.55;
   } else {
     col = inkify(sampleImg(uA, uDA, uHasDA, iuv, drift), uPalA, px);
   }
@@ -118,7 +122,7 @@ export function CoverChain({ container }: { container: Container }) {
     uniforms: {
       uA: { value: blank }, uB: { value: blank }, uDA: { value: blank }, uDB: { value: blank },
       uHasDA: { value: 0 }, uHasDB: { value: 0 }, uAspA: { value: 4 / 3 }, uAspB: { value: 4 / 3 },
-      uScreen: { value: 1 }, uZoom: { value: 0 }, uTime: { value: 0 }, uInk: { value: 0.88 }, uParallax: { value: device.reducedMotion ? 0 : 1 },
+      uScreen: { value: 1 }, uZoom: { value: 0 }, uTime: { value: 0 }, uInk: { value: 0.42 }, uParallax: { value: device.reducedMotion ? 0 : 1 },
       uPortal: { value: new THREE.Vector4(0.34, 0.26, 0.32, 0.4) }, uPointer: { value: new THREE.Vector2() }, uRes: { value: new THREE.Vector2(1, 1) },
       uPalA: { value: Array.from({ length: 5 }, () => new THREE.Color()) }, uPalB: { value: Array.from({ length: 5 }, () => new THREE.Color()) },
     },
