@@ -1,5 +1,5 @@
 import type { Lifecycle } from './Controller'
-import { ANCHORS, useSite } from '../global/store'
+import { coverState, useSite } from '../global/store'
 import { device } from '../global/device'
 
 /**
@@ -16,13 +16,9 @@ export class AudioController implements Lifecycle {
   init() {
     this.unsub = useSite.subscribe((s, prev) => {
       if (s.muted !== prev.muted) this.applyMute()
-      if (s.hoverTrack !== prev.hoverTrack || s.activeProject !== prev.activeProject) this.setMotor(Boolean(s.hoverTrack || s.activeProject))
-      if (s.hoverTrack && s.hoverTrack !== prev.hoverTrack) this.click(0.25)
-      // passagens da viagem: cada uma tem o seu som
-      const crossed = (x: number) => (prev.progress < x && s.progress >= x) || (prev.progress >= x && s.progress < x)
-      if (crossed(ANCHORS.player)) this.click(1)
-      if (crossed(ANCHORS.flip)) { this.click(0.8); this.rewind() }
-      this.setMotor(Boolean(s.hoverTrack || s.activeProject || (s.progress > ANCHORS.player && s.progress < 0.95)))
+      // cada travessia de portal tem o seu clique, com variação de tom no filtro
+      if (coverState(s.progress).shown !== coverState(prev.progress).shown) this.click(0.7)
+      this.setMotor(Boolean(s.activeProject))
     })
   }
 

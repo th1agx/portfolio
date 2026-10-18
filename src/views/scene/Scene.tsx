@@ -1,69 +1,13 @@
-import { useEffect, useMemo } from 'react'
-import * as THREE from 'three'
-import { Canvas, useThree } from '@react-three/fiber'
-import { Tape } from './Tape'
-import { CameraRig } from './CameraRig'
-import { Dust } from './Dust'
-import { Desk } from './Desk'
-import { Road } from './Road'
-import type { TrackRow } from './art'
-import { tracklist } from '../../models/content/pt'
+import { Canvas } from '@react-three/fiber'
+import { CoverChain } from './CoverChain'
 import { device } from '../../global/device'
-import { useLoader } from '../../global/loader'
 import type { Container } from '../../app/container'
 
-/** Um mundo só, que nunca desmonta. As rotas mudam o estado dele, não a página. */
-export function Scene({ container, onOpenTrack }: { container: Container; onOpenTrack: (slug: string) => void }) {
+/** O mundo: uma tela cheia que nunca desmonta. As rotas e o scroll mudam o estado dela, não a página. */
+export function Scene({ container }: { container: Container }) {
   return (
-    <Canvas
-      className="scene"
-      dpr={device.lowPower ? [1, 1.5] : [1, 2]}
-      shadows
-      camera={{ position: [-0.5, 0.22, 2.25], fov: 34, near: 0.05, far: 60 }}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
-    >
-      <World container={container} onOpenTrack={onOpenTrack} />
+    <Canvas className="scene" dpr={device.lowPower ? [1, 1.5] : [1, 2]} gl={{ antialias: false }} flat linear>
+      <CoverChain container={container} />
     </Canvas>
   )
-}
-
-function World({ container, onOpenTrack }: { container: Container; onOpenTrack: (slug: string) => void }) {
-  const rows = useMemo<TrackRow[]>(() => {
-    let a = 0, b = 0
-    return tracklist.map((t) => ({ side: t.side, code: t.side === 'A' ? `A${++a}` : `B${++b}`, project: container.projects.bySlug(t.slug)! }))
-  }, [container])
-
-  return (
-    <>
-      <color attach="background" args={['#0D0C11']} />
-      <fog attach="fog" args={['#0D0C11', 5, 26]} />
-      {/* penumbra fria de base; a luz quente vem do abajur, dentro da Desk */}
-      <ambientLight intensity={0.3} color="#8A86B8" />
-      <directionalLight position={[-3, 1, -2]} intensity={0.5} color="#7C80D6" />
-      <Desk />
-      <Tape rows={rows} onOpenTrack={onOpenTrack} />
-      <Road rows={rows} onOpenTrack={onOpenTrack} />
-      <Dust />
-      <CameraRig container={container} />
-      <Warmup />
-    </>
-  )
-}
-
-/** Compila todos os shaders antes de o visitante entrar, como o Aengel faz. */
-function Warmup() {
-  const { gl, scene, camera } = useThree()
-  useEffect(() => {
-    let alive = true
-    useLoader.getState().set('compiling', 0.6)
-    const run = async () => {
-      try { await gl.compileAsync(scene, camera) } catch { gl.compile(scene, camera) }
-      if (!alive) return
-      gl.render(scene, camera)
-      useLoader.getState().set('ready', 1)
-    }
-    requestAnimationFrame(() => { run() })
-    return () => { alive = false }
-  }, [gl, scene, camera])
-  return null
 }

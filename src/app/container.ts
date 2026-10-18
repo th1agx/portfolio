@@ -1,7 +1,6 @@
 import { FrameController } from '../controllers/FrameController'
 import { ScrollController } from '../controllers/ScrollController'
 import { PointerController } from '../controllers/PointerController'
-import { TransitionController } from '../controllers/TransitionController'
 import { AudioController } from '../controllers/AudioController'
 import { ControllerRegistry } from '../controllers/ControllerRegistry'
 import { StaticProjectRepository } from '../models/repositories/ProjectRepository'
@@ -16,12 +15,11 @@ export function createContainer() {
   const sequence = new Sequence(projects)
   const scroll = new ScrollController()
   const pointer = new PointerController()
-  const transition = new TransitionController(sequence)
   const audio = new AudioController()
 
-  const registry = new ControllerRegistry(frame).register(scroll, pointer, transition, audio)
+  const registry = new ControllerRegistry(frame).register(scroll, pointer, audio)
 
-  return { frame, events, projects, sequence, scroll, pointer, transition, audio, registry }
+  return { frame, events, projects, sequence, scroll, pointer, audio, registry }
 }
 
 export type Container = ReturnType<typeof createContainer>

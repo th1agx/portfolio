@@ -1,12 +1,12 @@
 import { create } from 'zustand'
 
 /** Etapas reais do carregamento. O texto do loader é exatamente o que o código está fazendo. */
-export type LoadStage = 'fonts' | 'printing' | 'compiling' | 'ready'
+export type LoadStage = 'fonts' | 'covers' | 'compiling' | 'ready'
 
 export const STAGE_LABEL: Record<LoadStage, string> = {
   fonts: 'Carregando as fontes do encarte',
-  printing: 'Imprimindo o encarte',
-  compiling: 'Compilando os shaders',
+  covers: 'Carregando as capas',
+  compiling: 'Ajustando as tintas',
   ready: 'Pronto',
 }
 

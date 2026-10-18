@@ -1,16 +1,17 @@
-import { ANCHORS, useSite, type Anchor } from '../../global/store'
+import { coverAnchor, coverState, useSite } from '../../global/store'
+import { covers } from '../../models/content/covers'
 import { useContainer } from '../../bindings/useContainer'
 
 /**
- * Navegação: três palavras e o som. Pular para longe passa pelo véu (cobre, teletransporta, revela);
- * para perto, a câmera simplesmente viaja. É a regra do Aengel.
+ * Pular para uma capa. Perto: a câmera atravessa os portais no caminho. Longe: o véu cobre,
+ * teletransporta e revela, como no Aengel.
  */
 export function useJump() {
   const { scroll, audio } = useContainer()
-  return (anchor: Anchor) => {
-    const target = ANCHORS[anchor]
-    const far = Math.abs(target - useSite.getState().progress) > 0.3
-    if (!far) { scroll.toProgress(target); return }
+  return (i: number) => {
+    const from = coverState(useSite.getState().progress).shown
+    const target = coverAnchor(i)
+    if (Math.abs(i - from) <= 1) { scroll.toProgress(target); return }
     useSite.getState().setVeil(true)
     audio.click(0.6)
     window.setTimeout(() => {
@@ -20,23 +21,19 @@ export function useJump() {
   }
 }
 
+const idx = (slug: string) => covers.findIndex((c) => c.slug === slug)
+
 export function Nav() {
   const jump = useJump()
   const muted = useSite((s) => s.muted)
   const entered = useSite((s) => s.entered)
   if (!entered) return null
   return (
-    <header className="nav">
-      <button className="nav-logo" onClick={() => jump('intro')} aria-label="Thiago Antunes, voltar ao começo da fita">
-        <img src="/brand/logo-head.png" alt="" width={58} height={22} />
-      </button>
-      <nav aria-label="Principal">
-        <button onClick={() => jump('cover')}>Capa</button>
-        <button onClick={() => jump('tracklist')}>Faixas</button>
-        <button onClick={() => jump('back')}>Verso</button>
-        <button onClick={() => jump('sideA')}>Tocar</button>
-        <button onClick={() => useSite.getState().setMuted(!muted)} aria-pressed={!muted}>{muted ? 'Som desligado' : 'Som ligado'}</button>
-      </nav>
-    </header>
+    <nav className="nav" aria-label="Principal">
+      <button onClick={() => jump(0)}>Início</button>
+      <button onClick={() => jump(idx('tributax'))}>Faixas</button>
+      <button onClick={() => jump(idx('contato'))}>Contato</button>
+      <button onClick={() => useSite.getState().setMuted(!muted)} aria-pressed={!muted}>{muted ? 'Som desligado' : 'Som ligado'}</button>
+    </nav>
   )
 }
