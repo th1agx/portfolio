@@ -8,6 +8,8 @@ import s from './site.module.css'
 // Cabeçalho: assinatura TA à esquerda, hora de Belo Horizonte no centro e um único botão de menu.
 // O menu não abre um painel: a própria pílula se estica para a esquerda e os links aparecem dentro dela,
 // um de cada vez. Esc ou clique fora fecham.
+// Rolando para baixo, a assinatura e a hora sobem e somem (para não passar por cima do conteúdo);
+// rolando para cima, voltam. O botão do menu fica sempre.
 
 const links = [
   { href: '#ideia', rotulo: 'Ideia' },
@@ -20,6 +22,19 @@ const links = [
 export function Cabecalho() {
   const [aberto, setAberto] = useState(false)
   const raiz = useRef<HTMLElement>(null)
+  const [oculto, setOculto] = useState(false)
+
+  useEffect(() => {
+    let ultimo = window.scrollY
+    const rolar = () => {
+      const y = window.scrollY
+      if (Math.abs(y - ultimo) < 6) return
+      setOculto(y > ultimo && y > 160)
+      ultimo = y
+    }
+    window.addEventListener('scroll', rolar, { passive: true })
+    return () => window.removeEventListener('scroll', rolar)
+  }, [])
 
   useEffect(() => {
     if (!aberto) return
@@ -34,7 +49,7 @@ export function Cabecalho() {
   }, [aberto])
 
   return (
-    <header className={s.cabecalho}>
+    <header className={s.cabecalho} data-oculto={oculto && !aberto ? '1' : '0'}>
       <a className={s.assinatura} href="#topo" aria-label="Thiago Antunes, início">
         <span className={s.marcaTA} aria-hidden />
         <span>Thiago Antunes</span>
