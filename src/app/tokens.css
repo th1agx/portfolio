@@ -1,0 +1,44 @@
+/* Tokens. A base de medidas veio da home do Lusion (docs/LUSION_REA.md); cores, tipografia e motivos são do Thiago.
+   Medidas tiradas em 1440px de largura viram vw para escalar do mesmo jeito. */
+
+
+@font-face { font-family: 'Cabinet Grotesk'; src: url('/fonts/tipo/cabinet-grotesk-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Cabinet Grotesk'; src: url('/fonts/tipo/cabinet-grotesk-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Cabinet Grotesk'; src: url('/fonts/tipo/cabinet-grotesk-800.woff2') format('woff2'); font-weight: 800; font-display: swap; }
+
+:root {
+  --bg: #f5f5f2; /* branco suave */
+  --ink: #121214;
+  --painel: #161618;
+  --grafite: #1b1c1f; /* campo da seção de trabalho */
+  --grafite-2: #24262a;
+  --sobre-grafite: #ecebe6;
+  --apagado: #8d8c87;
+  --pilula-escura: #2b2e3a;
+  --pilula-clara: #e4e6ef;
+  --branco: #ffffff;
+  --lime: #d7f452;
+
+  --margem: max(20px, 5vw); /* 72px em 1440 */
+  --coluna2: 51vw; /* 734px */
+  --raio: max(14px, 1.4vw);
+
+  --t-frase: max(22px, 2.5vw); /* 36px */
+  --t-titulo: max(52px, 10vw); /* 144px */
+  --t-trabalho: max(46px, 8vw); /* 115px */
+  --t-paragrafo: max(17px, 1.5vw); /* 21,6px */
+  --t-rotulo: max(12px, 0.97vw); /* 14px */
+  --t-mini: max(11px, 0.9vw); /* 13px */
+  --t-sobre: max(44px, 7.5vw); /* 108px */
+
+  --ease: cubic-bezier(0.35, 0, 0, 1); /* ease.lusion */
+
+  /* Cabinet Grotesk: 800 nos títulos, 400 e 500 no texto (escolhida pelo Thiago entre Cabinet, Panchang e Tanker) */
+  --font-display: 'Cabinet Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --peso-display: 800;
+  --caixa-display: none;
+  --track-display: -0.035em;
+  --entrelinha-display: 0.86;
+  --escala-display: 1;
+  --font-texto: 'Cabinet Grotesk', 'Helvetica Neue', Arial, sans-serif;
+}

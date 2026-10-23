@@ -1,0 +1,1492 @@
+/* Diagramação do protótipo. A base de grade (margem 5vw, segunda coluna em 51vw) veio da medição do
+   Lusion; composição, tipografia pesada, régua, faixas e a vista explodida são do Thiago. */
+
+/* cabeçalho */
+
+.cabecalho {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: max(18px, 2.2vw) var(--margem) 0;
+  pointer-events: none;
+}
+
+/* dentro do túnel (cena escura) o cabeçalho fica claro */
+:global(html[data-cena='escura']) .cabecalho {
+  --tinta: #ecebe6;
+  --ink: #ecebe6;
+  color: #ecebe6;
+}
+
+.cabecalho > * {
+  pointer-events: auto;
+}
+
+.assinatura {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: start;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  font-size: max(14px, 1.1vw);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+}
+
+.marcaTA {
+  width: 2.6em;
+  height: 1em;
+  background: currentColor;
+  mask: url('/brand/logo-head.png') center / contain no-repeat;
+}
+
+.relogio {
+  font-size: var(--t-mini);
+  font-weight: 500;
+  text-transform: uppercase;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.relogio::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 0 2px var(--ink);
+  animation: pulso 2.4s ease-in-out infinite;
+}
+
+@keyframes pulso {
+  50% {
+    transform: scale(0.6);
+  }
+}
+
+.pilula {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: max(40px, 3vw);
+  padding: 0 max(16px, 1.4vw);
+  border: 0;
+  border-radius: 999px;
+  font-family: var(--font-texto);
+  font-size: var(--t-rotulo);
+  font-weight: 500;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 500ms var(--ease);
+}
+
+.pilula:active {
+  transform: scale(0.95);
+}
+
+.pilulaEscura {
+  background: var(--ink);
+  color: var(--branco);
+}
+
+/* texto que rola para cima no hover: a cópia em data-texto entra por baixo */
+.rolante {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.rolante > span,
+.rolante::after {
+  display: block;
+  transition: transform 500ms var(--ease);
+}
+
+.rolante::after {
+  content: attr(data-texto);
+  position: absolute;
+  inset: 100% 0 auto;
+}
+
+.pilula:hover .rolante > span,
+.pilula:hover .rolante::after {
+  transform: translateY(-100%);
+}
+
+/* menu: uma pílula escura que se estica para a esquerda e mostra os links dentro dela */
+.menu {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  height: max(40px, 3vw);
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--branco);
+}
+
+.menuLinks {
+  display: grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns 700ms var(--ease);
+}
+
+.menu[data-aberto='1'] .menuLinks {
+  grid-template-columns: 1fr;
+}
+
+.menuLinks > div {
+  display: flex;
+  gap: 2px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.menuLinks a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: var(--t-rotulo);
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  opacity: 0;
+  transform: translateX(14px);
+  transition: opacity 300ms var(--ease), transform 600ms var(--ease), background-color 200ms, color 200ms;
+}
+
+.menu[data-aberto='1'] .menuLinks a {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--i) * 45ms + 120ms);
+}
+
+.menuLinks a:hover,
+.menuLinks a:focus-visible {
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.menuBotao {
+  flex: none;
+  width: calc(max(40px, 3vw) - 8px);
+  height: calc(max(40px, 3vw) - 8px);
+  border: 0;
+  border-radius: 50%;
+  background: var(--lime);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+/* ícone: dois traços que viram um x */
+.menuIcone {
+  position: relative;
+  width: 14px;
+  height: 8px;
+}
+
+.menuIcone::before,
+.menuIcone::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+  transition: transform 500ms var(--ease), top 500ms var(--ease);
+}
+
+.menuIcone::before {
+  top: 0;
+}
+
+.menuIcone::after {
+  top: 6px;
+}
+
+.menu[data-aberto='1'] .menuIcone::before {
+  top: 3px;
+  transform: rotate(45deg);
+}
+
+.menu[data-aberto='1'] .menuIcone::after {
+  top: 3px;
+  transform: rotate(-45deg);
+}
+
+/* herói */
+
+.heroi {
+  position: relative;
+  height: 100svh;
+  min-height: 600px;
+}
+
+.painel {
+  position: absolute;
+  top: max(84px, 7.2vw);
+  left: var(--margem);
+  right: var(--margem);
+  bottom: 64px;
+  border-radius: var(--raio);
+  overflow: hidden;
+  background: var(--painel);
+  transform-origin: 50% 0;
+  will-change: transform;
+}
+
+.painelTexto {
+  position: absolute;
+  inset: 0;
+  padding: max(18px, 2.4vw);
+  color: var(--branco);
+  pointer-events: none;
+  /* o texto inverte sobre as peças: escuro sobre o branco, claro sobre o fundo */
+  mix-blend-mode: difference;
+}
+
+.painelSobre {
+  font-size: var(--t-rotulo);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.manchete {
+  position: absolute;
+  left: max(16px, 2vw);
+  bottom: max(14px, 1.4vw);
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  line-height: var(--entrelinha-display);
+  font-size: max(64px, 14vw);
+}
+
+.mancheteLinha {
+  display: block;
+}
+
+.painelNota {
+  position: absolute;
+  right: max(18px, 2.4vw);
+  bottom: max(18px, 2.4vw);
+  max-width: max(240px, 24vw);
+  font-size: var(--t-paragrafo);
+  line-height: 1.3;
+}
+
+.painelDica {
+  position: absolute;
+  top: max(18px, 2.4vw);
+  right: max(18px, 2.4vw);
+  font-size: var(--t-mini);
+  opacity: 0.6;
+}
+
+/* pontos onde o robô guia para; o componente Guia lê a posição deles */
+.ancoraRobo {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.palavraMascara {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.06em;
+}
+
+.palavra {
+  display: inline-block;
+  transform-origin: left bottom;
+  animation: entrar 1.4s var(--ease) both;
+  animation-delay: calc(450ms + var(--i) * 70ms);
+}
+
+@keyframes entrar {
+  from {
+    transform: translate3d(0, 1.1em, 0) rotate(9deg);
+  }
+}
+
+/* título e linha lima */
+
+.ideia {
+  position: relative;
+  padding: 16vw var(--margem) 16vw;
+}
+
+.linha {
+  position: absolute;
+  inset: -8vw 0 0;
+  width: 100%;
+  height: calc(100% + 8vw);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.titulo {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  text-transform: var(--caixa-display);
+  letter-spacing: var(--track-display);
+  line-height: var(--entrelinha-display);
+  font-size: calc(var(--t-titulo) * 1.15 * var(--escala-display));
+}
+
+.tituloMascara {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.04em;
+}
+
+.tituloLinha {
+  display: block;
+  transform: translateY(105%) rotate(4deg);
+  transform-origin: left bottom;
+  transition: transform 1.3s var(--ease);
+}
+
+.tituloLinha1 {
+  padding-left: 15vw;
+}
+
+.tituloLinha2 {
+  transition-delay: 120ms;
+}
+
+.ideia[data-visivel='1'] .tituloLinha {
+  transform: none;
+}
+
+.colunaTexto {
+  position: relative;
+  margin: 5vw 0 0 calc(var(--coluna2) - var(--margem));
+  max-width: 40vw;
+  display: grid;
+  gap: 2.4vw;
+  justify-items: start;
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 900ms var(--ease) 300ms, transform 1.2s var(--ease) 300ms;
+}
+
+.ideia[data-visivel='1'] .colunaTexto {
+  opacity: 1;
+  transform: none;
+}
+
+.paragrafo {
+  font-size: var(--t-paragrafo);
+  line-height: 1.4;
+}
+
+/* faixas de palavras */
+
+.faixas {
+  position: relative;
+  height: 320svh;
+}
+
+.faixasFixo {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: grid;
+  /* coluna da largura da tela: sem isso a faixa teria a largura de todas as palavras e giraria em torno
+     de um centro muito à direita */
+  grid-template-columns: minmax(0, 1fr);
+  align-content: center;
+}
+
+.faixa {
+  /* três telas de largura, centrada: o fundo cobre todo o texto que corre, e o giro fica no meio da tela */
+  width: 300vw;
+  margin-left: -100vw;
+  white-space: nowrap;
+  padding: 0.18em 0;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  text-transform: var(--caixa-display);
+  letter-spacing: var(--track-display);
+  font-size: calc(max(40px, 6vw) * var(--escala-display));
+  line-height: 1;
+}
+
+.faixaLima {
+  background: var(--lime);
+  color: var(--ink);
+  transform: rotate(-2.5deg) scale(1.05);
+}
+
+.faixaEscura {
+  /* mesma cor do quadro (.lamina) que nasce dela e cresce até cobrir a tela */
+  position: relative;
+  z-index: 1;
+  background: #0c0d0f;
+  color: var(--branco);
+  transform: rotate(1.8deg) scale(1.05);
+  margin-top: -0.2em;
+}
+
+.lamina {
+  position: absolute;
+  inset: 0;
+  background: #0c0d0f;
+  z-index: 0;
+}
+
+.faixaLima {
+  position: relative;
+  z-index: 2;
+}
+
+.faixaTrilho > span {
+  will-change: transform;
+}
+
+.anelFaixa {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  border: 3px solid var(--lime);
+  z-index: 3;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.faixaTrilho {
+  display: inline-flex;
+  will-change: transform;
+}
+
+.faixaTrilho > span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.faixaJunta {
+  display: inline-block;
+  width: 0.42em;
+  height: 0.42em;
+  margin: 0 0.35em;
+  border-radius: 50%;
+  border: 0.09em solid currentColor;
+}
+
+/* trabalho selecionado (começo) */
+
+.trabalho {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4vw;
+  padding: 8vw var(--margem) 30vh;
+}
+
+.trabalhoTitulo {
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  text-transform: var(--caixa-display);
+  letter-spacing: var(--track-display);
+  line-height: var(--entrelinha-display);
+  font-size: calc(var(--t-trabalho) * var(--escala-display));
+}
+
+.trabalhoNota {
+  max-width: 21vw;
+  margin-top: 1.4vw;
+  font-size: var(--t-mini);
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/* pontos onde o robô guia para (o pé dele fica no topo de cada um) */
+.ancoraTitulo {
+  display: inline-block;
+  width: 1px;
+  height: 1px;
+  margin-left: 0.25em;
+  vertical-align: top;
+  transform: translateY(0.12em);
+}
+
+.linhaBotao {
+  display: flex;
+  align-items: flex-end;
+  gap: 90px;
+}
+
+.ancoraBotao {
+  width: 1px;
+  height: 0;
+}
+
+.ancoraFaixa {
+  position: absolute;
+  left: 64%;
+  top: calc(50% - 0.9 * max(40px, 6vw));
+  width: 1px;
+  height: 1px;
+  z-index: 2;
+}
+
+.ancoraTunel {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 1px;
+}
+
+/* projetos num palco 3D só */
+
+.projetos {
+  position: relative;
+  height: 900svh;
+  color: #ecebe6;
+  --traco: rgba(236, 235, 230, 0.22);
+}
+
+.projetosFixo {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.palco {
+  position: absolute;
+  inset: 0;
+  opacity: calc((1 - var(--fim, 0)) * var(--ini, 0));
+}
+
+.nomesFundo {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* o nome do projeto corre atrás da cena, vazado, e troca com uma descida de máscara */
+.nomeVazado {
+  position: absolute;
+  left: 0;
+  bottom: 4vh;
+  margin: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  line-height: 0.85;
+  font-size: 24vw;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--traco);
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 1100ms var(--ease);
+}
+
+.nomeVazado span {
+  display: inline-block;
+  transform: translateX(calc(var(--l, 0) * -45%));
+}
+
+.nomeVazado[data-on='1'] {
+  clip-path: inset(0 0 0 0);
+}
+
+/* índice dos quatro projetos, na borda direita: o atual acende */
+.indice {
+  opacity: calc(1 - var(--fim, 0) * 1.5);
+  position: absolute;
+  right: var(--margem);
+  bottom: max(24px, 3vh);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  font-size: var(--t-mini);
+  font-weight: 500;
+  text-align: right;
+  z-index: 2;
+}
+
+.indice li {
+  opacity: 0.35;
+  transition: opacity 400ms, transform 600ms var(--ease);
+}
+
+.indice li span {
+  display: inline-block;
+  min-width: 2.2em;
+  color: var(--lime);
+}
+
+.indice[data-i='0'] li:nth-child(1),
+.indice[data-i='1'] li:nth-child(2),
+.indice[data-i='2'] li:nth-child(3),
+.indice[data-i='3'] li:nth-child(4) {
+  opacity: 1;
+  transform: translateX(-10px);
+}
+
+/* o texto de cada projeto entra pela esquerda, linha a linha */
+.projetoTexto {
+  opacity: calc(1 - var(--fim, 0) * 1.4);
+  position: absolute;
+  left: var(--margem);
+  top: 50%;
+  width: min(440px, 34vw);
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.projetoTexto[data-on='0'] > * {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 500ms, transform 800ms var(--ease);
+}
+
+.projetoTexto > * {
+  transition: opacity 500ms, transform 800ms var(--ease);
+}
+
+.projetoTexto[data-on='1'] {
+  pointer-events: auto;
+}
+
+.projetoTexto[data-on='1'] > * {
+  opacity: 1;
+  transform: none;
+}
+
+.projetoTexto[data-on='1'] > :nth-child(2) {
+  transition-delay: 60ms;
+}
+.projetoTexto[data-on='1'] > :nth-child(3) {
+  transition-delay: 120ms;
+}
+.projetoTexto[data-on='1'] > :nth-child(4) {
+  transition-delay: 180ms;
+}
+.projetoTexto[data-on='1'] > :nth-child(5) {
+  transition-delay: 240ms;
+}
+.projetoTexto[data-on='1'] > :nth-child(6) {
+  transition-delay: 300ms;
+}
+
+.projetoRotulo {
+  font-size: var(--t-rotulo);
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--lime);
+}
+
+.projetoNome {
+  position: relative;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  line-height: 0.9;
+  font-size: max(44px, 5vw);
+}
+
+.projetoFrase {
+  font-size: var(--t-paragrafo);
+  line-height: 1.35;
+  color: rgba(236, 235, 230, 0.85);
+}
+
+.projetoFatos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  font-size: var(--t-mini);
+}
+
+.projetoFatos li::before {
+  content: '';
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  margin-right: 0.6em;
+  border-radius: 50%;
+  background: var(--lime);
+}
+
+.projetoLinks {
+  display: flex;
+  gap: 18px;
+  font-size: var(--t-paragrafo);
+  font-weight: 500;
+}
+
+.projetoLinks a {
+  border-bottom: 1.5px solid var(--lime);
+}
+
+/* o print real do projeto, pequeno e torto, como uma foto presa no texto */
+.projetoPrint {
+  width: 62%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 10px;
+  rotate: -3deg;
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.8);
+}
+
+.projetoTexto[data-on='1'] .projetoPrint {
+  transform: none;
+}
+
+/* como eu trabalho: cartões no espírito do Zentry */
+
+.principios {
+  position: relative;
+  padding: 12vw var(--margem) 14vw;
+  /* clip e não hidden: hidden faria da seção um contêiner de rolagem e quebraria o sticky da abertura */
+  overflow: clip;
+}
+
+/* abertura presa: o quadro escuro (o fundo dos projetos) encolhe, inclina e cai, e o título cresce atrás */
+.principiosIntro {
+  position: relative;
+  height: 230svh;
+  margin: -12vw calc(var(--margem) * -1) 0;
+}
+
+.principiosIntroFixo {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.molduraQuadro {
+  position: absolute;
+  inset: 0;
+  background: #0c0d0f;
+  z-index: 3;
+}
+
+/* o mesmo anel lima que abriu os projetos, agora no centro do quadro que vai embora */
+.molduraAnel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  border: 3px solid var(--lime);
+}
+
+.principiosTitulo {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  line-height: 0.86;
+  font-size: max(64px, 13vw);
+}
+
+/* grade torta: cada cartão tem tamanho, cor e inclinação próprios, como cartas na mesa */
+.cartoes {
+  margin-top: 5vw;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1.6vw;
+  perspective: 1400px;
+}
+
+.cartao {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 50%;
+  --px: 0;
+  --py: 0;
+  --giro: 0deg;
+  transform-style: preserve-3d;
+  height: max(340px, 34vw);
+  /* sombra que segue o recorte (box-shadow seria cortado pelo clip-path) */
+  filter: drop-shadow(0 34px 40px rgba(18, 18, 20, 0.35));
+}
+
+/* cada cartão tem um recorte torto próprio, no espírito dos do Zentry; no hover ele se endireita */
+.cartao:nth-child(1) {
+  grid-column: 1 / 7;
+  --giro: -2deg;
+  --recorte: polygon(0% 5%, 100% 0%, 97% 100%, 2.5% 95%);
+}
+
+.cartao:nth-child(2) {
+  grid-column: 7 / 13;
+  margin-top: 9vw;
+  height: max(300px, 28vw);
+  --giro: 1.5deg;
+  --recorte: polygon(4% 0%, 100% 6%, 98% 100%, 0% 93%);
+}
+
+.cartao:nth-child(3) {
+  grid-column: 2 / 8;
+  margin-top: -2vw;
+  height: max(300px, 30vw);
+  --giro: 2.5deg;
+  --recorte: polygon(0% 0%, 95% 7%, 100% 100%, 5% 96%);
+}
+
+.cartao:nth-child(4) {
+  grid-column: 8 / 13;
+  margin-top: 6vw;
+  --giro: -3deg;
+  --recorte: polygon(3% 7%, 97% 0%, 100% 94%, 0% 100%);
+}
+
+.cartaoInterno {
+  position: relative;
+  height: 100%;
+  padding: max(24px, 2.4vw);
+  background: #0c0d0f;
+  color: #ecebe6;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  clip-path: var(--recorte);
+  transform: rotate(var(--giro)) rotateX(var(--rx)) rotateY(var(--ry));
+  transform-style: preserve-3d;
+  transition:
+    transform 600ms var(--ease),
+    clip-path 700ms var(--ease);
+}
+
+/* luz que segue o cursor e grão de papel por cima de tudo */
+.cartaoInterno::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(520px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.16), transparent 60%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.cartaoInterno::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.5'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.cartao:hover .cartaoInterno {
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+  transform: rotate(0deg) rotateX(var(--rx)) rotateY(var(--ry)) scale(1.02);
+  transition:
+    transform 160ms linear,
+    clip-path 700ms var(--ease);
+}
+
+.cartao[data-tipo='regra'] .cartaoInterno {
+  background: #f5f5f2;
+  color: #121214;
+}
+
+.cartao[data-tipo='prova'] .cartaoInterno {
+  background: #3d5afe;
+  color: #f5f5f2;
+}
+
+.cartao[data-tipo='porque'] .cartaoInterno {
+  background: #1b1c1f;
+  color: #d7f452;
+}
+
+.cartaoNumero {
+  position: relative;
+  z-index: 2;
+  font-size: var(--t-rotulo);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+/* a palavra gigante em duas camadas: a vazada atrás anda contra o cursor, a cheia anda a favor,
+   e as duas se separam como se estivessem em profundidades diferentes */
+.cartaoPalavra {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  margin: 0;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+  font-size: max(120px, 13vw);
+  padding-left: max(14px, 1.2vw);
+  pointer-events: none;
+  z-index: 1;
+  translate: calc(var(--px) * 26px) calc(-58% + var(--py) * 18px);
+  transition: translate 500ms var(--ease);
+}
+
+.cartaoPalavraVazada {
+  color: transparent;
+  -webkit-text-stroke: 1.5px currentColor;
+  opacity: 0.45;
+  z-index: 0;
+  translate: calc(var(--px) * -40px + 0.08em) calc(-58% + var(--py) * -30px - 0.08em);
+}
+
+.cartao:hover .cartaoPalavra {
+  transition: translate 160ms linear;
+}
+
+.cartao:nth-child(2) .cartaoPalavra,
+.cartao:nth-child(3) .cartaoPalavra {
+  font-size: max(110px, 11.5vw);
+}
+
+.cartaoRodape {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 6px;
+}
+
+.cartaoRodape h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-size: max(20px, 1.6vw);
+}
+
+.cartaoRodape p {
+  max-width: 36ch;
+  font-size: var(--t-mini);
+  line-height: 1.35;
+  opacity: 0.75;
+}
+
+.ancoraCartao {
+  position: absolute;
+  right: 12%;
+  top: 14%;
+  width: 1px;
+  height: 1px;
+}
+
+.visualMapa {
+  position: absolute;
+  top: max(16px, 1.4vw);
+  right: max(16px, 1.4vw);
+  width: 34%;
+  z-index: 1;
+}
+
+.visualMapa line {
+  stroke: rgba(236, 235, 230, 0.5);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: desenhar 4s var(--ease) infinite;
+  animation-delay: calc(var(--i) * 0.2s);
+}
+
+.visualMapa circle {
+  fill: #0c0d0f;
+  stroke: var(--lime);
+  stroke-width: 1.5;
+  animation: acender 4s ease infinite;
+  animation-delay: calc(var(--i) * 0.2s);
+}
+
+@keyframes desenhar {
+  40%,
+  80% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+
+@keyframes acender {
+  30%,
+  70% {
+    fill: var(--lime);
+  }
+}
+
+.visualRegra {
+  position: absolute;
+  top: max(16px, 1.4vw);
+  right: max(16px, 1.4vw);
+  width: 46%;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  font-size: var(--t-mini);
+}
+
+.visualRegra span {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(18, 18, 20, 0.06);
+  animation: linhaRegra 4.8s ease infinite;
+  animation-delay: calc(var(--i) * 1.2s);
+}
+
+@keyframes linhaRegra {
+  0%,
+  20% {
+    background: var(--lime);
+    color: var(--ink);
+  }
+  30%,
+  100% {
+    background: rgba(18, 18, 20, 0.06);
+  }
+}
+
+.visualProva {
+  position: absolute;
+  top: max(16px, 1.4vw);
+  right: max(16px, 1.4vw);
+  width: 50%;
+  justify-content: flex-end;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.visualProva li {
+  padding: 8px 14px 8px 30px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  font-size: var(--t-mini);
+  font-weight: 500;
+  position: relative;
+}
+
+.visualProva li::before {
+  content: '';
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: marcar 3.2s ease infinite;
+  animation-delay: calc(var(--i) * 0.5s);
+}
+
+@keyframes marcar {
+  30%,
+  90% {
+    background: currentColor;
+  }
+}
+
+.visualPorque {
+  position: absolute;
+  top: max(16px, 1.4vw);
+  right: max(16px, 1.4vw);
+  width: 40%;
+  z-index: 1;
+}
+
+.visualPorque path {
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 2;
+  stroke-dasharray: 1;
+  animation: desenhar 3.2s var(--ease) infinite;
+}
+
+.visualPorque circle {
+  fill: #ecebe6;
+}
+
+/* trajetória como estrada */
+
+.trajetoria {
+  position: relative;
+  z-index: 2;
+  /* sobrepõe a última tela do "Como eu trabalho": a estrada entra por cima dela num círculo */
+  margin-top: -100svh;
+}
+
+/* o túnel fica por baixo de tudo, a estrada por cima com um furo que abre */
+.tunelFundo {
+  visibility: hidden;
+  position: absolute;
+  inset: 0;
+  background: #16110c;
+}
+
+.estradaCamada {
+  clip-path: circle(0% at 0% 42%);
+  position: absolute;
+  inset: 0;
+  background: #f5f5f2;
+  color: #121214;
+  --furo: 0px;
+  -webkit-mask: radial-gradient(circle at var(--cx) var(--cy), transparent var(--furo), #000 calc(var(--furo) + 1px));
+  mask: radial-gradient(circle at var(--cx) var(--cy), transparent var(--furo), #000 calc(var(--furo) + 1px));
+  will-change: transform;
+}
+
+/* aro lima em volta do furo (100px de diâmetro, escalado pelo raio) */
+.furoAro {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 0.6px #d7f452,
+    0 0 6px 0.4px rgba(215, 244, 82, 0.6);
+  pointer-events: none;
+  opacity: 0;
+}
+
+/* o contato aparece sobre a luz branca do fim do túnel */
+.contatoCamada {
+  position: absolute;
+  inset: 0;
+  color: #121214;
+  pointer-events: none;
+  opacity: 0;
+  translate: 0 40px;
+  filter: blur(8px);
+  transition:
+    opacity 900ms var(--ease),
+    translate 1100ms var(--ease),
+    filter 900ms var(--ease);
+}
+
+.contatoCamada .contato {
+  align-content: end;
+  min-height: 100%;
+  height: 100%;
+}
+
+.contatoCamada[data-on='1'] {
+  opacity: 1;
+  translate: 0 0;
+  filter: none;
+  pointer-events: auto;
+}
+
+.trajetoriaFixo {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.trajetoriaTitulo {
+  position: absolute;
+  left: var(--margem);
+  top: max(90px, 8vw);
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  line-height: 0.9;
+  font-size: max(54px, 9vw);
+}
+
+.estrada {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.estradaFundo,
+.estradaLima {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 34;
+}
+
+.estradaFundo {
+  stroke: rgba(18, 18, 20, 0.07);
+}
+
+.estradaLima {
+  stroke: var(--lime);
+}
+
+.pontaEstrada {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.estacoes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.estacao {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.estacaoPino {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ink);
+  border: 5px solid var(--lime);
+  scale: 0;
+  transition: scale 600ms var(--ease);
+}
+
+/* no pino, só o ano, numa etiqueta pequena ao lado */
+.estacaoChip {
+  position: absolute;
+  left: 22px;
+  top: -13px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--lime);
+  font-size: var(--t-mini);
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  translate: -8px 0;
+  transition: opacity 400ms, translate 600ms var(--ease);
+}
+
+.estacao[data-lado='esquerda'] .estacaoChip {
+  left: auto;
+  right: 22px;
+  translate: 8px 0;
+}
+
+.estacao[data-on='1'] .estacaoPino {
+  scale: 1;
+}
+
+.estacao[data-on='1'] .estacaoChip {
+  opacity: 1;
+  translate: 0 0;
+}
+
+/* o painel da estação atual, sempre no mesmo lugar: no alto, à direita, fora do caminho da estrada.
+   Troca como um contador: as linhas do anterior sobem e somem dentro das próprias máscaras e só depois
+   as do novo sobem de baixo, com o ano rolando dígito a dígito. Nunca há dois textos visíveis juntos. */
+.estacaoPainel {
+  position: absolute;
+  top: max(96px, 11vh);
+  right: var(--margem);
+  width: min(440px, 32vw);
+  display: grid;
+  gap: 6px;
+  font-size: var(--t-mini);
+  pointer-events: none;
+}
+
+.linhaPainel {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.1em;
+}
+
+.linhaPainel > * {
+  display: block;
+  translate: 0 115%;
+  transition: translate 450ms var(--ease);
+}
+
+.estacaoAno > span {
+  display: inline-block;
+  translate: 0 115%;
+  transition: translate 450ms var(--ease);
+}
+
+.estacaoPainel[data-estado='atual'] .linhaPainel > * {
+  translate: 0 0;
+  transition: translate 750ms var(--ease) calc(420ms + var(--k) * 90ms);
+}
+
+.estacaoPainel[data-estado='atual'] .estacaoAno > span {
+  translate: 0 0;
+  transition: translate 750ms var(--ease) calc(420ms + var(--c) * 45ms);
+}
+
+.estacaoPainel[data-estado='passou'] .linhaPainel > *,
+.estacaoPainel[data-estado='passou'] .estacaoAno > span {
+  translate: 0 -115%;
+  transition: translate 400ms cubic-bezier(0.55, 0, 0.8, 0.2) calc(var(--k, 0) * 40ms);
+}
+
+.estacaoPainel[data-estado] .linhaPainel > .estacaoAno {
+  /* o ano anda pelos dígitos, não como bloco */
+  translate: 0 0;
+}
+
+.estacaoPainel strong {
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  font-size: max(20px, 1.7vw);
+  line-height: 1.05;
+}
+
+.estacaoAno {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: -0.04em;
+  line-height: 0.85;
+  font-size: max(48px, 5.4vw);
+  white-space: nowrap;
+}
+
+/* túnel */
+
+.viagem {
+  position: relative;
+  height: 1500svh;
+}
+
+.viagemFixo {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  background: #16110c;
+}
+
+/* contato, na saída do túnel */
+
+.contato {
+  position: relative;
+  min-height: 100svh;
+  padding: 18vh var(--margem) 8vh;
+  display: grid;
+  align-content: center;
+  gap: 2.4vw;
+}
+
+.contatoMarca {
+  width: max(160px, 22vw);
+  aspect-ratio: 1306 / 497;
+  background: var(--lime);
+  mask: url('/brand/logo-head.png') center / contain no-repeat;
+}
+
+.contatoChamada {
+  font-size: var(--t-paragrafo);
+}
+
+.contatoEmail {
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  font-size: max(34px, 6.4vw);
+  line-height: 1;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  background: linear-gradient(var(--lime), var(--lime)) 0 92% / 0 0.12em no-repeat;
+  transition: background-size 700ms var(--ease);
+}
+
+.contatoEmail:hover {
+  background-size: 100% 0.12em;
+}
+
+.contatoLinks {
+  display: flex;
+  gap: 24px;
+  font-size: var(--t-paragrafo);
+}
+
+@media (max-width: 700px) {
+  .cabecalho {
+    grid-template-columns: 1fr auto;
+  }
+
+  .relogio {
+    display: none;
+  }
+
+  .painelNota {
+    left: max(18px, 2.4vw);
+    bottom: calc(max(64px, 14vw) * 2 * var(--escala-display));
+  }
+
+  .colunaTexto {
+    margin-left: 0;
+    max-width: none;
+  }
+
+  .trabalho {
+    flex-direction: column;
+  }
+
+  .trabalhoNota {
+    max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tituloLinha,
+  .colunaTexto {
+    transform: none;
+    opacity: 1;
+  }
+}

@@ -1,0 +1,174 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  /* --fundo e --tinta mudam com a rolagem (componente Temas) */
+  background: var(--fundo, var(--bg));
+  color: var(--tinta, var(--ink));
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-texto);
+  font-size: var(--t-paragrafo);
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+  font-weight: 400;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.pular {
+  position: fixed;
+  left: var(--margem);
+  top: 12px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--lime);
+  color: var(--ink);
+  transform: translateY(-200%);
+}
+
+.pular:focus-visible {
+  transform: none;
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* robô guia: área clicável, balão e o cursor que ele carrega */
+.robo-alvo {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 41;
+  padding: 0;
+  border: 0;
+  border-radius: 40%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.robo-alvo:focus-visible {
+  outline: 2px solid var(--lime);
+}
+
+.robo-convite {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 42;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 400ms var(--ease);
+}
+
+.robo-convite[data-on='1'] {
+  opacity: 1;
+}
+
+/* três setas que caem em sequência, no ritmo do mergulho do robô */
+.robo-convite span {
+  width: 14px;
+  height: 14px;
+  border-right: 4px solid var(--lime);
+  border-bottom: 4px solid var(--lime);
+  rotate: 45deg;
+  filter: drop-shadow(0 0 1px #121214) drop-shadow(0 0 1px #121214);
+  animation: seta 2.1s ease-in-out infinite;
+}
+
+.robo-convite span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.robo-convite span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes seta {
+  0%,
+  40% {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+.robo-cursor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 43;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.robo-cursor[data-on='1'] {
+  opacity: 1;
+}
+
+html.cursor-roubado,
+html.cursor-roubado * {
+  cursor: none !important;
+}

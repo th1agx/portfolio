@@ -1,4 +1,18 @@
 node_modules
+.next
+out
 dist
 .taste-skill
 *.local
+next-env.d.ts
+*.tsbuildinfo
+test-results
+playwright-report
+.DS_Store
+
+# código de outros sites, só para estudo local: nunca importar, nunca publicar
+reference/
+
+# configuração local do Claude Code e notas de engenharia reversa de outro site: não publicar
+.claude/
+docs/LUSION_REA.md
