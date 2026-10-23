@@ -42,7 +42,7 @@
   width: 2.6em;
   height: 1em;
   background: currentColor;
-  mask: url('/brand/logo-head.png') center / contain no-repeat;
+  mask: url('./marca/logo-head.png') center / contain no-repeat;
 }
 
 .relogio {
@@ -1426,7 +1426,7 @@
   width: max(160px, 22vw);
   aspect-ratio: 1306 / 497;
   background: var(--lime);
-  mask: url('/brand/logo-head.png') center / contain no-repeat;
+  mask: url('./marca/logo-head.png') center / contain no-repeat;
 }
 
 .contatoChamada {

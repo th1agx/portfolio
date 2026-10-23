@@ -1,4 +1,5 @@
 // Projetos, com fatos tirados dos repositórios públicos (github.com/th1agx) e do perfil. Nada inventado.
+import { arquivo } from '@/content/caminho'
 
 export type Projeto = {
   id: string
@@ -22,7 +23,7 @@ export const projetos: Projeto[] = [
     nome: 'Tributax',
     frase: 'Um motor tributário em que cada resposta traz a regra aplicada, as descartadas e o fundamento legal.',
     fatos: ['208 testes automatizados', 'ICMS nas 27 unidades da federação', '15 decisões de arquitetura registradas'],
-    imagem: { src: '/projetos/tributax.jpg', alt: 'Documentação do Tributax, com o exemplo de uma venda interestadual e os tributos calculados.' },
+    imagem: { src: arquivo('/projetos/tributax.jpg'), alt: 'Documentação do Tributax, com o exemplo de uma venda interestadual e os tributos calculados.' },
     links: [
       { rotulo: 'Código', href: 'https://github.com/th1agx/Tributax-Motor-Tributario' },
       { rotulo: 'Documentação', href: 'https://tributax-api.onrender.com/' },
@@ -36,7 +37,7 @@ export const projetos: Projeto[] = [
     nome: 'DevGuard',
     frase: 'Agentes de IA só entregam depois de mapear, especificar, testar e revisar o próprio trabalho.',
     fatos: ['Seis etapas, do mapa ao relatório', 'Funciona com Claude Code, Codex e Cursor', 'Código aberto, licença MIT'],
-    imagem: { src: '/projetos/devguard.jpg', alt: 'Banner do DevGuard Skill com as etapas mapear, especificar, planejar, construir, testar e revisar.' },
+    imagem: { src: arquivo('/projetos/devguard.jpg'), alt: 'Banner do DevGuard Skill com as etapas mapear, especificar, planejar, construir, testar e revisar.' },
     links: [{ rotulo: 'Código', href: 'https://github.com/th1agx/devguard-skill' }],
     escuro: false,
     inclinacao: [-0.3, 0.6, -0.08],
@@ -58,8 +59,8 @@ export const projetos: Projeto[] = [
     nome: 'English Learning',
     frase: 'O site das aulas de inglês do CEFF, que substituiu o PDF de apresentação usado com novos alunos.',
     fatos: ['React 19, GSAP e Framer Motion', 'Organizado em MVC', 'Publicado no GitHub Pages'],
-    imagem: { src: '/projetos/english-0.jpg', alt: 'Site do CEFF Education: Inglês do jeito certo.' },
-    telas: ['/projetos/english-0.jpg', '/projetos/english-1.jpg', '/projetos/english-2.jpg', '/projetos/english-3.jpg', '/projetos/english-4.jpg'],
+    imagem: { src: arquivo('/projetos/english-0.jpg'), alt: 'Site do CEFF Education: Inglês do jeito certo.' },
+    telas: [arquivo('/projetos/english-0.jpg'), arquivo('/projetos/english-1.jpg'), arquivo('/projetos/english-2.jpg'), arquivo('/projetos/english-3.jpg'), arquivo('/projetos/english-4.jpg')],
     links: [
       { rotulo: 'Ver o site', href: 'https://th1agx.github.io/English-Learning-Experience/' },
       { rotulo: 'Código', href: 'https://github.com/th1agx/English-Learning-Experience' },

@@ -2,9 +2,9 @@
    Medidas tiradas em 1440px de largura viram vw para escalar do mesmo jeito. */
 
 
-@font-face { font-family: 'Cabinet Grotesk'; src: url('/fonts/tipo/cabinet-grotesk-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'Cabinet Grotesk'; src: url('/fonts/tipo/cabinet-grotesk-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
-@font-face { font-family: 'Cabinet Grotesk'; src: url('/fonts/tipo/cabinet-grotesk-800.woff2') format('woff2'); font-weight: 800; font-display: swap; }
+@font-face { font-family: 'Cabinet Grotesk'; src: url('./fontes/cabinet-grotesk-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Cabinet Grotesk'; src: url('./fontes/cabinet-grotesk-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Cabinet Grotesk'; src: url('./fontes/cabinet-grotesk-800.woff2') format('woff2'); font-weight: 800; font-display: swap; }
 
 :root {
   --bg: #f5f5f2; /* branco suave */

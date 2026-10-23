@@ -7,6 +7,7 @@ import { BufferGeometry, Color, InstancedMesh, MeshPhysicalMaterial, Object3D, R
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { criarCorpo, impulso, passo, type Corpo } from './fisica'
+import { arquivo } from '@/content/caminho'
 
 // O topo: um aglomerado de símbolos de código ({ } < / > ; = ( ) [ ]) grossos e arredondados, como peças de
 // borracha, flutuando no painel escuro. O cursor empurra as peças; o clique troca a cor das coloridas
@@ -32,7 +33,7 @@ const PECAS = (() => {
 
 function Pecas({ corIndice, ativo }: { corIndice: number; ativo: { current: boolean } }) {
   const { camera, pointer } = useThree()
-  const fonte = useLoader(FontLoader, '/fonts/3d/rubik-900.json')
+  const fonte = useLoader(FontLoader, arquivo('/fonts/3d/rubik-900.json'))
   const geos = useMemo(() => {
     const m = new Map<string, { geo: BufferGeometry; raio: number }>()
     for (const s of SIMBOLOS) {

@@ -8,6 +8,7 @@ import { AdditiveBlending, BoxGeometry, DirectionalLight, Color, Fog, Group, Ins
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { RoboAgente, type AcaoRobo } from './RoboAgente'
+import { arquivo } from '@/content/caminho'
 
 // O túnel: uma animação só, sem texto. O robô agente, agora grande, voa por cinco trechos e a câmera o
 // segue, mudando de distância e de ângulo em cada um:
@@ -90,7 +91,7 @@ function Costelas() {
 }
 
 function ParedeDeSimbolos() {
-  const fonte = useLoader(FontLoader, '/fonts/3d/rubik-900.json')
+  const fonte = useLoader(FontLoader, arquivo('/fonts/3d/rubik-900.json'))
   const simbolos = ['{', '}', '<', '>', ';', '/']
   const porTipo = 46
   const geos = useMemo(
@@ -226,7 +227,7 @@ function Boca() {
 
 // a sala: o túnel acaba num vão escuro com símbolos gigantes boiando devagar em volta do caminho
 function Sala() {
-  const fonte = useLoader(FontLoader, '/fonts/3d/rubik-900.json')
+  const fonte = useLoader(FontLoader, arquivo('/fonts/3d/rubik-900.json'))
   const pecas = useMemo(() => {
     const simbolos = ['{', '}', '<', '>', '/', ';', '(', ')', '[', ']', '=', '{', '<', '/']
     return simbolos.map((t, i) => {
