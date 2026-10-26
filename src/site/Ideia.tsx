@@ -66,9 +66,7 @@ export function Ideia() {
       </h2>
       <div className={s.colunaTexto}>
         <p className={s.paragrafo}>
-          Trabalho na 3D Lab com o ERP da empresa, integrações via API e automação. Fora dele, escrevi o Tributax, um motor tributário em
-          que cada resposta traz a regra aplicada e as descartadas, e o DevGuard, uma disciplina que obriga agentes de IA a provar o que
-          entregam.
+          No 3D Lab, mexo no ERP da empresa e nas integrações entre os sistemas. Por fora, escrevi o Tributax — um motor tributário que devolve a regra aplicada e as descartadas — e o DevGuard, que obriga agente de IA a provar o que entrega.
         </p>
         <span className={s.ancoraBotao} data-robo="joinha" aria-hidden />
       </div>

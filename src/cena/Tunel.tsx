@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useLoader } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
-import { AdditiveBlending, BoxGeometry, DirectionalLight, Color, Fog, Group, InstancedMesh, MathUtils, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Points, TorusGeometry } from 'three'
+import { AdditiveBlending, BackSide, BoxGeometry, DirectionalLight, Color, Fog, Group, InstancedMesh, MathUtils, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Points, TorusGeometry } from 'three'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { RoboAgente, type AcaoRobo } from './RoboAgente'
@@ -152,28 +152,30 @@ function ParedeDeSimbolos() {
 
 export const PORTAIS = Array.from({ length: 8 }, (_, i) => Z_PORTAIS - 5 - i * 7)
 
+// portais: anel lima inteiro com dois arcos que giram dentro dele — aro de luz, não caixa esticada
 function Portais({ progresso }: { progresso: { current: number } }) {
-  const ref = useRef<InstancedMesh>(null)
-  const geo = useMemo(() => new BoxGeometry(1, 1, 1), [])
-  const mat = useMemo(() => new MeshBasicMaterial({ color: new Color(LIMA).multiplyScalar(2.2), toneMapped: false }), [])
+  const grupos = useRef<(Group | null)[]>([])
+  const matAro = useMemo(() => new MeshBasicMaterial({ color: new Color(LIMA).multiplyScalar(1.5), toneMapped: false }), [])
+  const matArco = useMemo(() => new MeshBasicMaterial({ color: new Color(LIMA).multiplyScalar(2.1), toneMapped: false }), [])
+  const geoAro = useMemo(() => new TorusGeometry(3.4, 0.09, 10, 96), [])
+  const geoArco = useMemo(() => new TorusGeometry(3.0, 0.06, 8, 64, Math.PI * 0.72), [])
   useFrame(() => {
-    const m = ref.current
-    if (!m) return
-    let k = 0
-    PORTAIS.forEach((z, i) => {
-      const giro = i * 0.3 + progresso.current * 10
-      for (let b = 0; b < 4; b++) {
-        const a = giro + (b * Math.PI) / 2
-        o.position.set(Math.cos(a) * 3.3, Math.sin(a) * 3.3, z)
-        o.rotation.set(0, 0, a)
-        o.scale.set(0.16, 6.6, 0.16)
-        o.updateMatrix()
-        m.setMatrixAt(k++, o.matrix)
-      }
+    PORTAIS.forEach((_, i) => {
+      const g = grupos.current[i]
+      if (g) g.rotation.z = i * 0.3 + progresso.current * 10
     })
-    m.instanceMatrix.needsUpdate = true
   })
-  return <instancedMesh ref={ref} args={[geo, mat, PORTAIS.length * 4]} />
+  return (
+    <>
+      {PORTAIS.map((z, i) => (
+        <group key={z} position={[0, 0, z]} ref={(g) => void (grupos.current[i] = g)}>
+          <mesh geometry={geoAro} material={matAro} />
+          <mesh geometry={geoArco} material={matArco} />
+          <mesh geometry={geoArco} material={matArco} rotation={[0, 0, Math.PI]} />
+        </group>
+      ))}
+    </>
+  )
 }
 
 function Riscos({ progresso }: { progresso: { current: number } }) {
@@ -307,7 +309,18 @@ function Saida() {
   return (
     <mesh position={[0, 0, -COMPRIMENTO + 2]}>
       <circleGeometry args={[RAIO + 1, 64]} />
-      <meshBasicMaterial color={new Color('#f5f5f2').multiplyScalar(1.6)} toneMapped={false} />
+      {/* off-white de papel, sem multiplicar acima de 1: a saída acolhe, não estoura */}
+      <meshBasicMaterial color="#f2f1ec" toneMapped={false} />
+    </mesh>
+  )
+}
+
+// parede contínua do duto (costelas e símbolos por cima dela): escuridão com fundo de verdade
+function Parede() {
+  return (
+    <mesh position={[0, 0, (Z_SALA + 8) / 2]} rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[RAIO + 0.05, RAIO + 0.05, -(Z_SALA + 8), 48, 1, true]} />
+      <meshStandardMaterial color="#14110e" roughness={0.85} metalness={0.1} side={BackSide} />
     </mesh>
   )
 }
@@ -390,7 +403,7 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
     const mistura = para === de ? 0 : MathUtils.clamp((de.z - z) / (de.z - para.z), 0, 1)
     fundo.copy(a.set(de.cor)).lerp(b.set(para.cor), MathUtils.smoothstep(mistura, 0.6, 1))
     const saida = MathUtils.clamp((-z - (COMPRIMENTO - 26)) / 14, 0, 1)
-    fundo.lerp(a.set('#f5f5f2'), saida * saida)
+    fundo.lerp(a.set('#f2f1ec'), saida * saida)
     state.scene.background = fundo
     const fog = state.scene.fog as Fog | null
     if (fog) {
@@ -428,7 +441,7 @@ export default function Tunel({ progresso, ativo = true }: { progresso: { curren
       <Riscos progresso={progresso} />
       <Saida />
       <EffectComposer multisampling={0}>
-        <Bloom intensity={1.1} luminanceThreshold={0.6} luminanceSmoothing={0.2} mipmapBlur />
+        <Bloom intensity={0.75} luminanceThreshold={0.85} luminanceSmoothing={0.2} mipmapBlur />
         <Vignette offset={0.25} darkness={0.7} />
       </EffectComposer>
     </Canvas>

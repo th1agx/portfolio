@@ -9,9 +9,10 @@ import s from './site.module.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Projetos num palco só: a seção fica presa e a rolagem leva a câmera de um projeto ao outro (Palco.tsx).
-// Cada projeto é um objeto que se monta diante da câmera; o texto entra pela esquerda enquanto ele monta
-// e sai antes da viagem. O texto fica à esquerda e o objeto à direita: um nunca passa por cima do outro.
+// Projetos num salão 3D (Palco.tsx): os quatro são cards numa fila em arco sobre um piso espelhado;
+// a rolagem anda a fila — o card da frente chega ao posto e o objeto do projeto se monta em cima dele.
+// O texto fica na metade esquerda, composto como um dossiê: rótulo mono em cima, nome grande, frase,
+// linhas de especificação rótulo—valor e links. Nada de lista com marcador.
 // O robô guia não aparece aqui (data-sem-robo): a cena é dos projetos.
 
 const Palco = dynamic(() => import('@/cena/Palco'), { ssr: false })
@@ -32,13 +33,13 @@ export function Projetos() {
       const f = Math.min(p * 4, 3.999)
       const i = Math.floor(f)
       const dentro = f - i
-      blocos.forEach((b, j) => (b.dataset.on = j === i && dentro > 0.04 && dentro < 0.88 ? '1' : '0'))
+      blocos.forEach((b, j) => (b.dataset.on = j === i && dentro > 0.05 && dentro < 0.8 ? '1' : '0'))
       if (contador) contador.dataset.i = String(i)
-      // no fim, a cena apaga (objetos, halo e índice somem): quando a seção solta da tela, o que sobe é
-      // escuro sobre escuro, sem borda, e o anel lima do "Como eu trabalho" sobe sozinho até o centro
+      // no fim, a cena apaga (cards, objetos e contador somem): quando a seção solta da tela, o que
+      // sobe é escuro sobre escuro, sem borda, e o quadro do "Como eu trabalho" sobe sozinho
       const fim = gsap.utils.clamp(0, 1, (p - 0.94) / 0.045)
       el.style.setProperty('--fim', fim.toFixed(3))
-      // e no começo ela acende depois de presa: a borda de cima do canvas nunca sobe visível pela tela
+      // e no começo ela acende depois de presa: a borda de cima do canvas nunca sobe visível
       el.style.setProperty('--ini', gsap.utils.clamp(0, 1, (p - 0.002) / 0.03).toFixed(3))
     }
     aplicar(0)
@@ -63,30 +64,34 @@ export function Projetos() {
         <div className={s.palco}>
           <Palco progresso={progresso} ativo={ativo} />
         </div>
-        <ol className={s.indice} data-contador data-i="0" aria-hidden>
+        {/* contador grande no canto inferior direito, em mono: 01—04 */}
+        <p className={s.contadorProjetos} data-contador data-i="0" aria-hidden>
           {projetos.map((p, i) => (
-            <li key={p.id} style={{ '--i': i } as React.CSSProperties}>
-              <span>0{i + 1}</span> {p.nome}
-            </li>
+            <span key={p.id}>{`0${i + 1}`}</span>
           ))}
-        </ol>
-        {projetos.map((p) => (
+          <b>/{`0${projetos.length}`}</b>
+        </p>
+        {projetos.map((p, i) => (
           <section key={p.id} data-projeto data-on="0" className={s.projetoTexto} aria-labelledby={`projeto-${p.id}`}>
             <p className={s.projetoRotulo}>{p.rotulo}</p>
             <h3 id={`projeto-${p.id}`} className={s.projetoNome}>
               {p.nome}
             </h3>
             <p className={s.projetoFrase}>{p.frase}</p>
-            <ul className={s.projetoFatos}>
-              {p.fatos.map((f) => (
-                <li key={f}>{f}</li>
+            <dl className={s.projetoSpecs}>
+              {p.specs.map((spec) => (
+                <div key={spec.k}>
+                  <dt>{spec.k}</dt>
+                  <dd>{spec.v}</dd>
+                </div>
               ))}
-            </ul>
+            </dl>
             {p.links.length > 0 && (
               <p className={s.projetoLinks}>
                 {p.links.map((l) => (
                   <a key={l.href} href={l.href}>
-                    {l.rotulo} ↗
+                    <span>{l.rotulo}</span>
+                    <span aria-hidden>↗</span>
                   </a>
                 ))}
               </p>

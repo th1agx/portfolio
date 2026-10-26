@@ -4,7 +4,7 @@ import { arquivo } from '@/content/caminho'
 
 export const metadata: Metadata = {
   title: 'Thiago Antunes, engenheiro de software',
-  description: 'Sistemas de empresa, integrações e regras que mostram por que decidiram.',
+  description: 'ERP, integrações via API e um motor tributário que explica cada decisão. Feito à mão, em Belo Horizonte.',
   icons: { icon: arquivo('/brand/favicon.svg') },
 }
 

@@ -737,34 +737,104 @@
   color: rgba(236, 235, 230, 0.85);
 }
 
-.projetoFatos {
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* especificações: linhas rótulo—valor em mono, com fio embaixo, como ficha técnica */
+.projetoSpecs {
+  margin: 4px 0 0;
   display: grid;
-  gap: 8px;
-  font-size: var(--t-mini);
 }
 
-.projetoFatos li::before {
-  content: '';
-  display: inline-block;
-  width: 0.55em;
-  height: 0.55em;
-  margin-right: 0.6em;
-  border-radius: 50%;
-  background: var(--lime);
+.projetoSpecs > div {
+  display: grid;
+  grid-template-columns: minmax(86px, 7.5vw) 1fr;
+  gap: 18px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(236, 235, 230, 0.14);
+}
+
+.projetoSpecs > div:first-child {
+  border-top: 1px solid rgba(236, 235, 230, 0.14);
+}
+
+.projetoSpecs dt {
+  font-family: var(--font-mono);
+  font-size: max(11px, 0.82vw);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--lime);
+}
+
+.projetoSpecs dd {
+  margin: 0;
+  font-size: var(--t-rotulo);
+  color: rgba(236, 235, 230, 0.92);
 }
 
 .projetoLinks {
   display: flex;
-  gap: 18px;
-  font-size: var(--t-paragrafo);
-  font-weight: 500;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .projetoLinks a {
-  border-bottom: 1.5px solid var(--lime);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid rgba(236, 235, 230, 0.25);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: max(11.5px, 0.85vw);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: border-color 250ms, background-color 250ms;
+}
+
+.projetoLinks a:hover {
+  border-color: var(--lime);
+  background: rgba(215, 244, 82, 0.08);
+}
+
+.projetoLinks a span:last-child {
+  color: var(--lime);
+}
+
+/* contador do canto inferior direito: dígito grande que troca, /04 fixo em mono */
+.contadorProjetos {
+  opacity: calc((1 - var(--fim, 0)) * var(--ini, 0));
+  position: absolute;
+  right: var(--margem);
+  bottom: max(24px, 3.4vh);
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.contadorProjetos span {
+  display: none;
+  font-size: max(30px, 2.6vw);
+  font-weight: 500;
+  color: var(--lime);
+  font-variant-numeric: tabular-nums;
+}
+
+.contadorProjetos b {
+  font-size: max(13px, 1vw);
+  font-weight: 400;
+  color: rgba(236, 235, 230, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.contadorProjetos[data-i='0'] span:nth-child(1),
+.contadorProjetos[data-i='1'] span:nth-child(2),
+.contadorProjetos[data-i='2'] span:nth-child(3),
+.contadorProjetos[data-i='3'] span:nth-child(4) {
+  display: inline;
 }
 
 /* o print real do projeto, pequeno e torto, como uma foto presa no texto */
@@ -846,61 +916,87 @@
   font-weight: 500;
 }
 
+/* decisões como manifesto: linhas numeradas, afirmação grande à esquerda, explicação à direita */
 .decisoes {
-  margin: 8vw 0 0;
+  margin: 7vw 0 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  gap: 12vw;
 }
 
 .decisao {
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 5vw;
-  align-items: center;
-}
-
-.decisao[data-lado='direita'] .decisaoTexto {
-  order: 2;
-}
-
-.decisaoTexto {
   position: relative;
   display: grid;
-  gap: 18px;
+  grid-template-columns: minmax(56px, 6vw) 1.35fr 1fr;
+  gap: max(24px, 3vw);
+  align-items: start;
+  padding: max(28px, 3.2vw) 0 max(36px, 4vw);
+  border-top: 1px solid rgba(18, 18, 20, 0.22);
 }
 
-.decisaoAdr {
-  font-size: var(--t-rotulo);
+.decisao:last-child {
+  border-bottom: 1px solid rgba(18, 18, 20, 0.22);
+}
+
+.decisaoNum {
+  font-family: var(--font-mono);
+  font-size: max(13px, 0.95vw);
   font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: rgba(18, 18, 20, 0.5);
+  padding-top: 0.9em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* o nome em código, grande, sobe por uma máscara */
-.decisaoCodigoMascara {
+.decisaoTituloMascara {
   margin: 0;
   overflow: hidden;
-  /* espaço para descendentes (g, p) não serem cortados pela máscara */
-  padding-bottom: 0.22em;
-  margin-bottom: -0.14em;
+  padding-bottom: 0.14em;
 }
 
-.decisaoCodigo {
+.decisaoTitulo {
   display: block;
-  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  font-size: max(30px, 3.6vw);
-  overflow-wrap: anywhere;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  line-height: 0.98;
+  font-size: max(34px, 4.6vw);
+}
+
+.decisaoCorpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .decisaoFrase {
+  margin: 0;
   max-width: 34ch;
   font-size: var(--t-paragrafo);
   line-height: 1.4;
+}
+
+/* o detalhe: uma linha de código real, pequena, colada na linha da decisão */
+.decisaoDetalhe {
+  margin: 2px 0 0;
+  font-family: var(--font-mono);
+  font-size: max(12px, 0.88vw);
+  color: rgba(18, 18, 20, 0.62);
+  padding-left: 14px;
+  border-left: 2px solid var(--lime);
+}
+
+.decisaoDetalhe code {
+  font: inherit;
+}
+
+.decisaoAdr {
+  font-family: var(--font-mono);
+  font-size: max(11.5px, 0.82vw);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(18, 18, 20, 0.45);
+  text-align: right;
+  padding-top: 1.1em;
 }
 
 .ancoraDecisao {
@@ -911,356 +1007,17 @@
   height: 1px;
 }
 
-/* o artefato: um pedaço escuro do sistema sobre o lima */
-.decisaoArtefato {
-  will-change: transform;
-}
-
-.artefato {
-  position: relative;
-  min-height: max(240px, 18vw);
-  padding: max(20px, 2vw);
-  border-radius: max(14px, 1.2vw);
-  background: #0c0d0f;
-  color: #ecebe6;
-  box-shadow: 0 40px 70px -40px rgba(18, 18, 20, 0.6);
-  overflow: hidden;
-  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
-  font-size: max(13px, 1vw);
-}
-
-.artefatoRotulo {
-  margin: 0 0 18px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(236, 235, 230, 0.12);
-  font-size: 0.85em;
-  color: #8d8c87;
-}
-
-/* passos que acendem com a rolagem */
-.artefato [data-passo] {
-  transition:
-    opacity 450ms var(--ease),
-    transform 600ms var(--ease),
-    clip-path 700ms var(--ease);
-}
-
-.codigo {
-  margin: 0;
-  display: grid;
-  gap: 4px;
-  font: inherit;
-  white-space: pre;
-}
-
-.codigo i,
-.codigo b {
-  font-style: normal;
-  font-weight: inherit;
-}
-
-/* cada linha de código é "digitada": revela da esquerda para a direita */
-.linhaCodigo {
-  display: block;
-  clip-path: inset(0 100% 0 0);
-}
-
-.linhaCodigo[data-on='1'] {
-  clip-path: inset(0 0 0 0);
-}
-
-.chave {
-  color: #9fb0ff;
-}
-
-.texto {
-  color: #ecebe6;
-}
-
-.destaque {
-  color: var(--lime);
-}
-
-/* o zero aparece, é riscado e some; no lugar dele entra null */
-.chute {
-  display: inline-block;
-  color: #ff8a5c;
-  position: relative;
-}
-
-.chute::after {
-  content: '';
-  position: absolute;
-  left: -2px;
-  right: -2px;
-  top: 52%;
-  height: 2px;
-  background: #ff8a5c;
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 400ms var(--ease);
-}
-
-.chute[data-on='1']::after {
-  transform: scaleX(1);
-}
-
-.nulo {
-  display: inline-block;
-  color: var(--lime);
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.nulo[data-on='1'] {
-  opacity: 1;
-  transform: none;
-}
-
-/* fluxo de aprovação */
-.fluxo {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr auto 1fr;
-  align-items: center;
-  gap: 8px;
-  padding-top: 90px;
-}
-
-.etapa {
-  display: grid;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(236, 235, 230, 0.18);
-  opacity: 0;
-  transform: translateY(14px);
-}
-
-.etapa[data-on='1'] {
-  opacity: 1;
-  transform: none;
-}
-
-.etapa small {
-  color: #8d8c87;
-  font-size: 0.8em;
-}
-
-.etapa strong {
-  font-weight: 700;
-  font-size: 0.95em;
-  overflow-wrap: anywhere;
-}
-
-.etapa span {
-  font-size: 0.8em;
-  color: #b9b8b2;
-}
-
-.etapaFim[data-on='1'] {
-  background: var(--lime);
-  border-color: var(--lime);
-  color: #121214;
-}
-
-.etapaFim[data-on='1'] small,
-.etapaFim[data-on='1'] span {
-  color: #121214;
-}
-
-.seta {
-  width: 22px;
-  height: 2px;
-  background: #ecebe6;
-  transform: scaleX(0);
-  transform-origin: left;
-}
-
-.seta[data-on='1'] {
-  transform: scaleX(1);
-}
-
-/* o atalho IA → regra vigente: o arco se desenha e é barrado */
-.fluxoAtalho {
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 6px;
-  width: 80%;
-  height: 84px;
-  overflow: visible;
-}
-
-.fluxoAtalho path {
-  fill: none;
-  stroke: #ff8a5c;
-  stroke-width: 2;
-  stroke-dasharray: 0.02 0.015;
-  stroke-dashoffset: 0;
-  opacity: 0;
-  clip-path: inset(0 100% 0 0);
-  vector-effect: non-scaling-stroke;
-}
-
-.fluxoAtalho path[data-on='1'] {
-  opacity: 1;
-  clip-path: inset(0 0 0 0);
-}
-
-.cadeado {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #ff8a5c;
-  color: #121214;
-  font-size: 0.8em;
-  font-weight: 700;
-  opacity: 0;
-  transform: translateX(-50%) scale(1.8) rotate(-8deg);
-}
-
-.cadeado[data-on='1'] {
-  opacity: 1;
-  transform: translateX(-50%) scale(1) rotate(-4deg);
-}
-
-/* antes e depois: os ifs são riscados e encolhem; a linha da tabela entra */
-.codigoVelho {
-  color: #8d8c87;
-  transform-origin: top left;
-}
-
-.codigoVelho[data-on='1'] {
-  opacity: 0.25;
-  transform: scale(0.92);
-  text-decoration: line-through;
-  text-decoration-color: #ff8a5c;
-}
-
-.tabela {
-  margin-top: 20px;
-  border-radius: 10px;
-  border: 1px solid rgba(236, 235, 230, 0.18);
-  overflow: hidden;
-  opacity: 0;
-  transform: translateY(20px);
-}
-
-.tabela[data-on='1'] {
-  opacity: 1;
-  transform: none;
-}
-
-.tabelaCabeca,
-.tabelaLinha {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 0.7fr 1.1fr;
-  gap: 10px;
-  padding: 10px 12px;
-}
-
-.tabelaCabeca {
-  color: #8d8c87;
-  font-size: 0.8em;
-  border-bottom: 1px solid rgba(236, 235, 230, 0.12);
-}
-
-.tabelaLinha {
-  opacity: 0;
-  transform: translateX(-24px);
-}
-
-.tabelaLinha[data-on='1'] {
-  opacity: 1;
-  transform: none;
-  background: rgba(215, 244, 82, 0.12);
-}
-
-.tabelaLinha span {
-  overflow-wrap: anywhere;
-}
-
-.tabelaNota {
-  margin: 0;
-  padding: 10px 12px;
-  color: var(--lime);
-  font-size: 0.8em;
-  opacity: 0;
-}
-
-.tabelaNota[data-on='1'] {
-  opacity: 1;
-}
-
-/* trace: as linhas entram uma a uma e o carimbo append-only bate no fim */
-.trace {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 12px;
-}
-
-.trace li {
-  display: grid;
-  grid-template-columns: 7.5em 1fr;
-  gap: 12px;
-  align-items: baseline;
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.trace li[data-on='1'] {
-  opacity: 1;
-  transform: none;
-}
-
-.trace b {
-  font-weight: 700;
-}
-
-.ok {
-  color: var(--lime);
-}
-
-.fora {
-  color: #ff8a5c;
-}
-
-.lei {
-  color: #9fb0ff;
-}
-
-.carimboTrace {
-  position: absolute;
-  right: max(20px, 2vw);
-  bottom: max(20px, 2vw);
-  padding: 6px 14px;
-  border: 2px solid var(--lime);
-  border-radius: 8px;
-  color: var(--lime);
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  opacity: 0;
-  transform: scale(1.8) rotate(-10deg);
-}
-
-.carimboTrace[data-on='1'] {
-  opacity: 1;
-  transform: scale(1) rotate(-6deg);
-}
-
 @media (max-width: 760px) {
   .decisao {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
-  .decisao[data-lado='direita'] .decisaoTexto {
-    order: 0;
+  .decisaoAdr {
+    text-align: left;
+    padding-top: 0;
   }
 }
+
 
 /* trajetória como estrada */
 
@@ -1522,48 +1279,116 @@
   background: #16110c;
 }
 
-/* contato, na saída do túnel */
+/* contato, na saída do túnel: convite direto composto como uma página de fim */
 
 .contato {
   position: relative;
   min-height: 100svh;
-  padding: 18vh var(--margem) 8vh;
-  display: grid;
-  align-content: center;
-  gap: 2.4vw;
+  padding: 12vh var(--margem) 4vh;
+  display: flex;
+  flex-direction: column;
+  gap: 3vh;
 }
 
-.contatoMarca {
-  width: max(160px, 22vw);
-  aspect-ratio: 1306 / 497;
-  background: var(--lime);
-  mask: url('./marca/logo-head.png') center / contain no-repeat;
+.contatoTopo {
+  display: flex;
+  align-items: baseline;
+  gap: max(18px, 2.5vw);
+  padding-bottom: 2.2vh;
+  border-bottom: 1px solid rgba(18, 18, 20, 0.18);
 }
 
-.contatoChamada {
-  font-size: var(--t-paragrafo);
+.contatoMeta {
+  font-family: var(--font-mono);
+  font-size: max(12px, 0.9vw);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(18, 18, 20, 0.55);
+}
+
+.contatoMeta time {
+  color: #121214;
+  font-weight: 500;
+}
+
+.contatoVoltar {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: max(12px, 0.9vw);
+  color: #121214;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(18, 18, 20, 0.3);
+  padding-bottom: 2px;
+  transition: border-color 250ms;
+}
+
+.contatoVoltar:hover {
+  border-color: var(--lime);
+}
+
+.contatoTitulo {
+  margin: 6vh 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  line-height: 0.96;
+  font-size: max(52px, 9vw);
 }
 
 .contatoEmail {
   font-family: var(--font-display);
   font-weight: var(--peso-display);
   letter-spacing: var(--track-display);
-  font-size: max(34px, 6.4vw);
+  font-size: max(30px, 5.4vw);
   line-height: 1;
   text-decoration: none;
   overflow-wrap: anywhere;
-  background: linear-gradient(var(--lime), var(--lime)) 0 92% / 0 0.12em no-repeat;
+  width: fit-content;
+  background: linear-gradient(var(--lime), var(--lime)) 0 94% / 0 0.11em no-repeat;
   transition: background-size 700ms var(--ease);
 }
 
 .contatoEmail:hover {
-  background-size: 100% 0.12em;
+  background-size: 100% 0.11em;
 }
 
 .contatoLinks {
   display: flex;
-  gap: 24px;
-  font-size: var(--t-paragrafo);
+  gap: 12px;
+  margin: 1vh 0 auto;
+}
+
+.contatoLinks a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid rgba(18, 18, 20, 0.3);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: max(11.5px, 0.85vw);
+  font-weight: 500;
+  text-decoration: none;
+  color: #121214;
+  transition: border-color 250ms, background-color 250ms;
+}
+
+.contatoLinks a:hover {
+  border-color: #121214;
+  background: rgba(18, 18, 20, 0.05);
+}
+
+.contatoPe {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-top: 2.2vh;
+  border-top: 1px solid rgba(18, 18, 20, 0.18);
+  font-family: var(--font-mono);
+  font-size: max(11px, 0.8vw);
+  color: rgba(18, 18, 20, 0.55);
 }
 
 @media (max-width: 700px) {

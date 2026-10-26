@@ -158,9 +158,13 @@ function Robo({ ancoras, inter, dom }: { ancoras: { current: Ancora[] }; inter: 
     inclina.current += ((voando || r.fase ? indoPara * -0.35 : 0) - inclina.current) * s
     acao.current = proxima
 
-    // olha para o cursor
-    olhar.current.x = Math.max(-1, Math.min(1, (it.ponteiro.x - centroX) / 360))
-    olhar.current.y = Math.max(-1, Math.min(1, (it.ponteiro.y - centroY) / 360))
+    // olha para o cursor: direção cheia, não só quando o ponteiro está perto — o robô acompanha o
+    // ponteiro em qualquer ponto da tela (y da tela cresce para baixo, o do mundo 3D cresce para cima)
+    const dx = it.ponteiro.x - centroX
+    const dy = it.ponteiro.y - centroY
+    const dp = Math.max(1, Math.hypot(dx, dy))
+    olhar.current.x = dx / dp
+    olhar.current.y = -dy / dp
 
     const tamanho = (ALTURA * escala.current) / 2
     g.scale.setScalar(tamanho)

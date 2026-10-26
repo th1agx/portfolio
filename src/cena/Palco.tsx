@@ -1,13 +1,16 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Lightformer, RoundedBox } from '@react-three/drei'
+import { Suspense, useMemo, useRef } from 'react'
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
+import { Environment, Lightformer, MeshReflectorMaterial, RoundedBox } from '@react-three/drei'
 import { Bloom, EffectComposer, Noise, Vignette } from '@react-three/postprocessing'
-import { CanvasTexture, Color, DoubleSide, ExtrudeGeometry, Group, MathUtils, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, Path, PlaneGeometry, QuadraticBezierCurve3, SRGBColorSpace, Shape, TubeGeometry, Vector2, Vector3 } from 'three'
+import { CanvasTexture, Color, DoubleSide, ExtrudeGeometry, Group, MathUtils, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Path, PlaneGeometry, QuadraticBezierCurve3, SRGBColorSpace, Shape, Texture, TextureLoader, TubeGeometry, Vector2, Vector3 } from 'three'
+import { projetos } from '@/content/projetos'
 
-// O palco dos projetos: uma cena só, e a câmera viaja de um projeto ao outro com a rolagem.
-// Cada projeto é um objeto que conta o que ele faz, montado conforme o progresso local (0 a 1):
+// O palco dos projetos: um salão escuro com piso espelhado. Os quatro projetos são cards numa fila em
+// arco (o da frente fica embaixo do objeto, os outros recuem para a direita e somem na névoa); a
+// câmera fica parada — quem anda é a fila. Conforme a rolagem, o card da frente chega ao posto e o
+// objeto do projeto se monta em cima dele:
 //   Tributax   notas fiscais caem e empilham; um carimbo desce e marca "regra aplicada"
 //   DevGuard   seis placas hexagonais (as seis etapas) voam e montam um escudo, acendendo uma a uma
 //   ERP        um bloco central e quatro sistemas em volta, ligados por cabos com pacotes indo e vindo
@@ -17,16 +20,6 @@ import { CanvasTexture, Color, DoubleSide, ExtrudeGeometry, Group, MathUtils, Me
 const LIMA = '#d7f452'
 const AZUL = '#3d5afe'
 const LARANJA = '#ff5a1f'
-const ESPACO = 26
-// onde fica cada projeto: em fila, mas com alturas e profundidades diferentes para a câmera não andar em linha reta
-const ESTACOES = [new Vector3(0, 0, 0), new Vector3(ESPACO, 3, -6), new Vector3(ESPACO * 2, -1, -2), new Vector3(ESPACO * 3, 2, -8)]
-// de que ângulo a câmera olha cada um
-const ANGULOS = [
-  [0.35, 0.18],
-  [-0.45, 0.05],
-  [0.2, 0.5],
-  [-0.25, -0.05],
-]
 
 const passo = (a: number, b: number, x: number) => MathUtils.smoothstep(x, a, b)
 export const local = (p: number, i: number) => MathUtils.clamp((p - i / 4) * 4, 0, 1)
@@ -42,7 +35,8 @@ function textura(desenhar: (c: CanvasRenderingContext2D, w: number, h: number) =
   return t
 }
 
-const FONTE = '"Cabinet Grotesk", system-ui, sans-serif'
+const FONTE = '"Inter Tight", system-ui, sans-serif'
+const FONTE_MONO = '"IBM Plex Mono", monospace'
 
 /* ---------- Tributax ---------- */
 
@@ -560,91 +554,223 @@ function English({ p }: { p: React.RefObject<number> }) {
   )
 }
 
-/* ---------- câmera e montagem ---------- */
+/* ---------- cards em arco ---------- */
 
-const alvo = new Vector3()
-const olho = new Vector3()
-
-function Camera({ progresso }: { progresso: React.RefObject<number> }) {
-  const { camera, pointer } = useThree()
-  const olhar = useRef(new Vector3())
-  useFrame((_, dt) => {
-    const p = progresso.current ?? 0
-    // a câmera para em cada projeto e viaja entre eles: o progresso global vira posição com patamares
-    const f = Math.min(p * 4, 3.999)
-    const i = Math.floor(f)
-    const dentro = f - i
-    const viaja = passo(0.86, 1, dentro)
-    const a = ESTACOES[i]!
-    const b = ESTACOES[Math.min(i + 1, 3)]!
-    alvo.lerpVectors(a, b, viaja)
-    const [ang, alt] = ANGULOS[i]!
-    const [ang2, alt2] = ANGULOS[Math.min(i + 1, 3)]!
-    const ag = MathUtils.lerp(ang!, ang2!, viaja) + pointer.x * 0.12
-    const al = MathUtils.lerp(alt!, alt2!, viaja) + pointer.y * 0.08
-    // aproxima devagar enquanto o objeto se monta, e recua no meio da viagem para mostrar o caminho
-    const dist = 14.5 - passo(0.1, 0.8, dentro) * 2.5 + Math.sin(viaja * Math.PI) * 6
-    olho.set(alvo.x + Math.sin(ag) * dist - 2.6, alvo.y + Math.sin(al) * dist, alvo.z + Math.cos(ag) * dist)
-    const k = 1 - Math.exp(-dt * 5)
-    camera.position.lerp(olho, k)
-    // o objeto fica à direita: o texto do projeto ocupa a esquerda
-    olhar.current.lerp(alvo.clone().setX(alvo.x - 2.6), k)
-    camera.lookAt(olhar.current)
-  })
-  return null
+// a capa do card: a imagem do projeto emoldurada, com nome e rótulo na própria capa
+function capaCard(img: Texture | null, indice: number, nome: string, rotulo: string, w = 1024, h = 640) {
+  return textura((c) => {
+    c.fillStyle = '#101114'
+    c.fillRect(0, 0, w, h)
+    const m = 26
+    const iw = w - m * 2
+    const ih = h - m * 2
+    if (img) {
+      // enquadra a imagem cobrindo a área interna
+      const fonte = img.image as HTMLImageElement
+      const orig = { w: fonte.naturalWidth || iw, h: fonte.naturalHeight || ih }
+      const k = Math.max(iw / orig.w, ih / orig.h)
+      const dw = orig.w * k
+      const dh = orig.h * k
+      c.drawImage(fonte, m + (iw - dw) / 2, m + (ih - dh) / 2, dw, dh)
+    } else {
+      // sem imagem (ERP): mini-diagrama lima sobre grafite — o próprio objeto resumido
+      c.fillStyle = '#131419'
+      c.fillRect(m, m, iw, ih)
+      c.strokeStyle = 'rgba(215,244,82,0.85)'
+      c.lineWidth = 3
+      const cx = w / 2
+      const cy = h / 2 - 20
+      c.strokeRect(cx - 90, cy - 44, 180, 88)
+      const pontos = [
+        [cx - 300, cy - 130],
+        [cx + 300, cy - 110],
+        [cx - 280, cy + 130],
+        [cx + 290, cy + 120],
+      ] as const
+      c.lineWidth = 2
+      for (const [px, py] of pontos) {
+        c.strokeRect(px - 55, py - 24, 110, 48)
+        c.beginPath()
+        c.moveTo(px + (px < cx ? 55 : -55), py)
+        c.quadraticCurveTo(px + (px < cx ? 130 : -130), py, px < cx ? cx - 90 : cx + 90, cy + (py < cy ? -22 : 22))
+        c.stroke()
+      }
+      c.fillStyle = '#e9e8e3'
+      c.font = `600 34px ${FONTE_MONO}`
+      c.textAlign = 'center'
+      c.fillText('ERP', cx, cy + 12)
+    }
+    // filete de moldura e vinco inferior
+    c.strokeStyle = 'rgba(236,235,230,0.16)'
+    c.lineWidth = 2
+    c.strokeRect(m, m, iw, ih)
+    const g = c.createLinearGradient(0, h - 190, 0, h - m)
+    g.addColorStop(0, 'rgba(8,9,11,0)')
+    g.addColorStop(1, 'rgba(8,9,11,0.92)')
+    c.fillStyle = g
+    c.fillRect(m, h - 190, iw, 190 - m)
+    c.fillStyle = '#ecebe6'
+    c.font = `700 58px ${FONTE}`
+    c.textAlign = 'left'
+    c.fillText(nome, m + 26, h - 58)
+    c.fillStyle = 'rgba(236,235,230,0.6)'
+    c.font = `500 21px ${FONTE_MONO}`
+    c.fillText(rotulo.toUpperCase(), m + 27, h - 108)
+    c.fillStyle = LIMA
+    c.font = `500 26px ${FONTE_MONO}`
+    c.textAlign = 'right'
+    c.fillText(`0${indice + 1}`, w - m - 24, h - 58)
+  }, w, h)
 }
 
-// halo de cor atrás de cada projeto (lima, azul, laranja, lima): luz difusa, sem borda
-const CORES_HALO = ['#d7f452', '#3d5afe', '#ff5a1f', '#d7f452']
-const HALOS = CORES_HALO.map(
-  (cor) =>
-    new MeshBasicMaterial({
-      map: typeof document === 'undefined' ? null : textura((c, w, h) => {
-        const g = c.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2)
-        g.addColorStop(0, cor + '30')
-        g.addColorStop(0.45, cor + '0c')
-        g.addColorStop(1, cor + '00')
-        c.fillStyle = g
-        c.fillRect(0, 0, w, h)
-      }, 256, 256),
-      transparent: true,
-      depthWrite: false,
-      toneMapped: false,
-    }),
-)
+// cartão: placa fina de cantos arredondados com a capa na frente
+function formaCard(w: number, h: number, r: number) {
+  const s = new Shape()
+  s.moveTo(-w / 2 + r, -h / 2)
+  s.lineTo(w / 2 - r, -h / 2)
+  s.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r)
+  s.lineTo(w / 2, h / 2 - r)
+  s.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2)
+  s.lineTo(-w / 2 + r, h / 2)
+  s.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r)
+  s.lineTo(-w / 2, -h / 2 + r)
+  s.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2)
+  return s
+}
 
-function Estacao({ i, progresso, children }: { i: number; progresso: React.RefObject<number>; children: (p: React.RefObject<number>) => React.ReactNode }) {
-  const l = useRef(0)
+const CARD_W = 3.1
+const CARD_H = 1.95
+
+// posição do card na fila: m=0 é o posto da frente; m cresce = recua para a direita e para o fundo
+function vaga(m: number) {
+  return {
+    x: 2.35 + m * 1.7,
+    y: -1.28 + Math.sin(m * 2.2) * 0.1,
+    z: 2.55 - m * 1.35,
+    rot: -0.07 - m * 0.42,
+    esc: 1 - Math.min(m, 3) * 0.09,
+  }
+}
+
+// onde cada card está na fila (m) e o quanto o objeto dele está montado (local), derivados do progresso
+function estadoNaFila(p: number, j: number) {
+  const f = Math.min(p * 4, 3.999)
+  const i = Math.floor(f)
+  const l = f - i
+  const sai = Math.max(0, (l - 0.75) * 4)
+  // o card atual sai no fim do trecho e o próximo entra no lugar dele, na mesma curva — a fila anda
+  // inteira, sem troca seca
+  const m = j === i ? sai : j === i + 1 ? 1 - sai : j < i ? i - j + 1 : j - i
+  const local = j === i ? passo(0.1, 0.62, l) * (1 - passo(0.8, 0.96, l)) : 0
+  return { m, local, ativo: MathUtils.clamp(1 - m, 0, 1) }
+}
+
+// o card: placa fina com a capa na frente e um aro lima que acende quando está no posto
+function Card({ projeto, indice, progresso }: { projeto: (typeof projetos)[number]; indice: number; progresso: React.RefObject<number> }) {
   const g = useRef<Group>(null)
-  useFrame(() => {
-    l.current = local(progresso.current ?? 0, i)
-    // fora do trecho dele (e dos vizinhos), o projeto nem desenha
-    if (g.current) g.current.visible = Math.abs((progresso.current ?? 0) * 4 - i - 0.5) < 1.6
+  const aroMat = useMemo(() => new MeshBasicMaterial({ color: new Color(LIMA).multiplyScalar(1.5), transparent: true, opacity: 0, toneMapped: false, fog: false }), [])
+  const capa = useMemo(() => new MeshBasicMaterial({ toneMapped: false, fog: false }), [])
+  const [placa, frente] = useMemo(() => {
+    const geoPlaca = new ExtrudeGeometry(formaCard(CARD_W, CARD_H, 0.16), { depth: 0.07, bevelEnabled: true, bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 3, curveSegments: 12 })
+    geoPlaca.center()
+    geoPlaca.translate(0, 0, 0.045)
+    const moldura = new ExtrudeGeometry(formaMoldura(CARD_W + 0.14, CARD_H + 0.14, CARD_W + 0.03, CARD_H + 0.03), { depth: 0.02, bevelEnabled: false, curveSegments: 12 })
+    moldura.center()
+    return [geoPlaca, moldura] as const
+  }, [])
+  useFrame((st) => {
+    const { m, ativo } = estadoNaFila(progresso.current ?? 0, indice)
+    if (g.current) {
+      const v = vaga(m)
+      const t = st.clock.elapsedTime
+      g.current.position.set(v.x, v.y + Math.sin(t * 1.3 + indice * 1.7) * 0.045 * (1 + ativo), v.z)
+      g.current.rotation.set(Math.sin(t * 0.7 + indice) * 0.02, v.rot, Math.cos(t * 0.9 + indice) * 0.015)
+      g.current.scale.setScalar(v.esc)
+      g.current.visible = m < 4.5
+    }
+    // o da frente acende o aro e a capa; os de trás escurecem
+    aroMat.opacity = ativo * (0.65 + Math.sin(st.clock.elapsedTime * 2.4) * 0.3)
+    capa.color.setScalar(0.42 + ativo * 0.58)
   })
   return (
-    <group ref={g} position={ESTACOES[i]}>
-      <mesh position={[0.5, 0.3, -5]} material={HALOS[i]}>
-        <planeGeometry args={[22, 22]} />
+    <group ref={g}>
+      <mesh geometry={placa}>
+        <meshStandardMaterial color="#15161a" roughness={0.55} metalness={0.3} />
       </mesh>
-      {children(l)}
+      <mesh geometry={frente} material={aroMat} position={[0, 0, 0.09]} />
+      {/* a capa colada na face frontal */}
+      <mesh position={[0, 0, 0.095]} material={capa}>
+        <shapeGeometry args={[formaCard(CARD_W - 0.1, CARD_H - 0.1, 0.13)]} />
+      </mesh>
+      <CapaLoader projeto={projeto} indice={indice} capa={capa} />
     </group>
   )
 }
 
-function Chao() {
-  // um piso de pontos dá escala e mostra o deslocamento durante a viagem
-  const pontos = useMemo(() => {
-    const arr: number[] = []
-    for (let x = -20; x <= ESPACO * 3 + 20; x += 1.6) for (let z = -24; z <= 12; z += 1.6) arr.push(x, -4.6, z)
-    return new Float32Array(arr)
-  }, [])
+// moldura vazada (aro): o retângulo de fora menos o de dentro
+function formaMoldura(ow: number, oh: number, iw: number, ih: number) {
+  const s = formaCard(ow, oh, 0.2)
+  const furo = new Path()
+  const r = 0.16
+  furo.moveTo(-iw / 2 + r, -ih / 2)
+  furo.lineTo(iw / 2 - r, -ih / 2)
+  furo.quadraticCurveTo(iw / 2, -ih / 2, iw / 2, -ih / 2 + r)
+  furo.lineTo(iw / 2, ih / 2 - r)
+  furo.quadraticCurveTo(iw / 2, ih / 2, iw / 2 - r, ih / 2)
+  furo.lineTo(-iw / 2 + r, ih / 2)
+  furo.quadraticCurveTo(-iw / 2, ih / 2, -iw / 2, ih / 2 - r)
+  furo.lineTo(-iw / 2, -ih / 2 + r)
+  furo.quadraticCurveTo(-iw / 2, -ih / 2, -iw / 2 + r, -ih / 2)
+  s.holes.push(furo)
+  return s
+}
+
+// carrega a imagem do projeto e desenha a capa do card com ela
+function CapaLoader({ projeto, indice, capa }: { projeto: (typeof projetos)[number]; indice: number; capa: MeshBasicMaterial }) {
+  const img = projeto.imagem ? useLoader(TextureLoader, projeto.imagem.src) : null
+  useMemo(() => {
+    capa.map = capaCard(img, indice, projeto.nome, projeto.rotulo)
+    capa.needsUpdate = true
+  }, [img])
+  return null
+}
+
+/* ---------- montagem do palco ---------- */
+
+// onde cada objeto fica: em cima do card da frente
+const POSTO = new Vector3(1.5, 1.9, 0.2)
+const ESCALAS = [0.56, 0.74, 0.76, 0.74]
+
+function Fila({ progresso }: { progresso: React.RefObject<number> }) {
+  const objetos = useRef<(Group | null)[]>([])
+  const locais = useRef<React.RefObject<number>[]>(projetos.map(() => ({ current: 0 })))
+  useFrame((st) => {
+    const p = progresso.current ?? 0
+    const f = Math.min(p * 4, 3.999)
+    const i = Math.floor(f)
+    projetos.forEach((_, j) => {
+      const { m, local } = estadoNaFila(p, j)
+      locais.current[j]!.current = local
+      const o = objetos.current[j]
+      if (o) {
+        o.visible = local > 0.001 && m < 0.5
+        const pulo = 1 + Math.sin(local * Math.PI) * 0.03
+        o.scale.setScalar(ESCALAS[j]! * pulo)
+        o.rotation.y = Math.sin(st.clock.elapsedTime * 0.25 + j * 2) * 0.06
+      }
+    })
+  })
   return (
-    <points>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[pontos, 3]} />
-      </bufferGeometry>
-      <pointsMaterial size={0.06} color="#ecebe6" transparent opacity={0.28} sizeAttenuation />
-    </points>
+    <group>
+      {projetos.map((projeto, j) => (
+        <Card key={projeto.id} projeto={projeto} indice={j} progresso={progresso} />
+      ))}
+      {projetos.map((_, j) => (
+        <group key={`obj-${j}`} ref={(g) => void (objetos.current[j] = g)} position={POSTO}>
+          {j === 0 ? <Tributax p={locais.current[j]!} /> : j === 1 ? <DevGuard p={locais.current[j]!} /> : j === 2 ? <Erp p={locais.current[j]!} /> : <English p={locais.current[j]!} />}
+        </group>
+      ))}
+    </group>
   )
 }
 
@@ -655,14 +781,16 @@ export default function Palco({ progresso, ativo }: { progresso: React.RefObject
       frameloop={ativo ? 'always' : 'never'}
       dpr={[1, 1.75]}
       gl={{ antialias: false }}
-      camera={{ position: [0, 2, 14], fov: 38 }}
+      camera={{ position: [0, 1.5, 12.6], fov: 38 }}
       style={{ position: 'absolute', inset: 0 }}
     >
-      {/* o mesmo escuro do fundo da página nos projetos */}
-      <color attach="background" args={['#0c0d0f']} />
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[6, 10, 8]} intensity={2.2} />
-      <directionalLight position={[-8, -2, -6]} intensity={0.6} color={AZUL} />
+      {/* salão escuro: gradiente no fundo e névoa para a fila sumir com distância */}
+      <color attach="background" args={['#0a0b0d']} />
+      <fog attach="fog" args={['#0a0b0d', 15, 32]} />
+      <ambientLight intensity={0.32} />
+      <directionalLight position={[6, 10, 8]} intensity={2.0} castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0004} />
+      <directionalLight position={[-8, -2, -6]} intensity={0.55} color={AZUL} />
+      <directionalLight position={[0, 3, -9]} intensity={0.4} color={LIMA} />
       <Environment resolution={256}>
         <Lightformer intensity={2.4} position={[0, 6, 6]} scale={[12, 3, 1]} />
         <Lightformer intensity={0.8} position={[6, 2, -4]} scale={[3, 6, 1]} />
@@ -670,26 +798,61 @@ export default function Palco({ progresso, ativo }: { progresso: React.RefObject
         <Lightformer form="ring" intensity={1.6} position={[4, 4, 6]} scale={3} />
         <Lightformer intensity={0.6} color={AZUL} position={[0, -6, 2]} scale={[10, 2, 1]} />
       </Environment>
-      <Camera progresso={progresso} />
-      <Chao />
-      <Estacao i={0} progresso={progresso}>
-        {(p) => <Tributax p={p} />}
-      </Estacao>
-      <Estacao i={1} progresso={progresso}>
-        {(p) => <DevGuard p={p} />}
-      </Estacao>
-      <Estacao i={2} progresso={progresso}>
-        {(p) => <Erp p={p} />}
-      </Estacao>
-      <Estacao i={3} progresso={progresso}>
-        {(p) => <English p={p} />}
-      </Estacao>
+      {/* fundo em gradiente: quase preto em cima, um degrau mais claro embaixo */}
+      <mesh position={[2, 3, -9]}>
+        <planeGeometry args={[46, 22]} />
+        <meshBasicMaterial map={textura((c, w, h) => {
+          const g = c.createLinearGradient(0, 0, 0, h)
+          g.addColorStop(0, '#07080a')
+          g.addColorStop(0.62, '#0c0d10')
+          g.addColorStop(1, '#121318')
+          c.fillStyle = g
+          c.fillRect(0, 0, w, h)
+        }, 64, 256)} fog={false} />
+      </mesh>
+      {/* piso espelhado: o reflexo é o que dá escala e matéria ao salão */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[1.5, -2.35, 0]}>
+        <planeGeometry args={[60, 40]} />
+        <MeshReflectorMaterial
+          blur={[280, 60]}
+          resolution={768}
+          mixBlur={1}
+          mixStrength={14}
+          roughness={0.92}
+          depthScale={1.1}
+          minDepthThreshold={0.4}
+          maxDepthThreshold={1.4}
+          color="#0a0b0d"
+          metalness={0.55}
+          mirror={0.55}
+        />
+      </mesh>
+      <CameraParada progresso={progresso} />
+      <Suspense fallback={null}>
+        <Fila progresso={progresso} />
+      </Suspense>
       {/* brilho só no que é luz (aros, pacotes), grão de filme e vinheta: tira o aspecto de render limpo demais */}
       <EffectComposer multisampling={4}>
-        <Bloom intensity={0.6} luminanceThreshold={1.05} luminanceSmoothing={0.15} mipmapBlur />
-        <Noise opacity={0.045} premultiply />
-        <Vignette offset={0.3} darkness={0.6} />
+        <Bloom intensity={0.55} luminanceThreshold={1.05} luminanceSmoothing={0.15} mipmapBlur />
+        <Noise opacity={0.04} premultiply />
+        <Vignette offset={0.32} darkness={0.58} />
       </EffectComposer>
     </Canvas>
   )
+}
+
+/* câmera parada: só um ar com o ponteiro — quem anda é a fila */
+
+function CameraParada({ progresso }: { progresso: React.RefObject<number> }) {
+  const { camera, pointer } = useThree()
+  const alvoPos = useRef(new Vector3(0, 1.5, 12.6))
+  useFrame((_, dt) => {
+    const p = progresso.current ?? 0
+    // um leve dolly para dentro ao longo da seção, devagar: a sala parece respirar
+    alvoPos.current.set(pointer.x * 0.55, 1.5 + pointer.y * 0.3, 12.6 - p * 1.1)
+    const k = 1 - Math.exp(-dt * 3)
+    camera.position.lerp(alvoPos.current, k)
+    camera.lookAt(1.1, 0.9, 0)
+  })
+  return null
 }

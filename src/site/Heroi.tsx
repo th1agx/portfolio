@@ -65,7 +65,7 @@ export function Heroi() {
             </span>
           </h1>
           <p className={s.painelNota}>
-            <Palavras texto="ERP, integrações via API e regras fiscais que mostram por que decidiram." inicio={7} />
+            <Palavras texto="ERP, integrações via API e regras fiscais que explicam a própria decisão." inicio={7} />
           </p>
           <p className={s.painelDica}>Passe o cursor nas peças. Clique para trocar a cor.</p>
         </div>

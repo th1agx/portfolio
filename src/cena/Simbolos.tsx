@@ -37,7 +37,7 @@ function Pecas({ corIndice, ativo }: { corIndice: number; ativo: { current: bool
   const geos = useMemo(() => {
     const m = new Map<string, { geo: BufferGeometry; raio: number }>()
     for (const s of SIMBOLOS) {
-      const g = new TextGeometry(s, { font: fonte, size: 1.7, depth: 0.55, curveSegments: 10, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.11, bevelSegments: 6 })
+      const g = new TextGeometry(s, { font: fonte, size: 1.7, depth: 0.55, curveSegments: 16, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.11, bevelSegments: 8 })
       g.center()
       g.computeBoundingSphere()
       m.set(s, { geo: g, raio: g.boundingSphere!.radius * 0.72 })
@@ -46,9 +46,10 @@ function Pecas({ corIndice, ativo }: { corIndice: number; ativo: { current: bool
   }, [fonte])
   const materiais = useMemo(
     () => ({
-      cor: new MeshPhysicalMaterial({ color: PALETA[0], roughness: 0.5, sheen: 0.6, sheenRoughness: 0.5, clearcoat: 0.15 }),
-      branco: new MeshPhysicalMaterial({ color: '#eceae6', roughness: 0.5, sheen: 0.4, clearcoat: 0.15 }),
-      grafite: new MeshPhysicalMaterial({ color: '#1d1e22', roughness: 0.38, clearcoat: 0.5, clearcoatRoughness: 0.3 }),
+      // plástico de brinquedo bom: laqueado com clearcoat, branco com pérola de leve, grafite semimetal
+      cor: new MeshPhysicalMaterial({ color: PALETA[0], roughness: 0.42, sheen: 0.5, sheenRoughness: 0.4, clearcoat: 0.7, clearcoatRoughness: 0.25, envMapIntensity: 1.2 }),
+      branco: new MeshPhysicalMaterial({ color: '#eceae6', roughness: 0.45, sheen: 0.35, clearcoat: 0.5, clearcoatRoughness: 0.3, iridescence: 0.22, iridescenceIOR: 1.3, envMapIntensity: 1.15 }),
+      grafite: new MeshPhysicalMaterial({ color: '#1d1e22', roughness: 0.32, metalness: 0.3, clearcoat: 0.85, clearcoatRoughness: 0.22, envMapIntensity: 1.3 }),
     }),
     [],
   )
@@ -157,6 +158,8 @@ export default function Simbolos() {
           <Lightformer form="rect" intensity={3} position={[-4, 6, 8]} scale={[10, 6, 1]} />
           <Lightformer form="rect" intensity={1.2} position={[8, 0, 6]} rotation-y={-Math.PI / 3} scale={[6, 10, 1]} />
           <Lightformer form="ring" intensity={1.5} position={[0, -6, 6]} scale={4} />
+          {/* um quê de lima na borda de baixo: amarra o aglomerado à cor da marca */}
+          <Lightformer form="rect" intensity={0.55} color="#d7f452" position={[-7, -5, 5]} rotation-y={Math.PI / 4} scale={[5, 4, 1]} />
         </Environment>
         <Pecas corIndice={corIndice} ativo={ativo} />
       </Canvas>
