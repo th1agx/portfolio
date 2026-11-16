@@ -3,10 +3,8 @@ import { arquivo } from '@/content/caminho'
 
 export type Projeto = {
   id: string
-  rotulo: string
   nome: string
   frase: string
-  fatos: string[]
   imagem?: { src: string; alt: string }
   palavras?: string[]
   telas?: string[]
@@ -19,10 +17,8 @@ export type Projeto = {
 export const projetos: Projeto[] = [
   {
     id: 'tributax',
-    rotulo: 'Projeto pessoal, 2026',
     nome: 'Tributax',
     frase: 'Um motor tributário em que cada resposta traz a regra aplicada, as descartadas e o fundamento legal.',
-    fatos: ['208 testes automatizados', 'ICMS nas 27 unidades da federação', '15 decisões de arquitetura registradas'],
     imagem: { src: arquivo('/projetos/tributax.jpg'), alt: 'Documentação do Tributax, com o exemplo de uma venda interestadual e os tributos calculados.' },
     links: [
       { rotulo: 'Código', href: 'https://github.com/th1agx/Tributax-Motor-Tributario' },
@@ -33,10 +29,8 @@ export const projetos: Projeto[] = [
   },
   {
     id: 'devguard',
-    rotulo: 'Skill para agentes de IA',
     nome: 'DevGuard',
     frase: 'Agentes de IA só entregam depois de mapear, especificar, testar e revisar o próprio trabalho.',
-    fatos: ['Seis etapas, do mapa ao relatório', 'Funciona com Claude Code, Codex e Cursor', 'Código aberto, licença MIT'],
     imagem: { src: arquivo('/projetos/devguard.jpg'), alt: 'Banner do DevGuard Skill com as etapas mapear, especificar, planejar, construir, testar e revisar.' },
     links: [{ rotulo: 'Código', href: 'https://github.com/th1agx/devguard-skill' }],
     escuro: false,
@@ -44,10 +38,8 @@ export const projetos: Projeto[] = [
   },
   {
     id: 'erp',
-    rotulo: '3D Lab, desde 2026',
     nome: 'ERP e integrações',
     frase: 'Módulos do ERP interno e integrações via API entre os sistemas da empresa, com IA no dia a dia do desenvolvimento.',
-    fatos: ['Estagiário de março a junho de 2026', 'Engenheiro de software júnior desde junho', 'JavaScript, PHP, Laravel e Python'],
     palavras: ['ERP', 'APIs', 'Integrações', 'Automação', 'Laravel', 'Python', 'IA aplicada'],
     links: [],
     escuro: true,
@@ -55,10 +47,8 @@ export const projetos: Projeto[] = [
   },
   {
     id: 'english',
-    rotulo: 'Site para o CEFF Education',
     nome: 'English Learning',
     frase: 'O site das aulas de inglês do CEFF, que substituiu o PDF de apresentação usado com novos alunos.',
-    fatos: ['React 19, GSAP e Framer Motion', 'Organizado em MVC', 'Publicado no GitHub Pages'],
     imagem: { src: arquivo('/projetos/english-0.jpg'), alt: 'Site do CEFF Education: Inglês do jeito certo.' },
     telas: [arquivo('/projetos/english-0.jpg'), arquivo('/projetos/english-1.jpg'), arquivo('/projetos/english-2.jpg'), arquivo('/projetos/english-3.jpg'), arquivo('/projetos/english-4.jpg')],
     links: [

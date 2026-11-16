@@ -11,13 +11,14 @@ const giro = new Euler()
 
 type P = { x: number; y: number }
 
-export type Quadro = { cx: number; cy: number; w: number; h: number; rx: number; ry: number; rz: number; raio: number }
+export type Quadro = { cx: number; cy: number; w: number; h: number; rx: number; ry: number; rz: number; raio: number; pz?: number; focal?: number }
 
 export function caminhoDoQuadro(q: Quadro) {
   giro.set(q.rx, q.ry, q.rz)
   const pts: P[] = CANTOS.map((c) => {
     tmp.set(c.x * q.w, c.y * q.h, 0).applyEuler(giro)
-    const k = FOCAL / (FOCAL + tmp.z)
+    const f = q.focal ?? FOCAL
+    const k = f / (f + tmp.z + (q.pz ?? 0))
     return { x: q.cx + tmp.x * k, y: q.cy + tmp.y * k }
   })
   let d = ''

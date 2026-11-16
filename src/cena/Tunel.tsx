@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useLoader } from '@react-three/fiber'
+import { Precompilar } from './Precompilar'
 import { Environment, Lightformer } from '@react-three/drei'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import { AdditiveBlending, BoxGeometry, DirectionalLight, Color, Fog, Group, InstancedMesh, MathUtils, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Points, TorusGeometry } from 'three'
@@ -327,6 +328,7 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
   const zSuave = useRef(INICIO)
   const olharTras = useRef(1)
   const luzFrente = useRef<DirectionalLight>(null)
+  const corpo = useRef<Group>(null)
   useEffect(() => {
     if (luzFrente.current && grupo.current) luzFrente.current.target = grupo.current
   }, [])
@@ -358,7 +360,8 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
     const y = Math.cos(z * 0.09) * 0.8 - 0.4 + naSala * Math.sin(t * 0.8) * 0.8 - lado * 1.2
     if (grupo.current) {
       // só um robô por vez: este só aparece quando o robô guia da página some (data-tunel)
-      grupo.current.visible = document.documentElement.dataset.tunel === '1'
+      // (só o corpo some: as luzes dele ficam acesas, porque mudar a contagem de luzes recompila a cena toda)
+      if (corpo.current) corpo.current.visible = document.documentElement.dataset.tunel === '1'
       grupo.current.position.set(x, y, z)
       // inclina de leve para o lado da curva, como quem faz a curva voando; nada de giros bruscos
       const inclina = -Math.cos(z * 0.12) * 0.28
@@ -401,7 +404,9 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
 
   return (
     <group ref={grupo} scale={0.75}>
-      <RoboAgente acao={acao} brilho={1.6} />
+      <group ref={corpo}>
+        <RoboAgente acao={acao} brilho={1.6} />
+      </group>
       <pointLight position={[0, 1.5, 2]} intensity={14} distance={10} color="#ffe6c4" />
       <directionalLight ref={luzFrente} intensity={0} />
     </group>
@@ -420,6 +425,7 @@ export default function Tunel({ progresso, ativo = true }: { progresso: { curren
         <Corredor progresso={progresso} />
         <ParedeDeSimbolos />
         <Sala />
+        <Precompilar />
       </Suspense>
       <Boca />
       <Poeira />

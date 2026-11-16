@@ -33,12 +33,14 @@
 
   --ease: cubic-bezier(0.35, 0, 0, 1); /* ease.lusion */
 
-  /* Cabinet Grotesk: 800 nos títulos, 400 e 500 no texto (escolhida pelo Thiago entre Cabinet, Panchang e Tanker) */
-  --font-display: 'Cabinet Grotesk', 'Helvetica Neue', Arial, sans-serif;
-  --peso-display: 800;
+  /* Inter Tight (a do Ingrassia) no site todo, títulos em 600 com o espaço fechado como no Apple; a Cabinet
+     Grotesk (escolhida pelo Thiago entre Cabinet, Panchang e Tanker) fica só no topo, em .heroi */
+  --font-marca: 'Cabinet Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: var(--font-inter), 'Helvetica Neue', Arial, sans-serif;
+  --peso-display: 600;
   --caixa-display: none;
-  --track-display: -0.035em;
+  --track-display: -0.045em;
   --entrelinha-display: 0.86;
   --escala-display: 1;
-  --font-texto: 'Cabinet Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  --font-texto: var(--font-inter), 'Helvetica Neue', Arial, sans-serif;
 }

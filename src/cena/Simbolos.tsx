@@ -75,7 +75,8 @@ function Pecas({ corIndice, ativo }: { corIndice: number; ativo: { current: bool
   }, [corIndice, corpos, aleatorio])
 
   useFrame((state, dt) => {
-    const r = Math.min(1.5, window.scrollY / window.innerHeight)
+    // a pilha viaja dentro do painel até a seção seguinte: a rolagem só a abre um pouco, para caber no cartão
+    const r = Math.min(0.35, window.scrollY / window.innerHeight)
     const vr = (r - rolagemAnterior.current) / Math.max(dt, 1e-3)
     rolagemAnterior.current = r
     if (Math.abs(vr) > 0.01) for (const c of corpos) c.vel.addScaledVector(c.pos.clone().normalize(), vr * 6)
@@ -142,6 +143,8 @@ export default function Simbolos() {
   return (
     <div ref={raiz} style={{ position: 'absolute', inset: 0 }} onPointerEnter={() => (ativo.current = true)} onPointerLeave={() => (ativo.current = false)}>
       <Canvas
+        // o painel viaja encolhendo (transform): o tamanho vem do elemento, não da caixa já encolhida
+        resize={{ offsetSize: true }}
         frameloop={visivel ? 'always' : 'never'}
         dpr={[1, 1.75]}
         camera={{ fov: 25, position: [0, 0, 19], near: 1, far: 80 }}

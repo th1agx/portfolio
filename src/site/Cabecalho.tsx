@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { perfil } from '@/content/perfil'
-import { Relogio } from './Relogio'
 import s from './site.module.css'
 
-// Cabeçalho: assinatura TA à esquerda, hora de Belo Horizonte no centro e um único botão de menu.
+// Cabeçalho: assinatura TA à esquerda e um único botão de menu.
 // O menu não abre um painel: a própria pílula se estica para a esquerda e os links aparecem dentro dela,
 // um de cada vez. Esc ou clique fora fecham.
-// Rolando para baixo, a assinatura e a hora sobem e somem (para não passar por cima do conteúdo);
-// rolando para cima, voltam. O botão do menu fica sempre.
+// Como no site do Lando Norris (data-nav-theme): as cores seguem as da seção que está embaixo (texto e botão
+// trocam juntos com o fundo). Só aparece na primeira tela e no contato (o <html> recebe data-final); no meio
+// do site sobe e some, para não passar por cima de nada.
 
 const links = [
   { href: '#ideia', rotulo: 'Ideia' },
@@ -25,15 +25,14 @@ export function Cabecalho() {
   const [oculto, setOculto] = useState(false)
 
   useEffect(() => {
-    let ultimo = window.scrollY
-    const rolar = () => {
-      const y = window.scrollY
-      if (Math.abs(y - ultimo) < 6) return
-      setOculto(y > ultimo && y > 160)
-      ultimo = y
+    let raf = 0
+    const ver = () => {
+      const noFim = document.documentElement.dataset.final === '1'
+      setOculto(window.scrollY > window.innerHeight * 0.5 && !noFim)
+      raf = requestAnimationFrame(ver)
     }
-    window.addEventListener('scroll', rolar, { passive: true })
-    return () => window.removeEventListener('scroll', rolar)
+    raf = requestAnimationFrame(ver)
+    return () => cancelAnimationFrame(raf)
   }, [])
 
   useEffect(() => {
@@ -54,7 +53,6 @@ export function Cabecalho() {
         <span className={s.marcaTA} aria-hidden />
         <span>Thiago Antunes</span>
       </a>
-      <Relogio className={s.relogio} />
       <nav ref={raiz} className={s.menu} data-aberto={aberto ? '1' : '0'} aria-label="Principal">
         <div className={s.menuLinks} id="menu-links" inert={!aberto}>
           <div>
