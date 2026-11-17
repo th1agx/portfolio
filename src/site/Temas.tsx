@@ -16,9 +16,9 @@ gsap.registerPlugin(ScrollTrigger)
 // elemento: eles brigavam entre si e deixavam a cor errada ao rolar rápido ou recarregar no meio.
 
 const TEMAS: Record<string, { fundo: string; tinta: string }> = {
-  claro: { fundo: '#f5f5f2', tinta: '#121214' },
-  escuro: { fundo: '#0c0d0f', tinta: '#ecebe6' },
-  lima: { fundo: '#d7f452', tinta: '#121214' },
+  claro: { fundo: '#f5f5f2', tinta: '#050505' },
+  escuro: { fundo: '#050505', tinta: '#e8edf5' },
+  lima: { fundo: '#000080', tinta: '#e8edf5' },
 }
 
 const tema = (nome?: string) => TEMAS[nome ?? 'claro'] ?? TEMAS.claro!

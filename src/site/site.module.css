@@ -20,9 +20,9 @@
 
 /* dentro do túnel (cena escura) o cabeçalho fica claro */
 :global(html[data-cena='escura']) .cabecalho {
-  --tinta: #ecebe6;
-  --fundo: #0b0b0d;
-  color: #ecebe6;
+  --tinta: #e8edf5;
+  --fundo: #050505;
+  color: #e8edf5;
 }
 
 /* no meio do site o cabeçalho sobe e some */
@@ -56,7 +56,7 @@
   width: 2.6em;
   height: 1em;
   background: currentColor;
-  mask: url('./marca/logo-head.png') center / contain no-repeat;
+  mask: url('./marca/assinatura.png') center / contain no-repeat;
 }
 
 .relogio {
@@ -73,7 +73,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--lime);
+  background: var(--azul-vivo);
   box-shadow: 0 0 0 2px var(--ink);
   animation: pulso 2.4s ease-in-out infinite;
 }
@@ -186,8 +186,8 @@
 
 .menuLinks a:hover,
 .menuLinks a:focus-visible {
-  background: var(--lime);
-  color: var(--ink);
+  background: var(--azul-vivo);
+  color: var(--sobre-grafite);
 }
 
 .menuBotao {
@@ -256,15 +256,21 @@
   min-height: 600px;
 }
 
-.painel {
+.heroiRelevo {
   position: absolute;
-  top: max(84px, 7.2vw);
-  left: var(--margem);
-  right: var(--margem);
-  bottom: 64px;
-  border-radius: var(--raio);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.painel {
+  /* tela cheia, sem canto: só vira cartão quando encolhe na rolagem */
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
   overflow: hidden;
-  background: var(--painel);
+  background: transparent;
   transform-origin: 50% 50%;
   will-change: transform;
 }
@@ -276,61 +282,19 @@
   top: 22%;
   width: 56%;
   height: 56%;
-  background: var(--lime);
-  -webkit-mask: url('./marca/logo-head.png') center / contain no-repeat;
-  mask: url('./marca/logo-head.png') center / contain no-repeat;
+  background: var(--azul-vivo);
+  -webkit-mask: url('./marca/assinatura.png') center / contain no-repeat;
+  mask: url('./marca/assinatura.png') center / contain no-repeat;
   clip-path: inset(0 100% 0 0);
   pointer-events: none;
   z-index: 2;
 }
 
-.painelTexto {
-  position: absolute;
-  inset: 0;
-  padding: max(18px, 2.4vw);
-  color: var(--branco);
-  pointer-events: none;
-  /* o texto inverte sobre as peças: escuro sobre o branco, claro sobre o fundo */
-  mix-blend-mode: difference;
-}
 
-.painelSobre {
-  font-size: var(--t-rotulo);
-  font-weight: 500;
-  text-transform: uppercase;
-}
 
-.manchete {
-  position: absolute;
-  left: max(16px, 2vw);
-  bottom: max(14px, 1.4vw);
-  font-family: var(--font-display);
-  font-weight: var(--peso-display);
-  letter-spacing: var(--track-display);
-  line-height: var(--entrelinha-display);
-  font-size: max(64px, 14vw);
-}
 
-.mancheteLinha {
-  display: block;
-}
 
-.painelNota {
-  position: absolute;
-  right: max(18px, 2.4vw);
-  bottom: max(18px, 2.4vw);
-  max-width: max(240px, 24vw);
-  font-size: var(--t-paragrafo);
-  line-height: 1.3;
-}
 
-.painelDica {
-  position: absolute;
-  top: max(18px, 2.4vw);
-  right: max(18px, 2.4vw);
-  font-size: var(--t-mini);
-  opacity: 0.6;
-}
 
 /* pontos onde o robô guia para; o componente Guia lê a posição deles */
 .ancoraRobo {
@@ -454,7 +418,7 @@
   content: '';
   position: absolute;
   inset: 0 -0.04em;
-  background: var(--lime);
+  background: var(--azul-vivo);
   transform-origin: right center;
   transition: transform 600ms cubic-bezier(0.455, 0.03, 0.515, 0.955) 300ms;
 }
@@ -537,8 +501,8 @@
 }
 
 .faixaLima {
-  background: var(--lime);
-  color: var(--ink);
+  background: var(--azul-vivo);
+  color: var(--sobre-grafite);
   transform: rotate(-2.5deg) scale(1.05);
 }
 
@@ -546,7 +510,7 @@
   /* mesma cor do quadro (.lamina) que nasce dela e cresce até cobrir a tela */
   position: relative;
   z-index: 1;
-  background: #0c0d0f;
+  background: #050505;
   color: var(--branco);
   transform: rotate(1.8deg) scale(1.05);
   margin-top: -0.2em;
@@ -555,7 +519,7 @@
 .lamina {
   position: absolute;
   inset: 0;
-  background: #0c0d0f;
+  background: #050505;
   z-index: 0;
 }
 
@@ -576,7 +540,7 @@
   height: 64px;
   margin: -32px 0 0 -32px;
   border-radius: 50%;
-  border: 3px solid var(--lime);
+  border: 3px solid var(--azul-vivo);
   z-index: 3;
   opacity: 0;
   pointer-events: none;
@@ -759,7 +723,7 @@
   overflow: hidden;
   aspect-ratio: 4 / 5;
   border-radius: 6px;
-  background: #282c20;
+  background: var(--azul);
   display: flex;
   align-items: flex-end;
   clip-path: ellipse(120% 0% at 50% 0%);
@@ -770,7 +734,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--lime);
+  background: var(--azul-vivo);
   clip-path: ellipse(120% 120% at 50% 100%);
   transition: clip-path 600ms cubic-bezier(0.215, 0.61, 0.355, 1) 400ms;
 }
@@ -798,7 +762,7 @@
   letter-spacing: -0.06em;
   line-height: 0.8;
   font-size: min(calc((var(--w) - 5rem) / var(--n) * 1.7), 9vw);
-  color: var(--lime);
+  color: var(--sobre-grafite);
   will-change: transform;
 }
 
@@ -834,7 +798,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: var(--lime);
+  background: var(--azul-vivo);
   transform-origin: right center;
   transition: transform 600ms cubic-bezier(0.645, 0.045, 0.355, 1) 300ms;
 }
@@ -860,14 +824,14 @@
   visibility: hidden;
   position: absolute;
   inset: 0;
-  background: #16110c;
+  background: #050508;
 }
 
 .estradaCamada {
   position: absolute;
   inset: 0;
   background: #f5f5f2;
-  color: #121214;
+  color: #050505;
   --furo: 0px;
   -webkit-mask: radial-gradient(circle at var(--cx) var(--cy), transparent var(--furo), #000 calc(var(--furo) + 1px));
   mask: radial-gradient(circle at var(--cx) var(--cy), transparent var(--furo), #000 calc(var(--furo) + 1px));
@@ -881,8 +845,8 @@
   height: 100px;
   border-radius: 50%;
   box-shadow:
-    0 0 0 0.6px #d7f452,
-    0 0 6px 0.4px rgba(215, 244, 82, 0.6);
+    0 0 0 0.6px #0000f0,
+    0 0 6px 0.4px rgba(0, 0, 240, 0.6);
   pointer-events: none;
   opacity: 0;
 }
@@ -891,7 +855,7 @@
 .contatoCamada {
   position: absolute;
   inset: 0;
-  color: #121214;
+  color: #050505;
   pointer-events: none;
   opacity: 0;
   translate: 0 40px;
@@ -942,7 +906,7 @@
   top: 0;
   height: 100svh;
   overflow: hidden;
-  background: #16110c;
+  background: #050508;
 }
 
 /* contato, na saída do túnel */
@@ -958,9 +922,9 @@
 
 .contatoMarca {
   width: max(160px, 22vw);
-  aspect-ratio: 1306 / 497;
-  background: var(--lime);
-  mask: url('./marca/logo-head.png') center / contain no-repeat;
+  aspect-ratio: 740 / 281;
+  background: var(--azul-vivo);
+  mask: url('./marca/assinatura.png') center / contain no-repeat;
 }
 
 .contatoChamada {
@@ -975,7 +939,7 @@
   line-height: 1;
   text-decoration: none;
   overflow-wrap: anywhere;
-  background: linear-gradient(var(--lime), var(--lime)) 0 92% / 0 0.12em no-repeat;
+  background: linear-gradient(var(--azul-vivo), var(--azul-vivo)) 0 92% / 0 0.12em no-repeat;
   transition: background-size 700ms var(--ease);
 }
 
@@ -998,10 +962,6 @@
     display: none;
   }
 
-  .painelNota {
-    left: max(18px, 2.4vw);
-    bottom: calc(max(64px, 14vw) * 2 * var(--escala-display));
-  }
 
   .colunaTexto {
     margin-left: 0;
@@ -1065,7 +1025,7 @@
 /* o contorno duplo da pílula (as duas concêntricas) */
 .codigoContorno {
   fill: none;
-  stroke: #121214;
+  stroke: #050505;
   stroke-width: 1px;
   vector-effect: non-scaling-stroke;
 }
@@ -1098,8 +1058,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse 70% 60% at 50% 50%, #161b0d 0%, #0c0d0f 70%);
-  color: var(--lime);
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, #000040 0%, #050505 70%);
+  color: var(--azul-vivo);
   will-change: clip-path, transform;
 }
 
@@ -1178,7 +1138,7 @@
   left: 0;
   z-index: -1;
   /* a sombra do wodniack, aqui uma extrusão verde-escura: dá volume às letras sobre o fundo escuro */
-  color: #2a3610;
+  color: #000080;
   -webkit-text-stroke: 0;
   opacity: min(calc(var(--estado) * 2), 1);
   transform: scale(1.06, 1.03) translate3d(calc(var(--head) * 0.6rem * var(--estado) * var(--estado)), 0.05em, 0);
@@ -1191,12 +1151,12 @@
 .letraCena[data-linha='1'],
 .letraCena[data-linha='4'] {
   color: transparent;
-  -webkit-text-stroke: 2px var(--lime);
+  -webkit-text-stroke: 2px var(--azul-vivo);
 }
 
 .letraCena[data-linha='2'],
 .letraCena[data-linha='5'] {
-  color: #ecebe6;
+  color: #e8edf5;
 }
 
 /* as duas camadas de letras (atrás e na frente dos prints), as duas dobradas pela lente */
@@ -1226,7 +1186,7 @@
   left: 50%;
   z-index: 2;
   display: block;
-  color: #ecebe6;
+  color: #e8edf5;
   text-decoration: none;
   transform: rotateY(calc(var(--progresso, 1) * -20deg)) translate3d(calc(var(--progresso, 1) * (50vw + 100%) - 50%), calc(var(--y, 0) * 50% - 50%), calc(var(--progresso, 1) * var(--progresso, 1) * -5rem)) scale(var(--tamanho, 1));
   transform-style: preserve-3d;
@@ -1247,13 +1207,13 @@
 .codigoCorpo {
   display: block;
   padding: 0.5rem 0.5rem 0;
-  background: #1c1d20;
+  background: #0c0c16;
   transition: transform 550ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 550ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .codigoTrabalho:hover .codigoCorpo {
   transform: translate3d(0, -1rem, 0) scale(1.06);
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(215, 244, 82, 0.5);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 0, 240, 0.5);
 }
 
 /* a frase e os links abrem embaixo do print (a altura vai de 0 ao conteúdo) */
@@ -1309,8 +1269,8 @@
   padding: 0 14px 0 0;
   height: 36px;
   border-radius: 0.4rem;
-  background: var(--lime);
-  color: #0c0d0f;
+  background: var(--azul-vivo);
+  color: var(--sobre-grafite);
   font: 700 12px/1 var(--font-texto);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1347,8 +1307,8 @@
   width: min(50vw, 720px);
   aspect-ratio: 16 / 10;
   padding: 2.4rem;
-  background: #282c20;
-  color: var(--lime);
+  background: #0a0a2a;
+  color: var(--azul-vivo);
   font: 600 clamp(22px, 2.6vw, 44px) / 1 var(--font-display);
   letter-spacing: -0.03em;
 }

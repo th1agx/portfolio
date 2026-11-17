@@ -12,7 +12,7 @@ import { Color, Group, Mesh, MeshPhysicalMaterial, MeshStandardMaterial } from '
 
 export type AcaoRobo = 'parado' | 'acenar' | 'sim' | 'joinha' | 'dancar' | 'voar' | 'nao' | 'pulo' | 'giro' | 'surpreso' | 'carregar' | 'chamar'
 
-const LIMA = '#d7f452'
+const LIMA = '#0000f0' // azul vivo da logo (o nome ficou do lima)
 
 export function RoboAgente({ acao, olhar, brilho = 1 }: { acao: { current: AcaoRobo }; olhar?: { current: { x: number; y: number } }; brilho?: number }) {
   const m = useMemo(

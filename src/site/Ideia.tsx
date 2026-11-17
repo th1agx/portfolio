@@ -77,12 +77,12 @@ export function Ideia() {
           ref={traco}
           d="M 1180 -40 C 1180 160, 980 210, 760 240 S 300 330, 210 520 S 330 860, 560 900 S 1000 940, 921 1105"
           fill="none"
-          stroke="var(--lime)"
+          stroke="var(--azul)"
           strokeWidth="30"
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
-        <circle ref={ponta} r="20" fill="var(--lime)" />
+        <circle ref={ponta} r="20" fill="var(--azul)" />
       </svg>
       <div className={s.ideiaTexto}>
       <h2 className={s.titulo}>

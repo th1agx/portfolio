@@ -285,11 +285,11 @@ export function Projetos() {
       }
     }
 
-    ctx.strokeStyle = 'rgba(215, 244, 82, 0.55)'
+    ctx.strokeStyle = 'rgba(40, 40, 255, 0.6)'
     montar()
     const redimensionar = () => {
       montar()
-      ctx.strokeStyle = 'rgba(215, 244, 82, 0.55)'
+      ctx.strokeStyle = 'rgba(40, 40, 255, 0.6)'
     }
     addEventListener('resize', redimensionar)
     // só anima enquanto a seção está na tela

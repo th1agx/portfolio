@@ -5,40 +5,26 @@ import dynamic from 'next/dynamic'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import s from './site.module.css'
+import { desenharRelevo } from './Trajetoria'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Topo: o painel escuro com o aglomerado de símbolos de código atrás do texto pesado. Ao sair, o painel
+// Topo: o retrato em tela cheia (humano por cima, robô revelado pelo cursor), sem texto, como no Lando. Ao sair, o painel
 // viaja pelo caminho curvo até a vaga na seção seguinte (ver o efeito abaixo). O robô guia começa aqui, pequeno.
 
-const Simbolos = dynamic(() => import('@/cena/Simbolos'), { ssr: false })
-
-function Palavras({ texto, inicio = 0 }: { texto: string; inicio?: number }) {
-  return (
-    <>
-      {texto.split(' ').map((p, i) => (
-        <span key={i}>
-          <span className={s.palavraMascara}>
-            <span className={s.palavra} style={{ '--i': i + inicio } as React.CSSProperties}>
-              {p}
-            </span>
-          </span>{' '}
-        </span>
-      ))}
-    </>
-  )
-}
+const Retrato = dynamic(() => import('@/cena/Retrato'), { ssr: false })
 
 export function Heroi() {
   const painel = useRef<HTMLDivElement>(null)
   const secao = useRef<HTMLElement>(null)
+  const inteiro = useRef(0)
+  const relevo = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const el = painel.current
-    const texto = el?.querySelector<HTMLElement>('[data-painel-texto]')
     const assinatura = el?.querySelector<HTMLElement>('[data-assinatura]')
     const pouso = document.querySelector<HTMLElement>('[data-pouso]')
     const ideia = document.getElementById('ideia')
-    if (!el || !texto || !assinatura || !pouso || !ideia) return
+    if (!el || !assinatura || !pouso || !ideia) return
     type P = { x: number; y: number; w: number }
     // geometria medida sem transformação. Pontos da viagem, como pos1, pos2 e pos3 do site do Lando: o painel
     // no topo, o centro da tela e a vaga reservada na seção seguinte. Depois de pousar, fica parado na vaga
@@ -102,16 +88,23 @@ export function Heroi() {
       const escala = p.w / g.w0
       // o painel é preso à página; para ele estar no ponto p da tela, compensa a rolagem
       el.style.transform = `translate3d(${p.x - g.x0}px, ${p.y + y - g.y0}px, 0) scale(${escala})`
-      el.style.borderRadius = `${18 / escala}px`
-      texto.style.opacity = String(Math.max(0, 1 - viagem / 0.35))
+      // como no Lando: no topo ocupa a tela, sem canto; vira cartão de canto redondo ao encolher
+      el.style.borderRadius = `${(18 * Math.min(1, viagem * 5)) / escala}px`
+      // sem fundo no topo (só o recorte sobre a página); ganha o fundo de cartão ao encolher
+      el.style.backgroundColor = `rgba(232, 237, 245, ${Math.min(1, viagem * 4).toFixed(3)})`
       // a assinatura é escrita da esquerda para a direita durante a viagem
       const escreve = Math.min(1, Math.max(0, (viagem - 0.12) / 0.5))
       assinatura.style.clipPath = `inset(0 ${(100 - escreve * 100).toFixed(2)}% 0 0)`
     }
+    // curvas de nível ao fundo, como no topo do Lando (as mesmas da Experiência)
+    const fundo = () => relevo.current && desenharRelevo(relevo.current)
+    fundo()
+    addEventListener('resize', fundo)
     medir()
     aplicar()
     const st = ScrollTrigger.create({ start: 0, end: 'max', onUpdate: aplicar, onRefresh: () => (medir(), aplicar()) })
     return () => {
+      removeEventListener('resize', fundo)
       st.kill()
       el.style.transform = ''
     }
@@ -119,27 +112,17 @@ export function Heroi() {
 
   return (
     <section id="topo" ref={secao} className={s.heroi} data-tema="claro">
-      <div ref={painel} className={s.painel} aria-label="Símbolos de código soltos. Passe o cursor para empurrar e clique para trocar a cor.">
-        <Simbolos />
+      <h1 className="visually-hidden">Thiago Antunes, engenheiro de software</h1>
+      <canvas ref={relevo} className={s.heroiRelevo} aria-hidden />
+      {/* só o personagem, sem texto: o cursor revela o robô; o clique (ou toque) mostra o robô inteiro */}
+      <div
+        ref={painel}
+        className={s.painel}
+        aria-label="Retrato de Thiago Antunes, metade humano e metade robô. O cursor revela a versão robô."
+        onClick={() => gsap.to(inteiro, { current: inteiro.current > 0.5 ? 0 : 1, duration: 1.5, ease: 'expo.inOut', overwrite: true })}
+      >
+        <Retrato inteiro={inteiro} />
         <span className={s.assinaturaViagem} data-assinatura aria-hidden />
-        <div className={s.painelTexto} data-painel-texto>
-          <p className={s.painelSobre}>
-            <Palavras texto="Thiago Antunes, engenheiro de software" />
-          </p>
-          <h1 className={s.manchete}>
-            <span className="visually-hidden">Thiago Antunes. </span>
-            <span className={s.mancheteLinha}>
-              <Palavras texto="Conecto" inicio={4} />
-            </span>
-            <span className={s.mancheteLinha}>
-              <Palavras texto="sistemas." inicio={5} />
-            </span>
-          </h1>
-          <p className={s.painelNota}>
-            <Palavras texto="ERP, integrações via API e regras fiscais que mostram por que decidiram." inicio={7} />
-          </p>
-          <p className={s.painelDica}>Passe o cursor nas peças. Clique para trocar a cor.</p>
-        </div>
       </div>
       <span className={s.ancoraRobo} data-robo="chamar" data-robo-alvo="ideia" aria-hidden />
     </section>

@@ -10,7 +10,7 @@ const inter = Inter_Tight({ subsets: ['latin'], weight: ['400', '500', '600', '7
 export const metadata: Metadata = {
   title: 'Thiago Antunes, engenheiro de software',
   description: 'Sistemas de empresa, integrações e regras que mostram por que decidiram.',
-  icons: { icon: arquivo('/brand/favicon.svg') },
+  icons: { icon: arquivo('/brand/icone.png') },
 }
 
 export const viewport: Viewport = { themeColor: '#f5f5f2' }

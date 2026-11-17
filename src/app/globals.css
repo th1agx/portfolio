@@ -39,8 +39,8 @@ a {
 }
 
 ::selection {
-  background: var(--lime);
-  color: var(--ink);
+  background: var(--azul-vivo);
+  color: var(--sobre-grafite);
 }
 
 .visually-hidden {
@@ -58,8 +58,8 @@ a {
   top: 12px;
   z-index: 100;
   padding: 10px 16px;
-  background: var(--lime);
-  color: var(--ink);
+  background: var(--azul-vivo);
+  color: var(--sobre-grafite);
   transform: translateY(-200%);
 }
 
@@ -100,7 +100,7 @@ html.lenis body {
 }
 
 .robo-alvo:focus-visible {
-  outline: 2px solid var(--lime);
+  outline: 2px solid var(--azul-vivo);
 }
 
 .robo-convite {
@@ -124,10 +124,10 @@ html.lenis body {
 .robo-convite span {
   width: 14px;
   height: 14px;
-  border-right: 4px solid var(--lime);
-  border-bottom: 4px solid var(--lime);
+  border-right: 4px solid var(--azul-vivo);
+  border-bottom: 4px solid var(--azul-vivo);
   rotate: 45deg;
-  filter: drop-shadow(0 0 1px #121214) drop-shadow(0 0 1px #121214);
+  filter: drop-shadow(0 0 1px #050505) drop-shadow(0 0 1px #050505);
   animation: seta 2.1s ease-in-out infinite;
 }
 

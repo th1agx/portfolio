@@ -299,7 +299,7 @@ export default function Guia() {
       </div>
       <div className="robo-cursor" data-on="0" ref={(el) => void (dom.current.cursor = el)} aria-hidden>
         <svg viewBox="0 0 24 24" width="26" height="26">
-          <path d="M4 2 L4 20 L9 15 L12.5 22 L15.5 20.6 L12 13.6 L19 13.6 Z" fill="#121214" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d="M4 2 L4 20 L9 15 L12.5 22 L15.5 20.6 L12 13.6 L19 13.6 Z" fill="#050505" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
         </svg>
       </div>
     </>

@@ -29,14 +29,14 @@ const SALA = 56
 const INICIO = 3
 export const COMPRIMENTO = TRECHO * 4 + SALA + 22
 const RAIO = 4.6
-const LIMA = '#d7f452'
+const LIMA = '#0000f0' // azul vivo da logo (o nome ficou do lima)
 // onde começa cada trecho (z, para dentro é negativo) e a cor do ar nele
 const Z_SALA = -TRECHO * 2
 const Z_PORTAIS = Z_SALA - SALA
 const Z_RISCOS = Z_PORTAIS - TRECHO
 const AR = [
-  { z: 0, cor: '#16110c' },
-  { z: -TRECHO, cor: '#0c100e' },
+  { z: 0, cor: '#050508' },
+  { z: -TRECHO, cor: '#05050c' },
   { z: Z_SALA - 6, cor: '#0d0e16' },
   { z: Z_PORTAIS + 6, cor: '#101012' },
   { z: Z_RISCOS, cor: '#0a0b10' },
@@ -52,10 +52,10 @@ function Costelas() {
   const refLuz = useRef<InstancedMesh>(null)
   const geo = useMemo(() => new TorusGeometry(RAIO, 0.12, 12, 72), [])
   const geoLuz = useMemo(() => new TorusGeometry(RAIO - 0.14, 0.035, 8, 72), [])
-  const mat = useMemo(() => new MeshStandardMaterial({ color: '#4a3a2a', roughness: 0.45, metalness: 0.5 }), [])
+  const mat = useMemo(() => new MeshStandardMaterial({ color: '#1a1a3a', roughness: 0.45, metalness: 0.5 }), [])
   const matLuz = useMemo(() => new MeshBasicMaterial({ color: '#ffffff', toneMapped: false }), [])
   const acesa = useRef(new Float32Array(n))
-  const quente = useMemo(() => new Color('#ffb062'), [])
+  const quente = useMemo(() => new Color('#2a2aff'), [])
   const cor = useMemo(() => new Color(), [])
   useFrame((_, dt) => {
     const m = refLuz.current
@@ -80,7 +80,7 @@ function Costelas() {
     if (ref.current) ref.current.instanceMatrix.needsUpdate = true
     if (refLuz.current) {
       refLuz.current.instanceMatrix.needsUpdate = true
-      for (let i = 0; i < n; i++) refLuz.current.setColorAt(i, new Color('#ffb062').multiplyScalar(0.12))
+      for (let i = 0; i < n; i++) refLuz.current.setColorAt(i, new Color('#2a2aff').multiplyScalar(0.12))
     }
   }, [])
   return (
@@ -266,7 +266,7 @@ function Sala() {
       {/* um anel enorme e fino marca a porta de saída da sala */}
       <mesh position={[0, 0, Z_PORTAIS + 2]}>
         <torusGeometry args={[RAIO + 0.15, 0.08, 12, 96]} />
-        <meshBasicMaterial color={new Color('#ffb062').multiplyScalar(2.5)} toneMapped={false} />
+        <meshBasicMaterial color={new Color('#2a2aff').multiplyScalar(2.5)} toneMapped={false} />
       </mesh>
       <pointLight position={[0, 6, Z_SALA - SALA / 2]} intensity={60} distance={60} color="#9fb0ff" />
     </group>
@@ -299,7 +299,7 @@ function Poeira() {
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[pos, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.035} color={new Color('#ffd9a8').multiplyScalar(1.4)} transparent opacity={0.65} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
+      <pointsMaterial size={0.035} color={new Color('#e8edf5').multiplyScalar(1.4)} transparent opacity={0.65} depthWrite={false} blending={AdditiveBlending} toneMapped={false} />
     </points>
   )
 }
@@ -407,7 +407,7 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
       <group ref={corpo}>
         <RoboAgente acao={acao} brilho={1.6} />
       </group>
-      <pointLight position={[0, 1.5, 2]} intensity={14} distance={10} color="#ffe6c4" />
+      <pointLight position={[0, 1.5, 2]} intensity={14} distance={10} color="#e8edf5" />
       <directionalLight ref={luzFrente} intensity={0} />
     </group>
   )
@@ -415,7 +415,7 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
 
 export default function Tunel({ progresso, ativo = true }: { progresso: { current: number }; ativo?: boolean }) {
   return (
-    <Canvas frameloop={ativo ? 'always' : 'never'} dpr={[1, 1.5]} camera={{ fov: 58, near: 0.1, far: 140, position: [-2.6, -0.8, 18] }} onCreated={({ scene }) => (scene.fog = new Fog('#16110c', 8, 46))}>
+    <Canvas frameloop={ativo ? 'always' : 'never'} dpr={[1, 1.5]} camera={{ fov: 58, near: 0.1, far: 140, position: [-2.6, -0.8, 18] }} onCreated={({ scene }) => (scene.fog = new Fog('#050508', 8, 46))}>
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 6, 5]} intensity={0.8} />
       <Environment resolution={128} frames={1}>

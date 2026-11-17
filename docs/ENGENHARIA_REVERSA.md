@@ -113,3 +113,24 @@ tempo é só texto e detalhe (0,5 a 0,6 s, `power2.out`). Nenhum deles troca de 
    − 50 %, y × 50 % − 50 %, progress² × −5rem) scale(size)`. Cada um entra pela direita, girado e afundado,
    passa reto pelo centro e sai pela esquerda girado para o outro lado. O vídeo só toca enquanto está na tela.
 6. **A fonte** das letras é `min(18.75rem, 25lvh)`, com quatro letras ocupando a altura toda.
+
+## landonorris.com: o rosto no topo (medido em 16/11/2026)
+
+Lido no bundle `lando-by-OFF+BRAND.05.js` (three + GSAP) e em quadros do topo com o cursor passando, em 1440×900.
+Quadros em `scratchpad/refs/lando/folha-hero.jpg`.
+
+1. **O rosto é um plano com relevo, não um modelo 3D.** Um `PlaneGeometry(1, 1, 128, 128)` com a foto, um mapa de
+   profundidade (`displacementScale 0.25`), alfa, normal e rugosidade. Ele gira com o mouse:
+   `rotation.y = mouse.x × 0.075` e `rotation.x = −mouse.y × 0.075`, com o mouse amortecido (`damp`, 0.025).
+2. **O cursor revela o capacete com um fluido.** Uma simulação de fluido (advecção BFECC, `dissipation 0.96`,
+   `mouse_force 50`, `cursor_size 18`, resolução 0.1 da tela, `dt 0.014`, 60 passos por segundo) gera uma textura de
+   velocidade. No shader do rosto, `step(0.1, 1 − efeito)` vira uma máscara de borda dura, e onde ela é 1 a cor
+   troca da foto para a textura do capacete. O rastro segue o cursor, se espalha como tinta na água e some sozinho.
+3. **Sem mouse, o efeito toca sozinho.** Depois de 2 s parado (2,5 s ao abrir a página), um cursor falso percorre
+   `x = −cos(p × 4π) × 0.75`, `y = cos(p × π) × 0.5`, com p de 0 a 1 em 2,5 s, ida e volta, com 3 s de pausa.
+4. **Ao passar no selo do capacete** (`data-gl-helmet="hover"`), o capacete inteiro entra de baixo para cima com uma
+   onda (`y + sin(x × π) × sin(t × π) × 0.2`), 1,5 s, `expo.inOut`; sai em 1 s.
+5. **Entrada da página:** `uReveal` de 0 a 1 em 1,1 s, de baixo para cima. O fundo são curvas de nível de ruído
+   (as mesmas linhas de relevo que já usamos na Experiência).
+6. **Na rolagem,** o topo fica preso (`sticky`), a foto encolhe num cartão e a seção escura de baixo sobe com o
+   letreiro grande e a assinatura desenhada.

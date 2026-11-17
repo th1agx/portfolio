@@ -13,7 +13,7 @@ import { arquivo } from '@/content/caminho'
 // borracha, flutuando no painel escuro. O cursor empurra as peças; o clique troca a cor das coloridas
 // (começando pelo lima da marca) e sacode o aglomerado; a rolagem espalha e aproxima a câmera.
 
-export const PALETA = ['#d7f452', '#3d5afe', '#ff5a1f', '#9b5cff', '#ffc21a']
+export const PALETA = ['#0000f0', '#000080', '#e8edf5', '#a5a9b4', '#2a2aff']
 
 const SIMBOLOS = ['{', '}', '<', '>', '/', ';', '=', '(', ')', '[', ']'] as const
 type Acabamento = 'cor' | 'branco' | 'grafite'
