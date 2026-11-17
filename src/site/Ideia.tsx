@@ -75,7 +75,7 @@ export function Ideia() {
       <svg className={s.linha} viewBox="0 0 1440 1400" preserveAspectRatio="none" aria-hidden>
         <path
           ref={traco}
-          d="M 1180 -40 C 1180 160, 980 210, 760 240 S 300 330, 210 520 S 330 860, 560 900 S 1000 940, 921 1105"
+          d="M 1180 -40 C 1150 220, 940 240, 812 430 C 705 590, 792 660, 806 830 C 817 975, 878 1012, 921 1105"
           fill="none"
           stroke="var(--azul)"
           strokeWidth="30"
@@ -98,9 +98,9 @@ export function Ideia() {
       </h2>
       <div className={s.colunaTexto}>
         <p className={s.paragrafo}>
-          Trabalho na 3D Lab com o ERP da empresa, integrações via API e automação. Fora dele, escrevi o Tributax, um motor tributário em
-          que cada resposta traz a regra aplicada e as descartadas, e o DevGuard, uma disciplina que obriga agentes de IA a provar o que
-          entregam.
+          Engenheiro de software na 3D Lab: ERP, integrações via API e agentes de IA em produção. Fora dela, o mesmo princípio — o
+          Tributax devolve cada cálculo com a regra aplicada, as descartadas e o fundamento legal; o DevGuard só deixa agente de IA
+          entregar com prova.
         </p>
         <span className={s.ancoraBotao} data-robo="joinha" aria-hidden />
       </div>

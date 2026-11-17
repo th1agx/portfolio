@@ -92,11 +92,13 @@ export function Heroi() {
       el.style.borderRadius = `${(18 * Math.min(1, viagem * 5)) / escala}px`
       // sem fundo no topo (só o recorte sobre a página); ganha o fundo de cartão ao encolher
       el.style.backgroundColor = `rgba(232, 237, 245, ${Math.min(1, viagem * 4).toFixed(3)})`
-      // a assinatura é escrita da esquerda para a direita durante a viagem
+      // a assinatura é escrita da esquerda para a direita durante a viagem e se apaga ao pousar:
+      // marca nenhuma fica em cima do rosto
       const escreve = Math.min(1, Math.max(0, (viagem - 0.12) / 0.5))
       assinatura.style.clipPath = `inset(0 ${(100 - escreve * 100).toFixed(2)}% 0 0)`
+      assinatura.style.opacity = `${1 - Math.min(1, Math.max(0, (viagem - 0.82) / 0.18))}`
     }
-    // curvas de nível ao fundo, como no topo do Lando (as mesmas da Experiência)
+    // curvas de nível do Lando: mantidas no código, mas no fundo azul ficam invisíveis (reprovadas visíveis)
     const fundo = () => relevo.current && desenharRelevo(relevo.current)
     fundo()
     addEventListener('resize', fundo)
@@ -111,7 +113,7 @@ export function Heroi() {
   }, [])
 
   return (
-    <section id="topo" ref={secao} className={s.heroi} data-tema="claro">
+    <section id="topo" ref={secao} className={s.heroi} data-tema="lima">
       <h1 className="visually-hidden">Thiago Antunes, engenheiro de software</h1>
       <canvas ref={relevo} className={s.heroiRelevo} aria-hidden />
       {/* só o personagem, sem texto: o cursor revela o robô; o clique (ou toque) mostra o robô inteiro */}

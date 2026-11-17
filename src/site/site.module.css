@@ -275,14 +275,14 @@
   will-change: transform;
 }
 
-/* a assinatura TA, escrita em lima por cima do painel enquanto ele viaja */
+/* a assinatura TA, em branco por cima do painel enquanto ele viaja sobre o fundo azul; se apaga ao pousar */
 .assinaturaViagem {
   position: absolute;
   left: 22%;
   top: 22%;
   width: 56%;
   height: 56%;
-  background: var(--azul-vivo);
+  background: var(--branco);
   -webkit-mask: url('./marca/assinatura.png') center / contain no-repeat;
   mask: url('./marca/assinatura.png') center / contain no-repeat;
   clip-path: inset(0 100% 0 0);
@@ -330,8 +330,6 @@
 
 .ideia {
   position: relative;
-  /* a grade do wodniack: a mesma da cena dos projetos (Projetos.tsx), presa ao fim desta seção, então ela
-     continua de uma seção para a outra sem borda */
   padding: 16vw var(--margem) 16vw;
   /* espaço para a sequência: o cartão pousa, o texto passa e o cartão sai */
   min-height: 190vh;
@@ -342,32 +340,7 @@
   align-items: start;
 }
 
-.ideia,
-.codigo {
-  --grade: rgba(18, 18, 20, 0.12);
-}
-
-/* 12 colunas (8 no celular) e uma linha a cada 10 % da altura da tela, contadas a partir do fim da seção: as
-   linhas caem exatamente onde as da cena dos projetos continuam. Some para cima, porque o topo do site não tem
-   grade */
-.ideia::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: linear-gradient(to right, var(--grade) 1px, transparent 1px), linear-gradient(to bottom, var(--grade) 1px, transparent 1px);
-  background-size: calc(100% / 12) 10lvh;
-  background-position: 0 100%;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 55%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 55%);
-}
-
-@media (max-width: 767px) {
-  .ideia::before {
-    background-size: calc(100% / 8) 10lvh;
-  }
-}
+/* a grade de quadrados ao fundo foi removida a pedido: cara de IA */
 
 .ideiaTexto {
   position: relative;
@@ -380,6 +353,7 @@
   width: 100%;
   pointer-events: none;
 }
+
 
 .linha {
   position: absolute;
@@ -1035,6 +1009,12 @@
   transform: translate3d(0, calc(var(--rolagem, 0) * 48px), 0);
 }
 
+/* a grade de quadrados da seção "Sistemas que se explicam" foi removida a pedido (cara de IA);
+   a cor sobrevive só para a grade interna da cena de projetos */
+.codigo {
+  --grade: rgba(18, 18, 20, 0.12);
+}
+
 .codigoGrade {
   fill: none;
   stroke: var(--grade);
@@ -1343,3 +1323,4 @@
   width: 100%;
   height: 100%;
 }
+

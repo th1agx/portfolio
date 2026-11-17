@@ -198,15 +198,16 @@ function Plano({ alvo, inteiro }: { alvo: { current: HTMLDivElement | null }; in
 
   const passo = (agora: number, dt: number) => {
     const k = cursor.current
-    // parado há 2 s (2,5 s ao abrir): o cursor invisível do Lando, ida em 2,5 s, pausa, volta, pausa de 3 s
-    const parado = agora - (k.movido || k.inicio) > (k.movido ? 2000 : 2500)
+    // parado há 3 s (3,5 s ao abrir): o cursor invisível do Lando faz o passeio UMA vez — ida em 2,5 s,
+    // pausa, volta — e descansa até o mouse se mexer de novo (antes repetia em loop e cansava)
+    const parado = agora - (k.movido || k.inicio) > (k.movido ? 3000 : 3500)
     let x = k.x
     let y = k.y
     let forca = 0
     if (parado || !k.dentro) {
-      // o passeio começa do zero cada vez que o mouse para
+      // o passeio começa do zero cada vez que o mouse para; no fim do ciclo, para de vez
       if (k.ocioso < 0) k.ocioso = agora
-      const t = ((agora - k.ocioso) / 1000) % 9.5
+      const t = Math.min(9.5, (agora - k.ocioso) / 1000)
       const ida = Math.min(1, t / 2.5)
       const volta = t > 4 ? Math.min(1, (t - 4) / 2.5) : 0
       const px = ida - volta

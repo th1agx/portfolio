@@ -50,8 +50,9 @@ const CLARO = [245, 245, 242]
 const mistura = (k: number, a = 1) => `rgba(${ESCURO.map((v, i) => Math.round(v + (CLARO[i]! - v) * k)).join(',')},${a.toFixed(3)})`
 const tinta = (k: number) => `rgb(${CLARO.map((v, i) => Math.round(v + ([5, 5, 5][i]! - v) * k)).join(',')})`
 
-// linhas de relevo (as do fundo do Lando): curvas de nível de um ruído suave, desenhadas uma vez num canvas
-export function desenharRelevo(c: HTMLCanvasElement) {
+// linhas de relevo (as do fundo do Lando): curvas de nível de um ruído suave, desenhadas uma vez num canvas.
+// A cor vem de quem chama: escura sobre fundo claro, clara sobre o fundo azul do topo
+export function desenharRelevo(c: HTMLCanvasElement, cor = 'rgba(5,5,5,0.09)') {
   const w = (c.width = c.offsetWidth)
   const h = (c.height = c.offsetHeight)
   const ctx = c.getContext('2d')
@@ -63,7 +64,7 @@ export function desenharRelevo(c: HTMLCanvasElement) {
     Math.sin(x * 0.0021 + Math.sin(y * 0.0017) * 2.1) + Math.sin(y * 0.0026 + Math.cos(x * 0.0013) * 1.7) + Math.sin((x + y) * 0.0011) * 0.8
   const v = new Float32Array(cols * lins)
   for (let j = 0; j < lins; j++) for (let i = 0; i < cols; i++) v[j * cols + i] = ruido(i * passoGrade, j * passoGrade)
-  ctx.strokeStyle = 'rgba(5,5,5,0.09)'
+  ctx.strokeStyle = cor
   ctx.lineWidth = 1
   ctx.beginPath()
   for (let nivel = -2.4; nivel <= 2.4; nivel += 0.4) {
