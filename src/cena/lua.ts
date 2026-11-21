@@ -342,9 +342,9 @@ export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: 
 
   let W = 1
   let H = 1
-  // o terreno é caro (raymarch): desenha na densidade da tela até 1,5x (1x no celular) e, se o aparelho não
-  // aguentar 40 quadros por segundo, baixa a resolução aos poucos até 60% dela
-  const teto = Math.min(devicePixelRatio, innerWidth < 768 ? 1 : 1.5)
+  // o terreno é caro (raymarch): desenha na densidade da tela até 2x (1,5x no celular) e, se o aparelho não
+  // aguentar 30 quadros por segundo, baixa a resolução aos poucos até 75% dela
+  const teto = Math.min(devicePixelRatio, innerWidth < 768 ? 1.5 : 2)
   let escala = teto
   const tamanho = () => {
     W = canvas.clientWidth
@@ -374,8 +374,8 @@ export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: 
     ultimo = agora
     if (canvas.style.visibility === 'visible' && document.visibilityState === 'visible') {
       media += (dt - media) * 0.05
-      if (++contados > 90 && media > 1 / 40 && escala > teto * 0.6) {
-        escala = Math.max(teto * 0.6, escala * 0.85)
+      if (++contados > 90 && media > 1 / 30 && escala > teto * 0.75) {
+        escala = Math.max(teto * 0.75, escala * 0.9)
         tamanho()
         contados = 0
         media = 1 / 60

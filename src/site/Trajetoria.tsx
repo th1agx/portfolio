@@ -5,18 +5,17 @@ import dynamic from 'next/dynamic'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { gsap } from 'gsap'
 import { Contato } from './Contato'
+import { iniciarAteAqui, pintarCartao } from '@/cena/ateAqui'
 import s from './site.module.css'
 
 gsap.registerPlugin(ScrollTrigger)
 
 // O final do site é uma cena só, presa na tela do começo ao fim, para não haver borda de seção nenhuma:
-//   1. a experiência, como a faixa horizontal do Lando (lida no código dele: a faixa anda para o lado de 0 a
-//      -(largura da faixa - largura da tela), sem curva e com 1 s de atraso, o scrub: 1; cada "lugar, ano"
-//      entra com o bloco lima quando chega a 95 % da tela; a imagem de cada item anda 4 rem dentro da moldura
-//      enquanto ele atravessa; o fundo vai do verde-escuro ao branco ao longo da faixa). O fundo começa no
-//      mesmo escuro em que os projetos terminam, então a troca de seção não tem borda; as linhas de relevo
-//      do Lando aparecem conforme o fundo clareia.
-//   2. o furo: no fim da faixa abre-se um buraco com aro lima no centro e a camada cresce em direção a ele
+//   1. "Até aqui": a trilha de luz em que os riscos dos projetos se juntaram desce pelo meio e passa entre os
+//      cartões da trajetória, que se curvam com a rolagem como a galeria do orchestrated (src/cena/ateAqui.ts).
+//      A seção começa por cima do fim dos projetos (margem negativa), transparente: o fundo e a trilha
+//      aparecem sobre a linha que já está lá, e a faixa sobe com 0,6 s de atraso (a velocidade curva os cartões).
+//   2. o furo: a trilha termina no centro da tela; ali abre-se um buraco com aro azul e a camada cresce em direção a ele
 //      (a câmera mergulha). O robô guia para no centro do furo.
 //   3. o túnel (Tunel.tsx), que já estava por baixo o tempo todo: o robô do túnel começa pequeno no centro
 //      da boca, exatamente onde o guia entrou, e a câmera vai atrás dele.
@@ -26,17 +25,17 @@ const Tunel = dynamic(() => import('@/cena/Tunel'), { ssr: false })
 
 // datas e textos do README do perfil; o "lugar" de cada uma é o que o próprio texto diz
 const ETAPAS = [
-  { onde: 'Estácio, 2022–2024', ano: '22–24', titulo: 'Análise e Desenvolvimento de Sistemas', texto: 'Formação tecnóloga na Estácio.' },
-  { onde: 'Graduação, 2025', ano: '25', titulo: 'Engenharia de Software', texto: 'Graduação em andamento, junto com o trabalho.' },
-  { onde: '3D Lab, março de 2026', ano: '03.26', titulo: 'Estagiário na 3D Lab', texto: 'Entrei por um desafio técnico: um cadastro de produtos em JavaScript puro.' },
-  { onde: '3D Lab, junho de 2026', ano: '06.26', titulo: 'Engenheiro de software júnior', texto: 'ERP, integrações via API e IA aplicada no dia a dia.' },
+  { onde: 'Estácio, 2022–2024', casa: 'Estácio', ano: '22–24', titulo: 'Análise e Desenvolvimento de Sistemas', texto: 'Formação tecnóloga na Estácio.' },
+  { onde: 'Graduação, 2025', casa: 'Estácio', ano: '25', titulo: 'Engenharia de Software', texto: 'Graduação em andamento, junto com o trabalho.' },
+  { onde: '3D Lab, março de 2026', casa: '3D Lab', ano: '03.26', titulo: 'Estagiário na 3D Lab', texto: 'Entrei por um desafio técnico: um cadastro de produtos em JavaScript puro.' },
+  { onde: '3D Lab, junho de 2026', casa: '3D Lab', ano: '06.26', titulo: 'Engenheiro de software júnior', texto: 'ERP, integrações via API e IA aplicada no dia a dia.' },
 ]
 
 // o furo abre no centro da tela
 const CENTRO = { x: 0.5, y: 0.52 }
 
 // quanto da rolagem cada parte usa (em telas)
-const ESTRADA = 5.6
+const ESTRADA = 6.2
 const TUNEL = 14
 const CONTATO = 1.2
 const TOTAL = ESTRADA + TUNEL + CONTATO
@@ -45,10 +44,6 @@ const passo = (a: number, b: number, x: number) => {
   const k = Math.min(1, Math.max(0, (x - a) / (b - a)))
   return k * k * (3 - 2 * k)
 }
-const ESCURO = [5, 5, 5]
-const CLARO = [245, 245, 242]
-const mistura = (k: number, a = 1) => `rgba(${ESCURO.map((v, i) => Math.round(v + (CLARO[i]! - v) * k)).join(',')},${a.toFixed(3)})`
-const tinta = (k: number) => `rgb(${CLARO.map((v, i) => Math.round(v + ([5, 5, 5][i]! - v) * k)).join(',')})`
 
 // linhas de relevo (as do fundo do Lando): curvas de nível de um ruído suave, desenhadas uma vez num canvas.
 // A cor vem de quem chama: escura sobre fundo claro, clara sobre o fundo azul do topo
@@ -95,7 +90,7 @@ export function Trajetoria() {
   const camada = useRef<HTMLDivElement>(null)
   const aro = useRef<HTMLDivElement>(null)
   const faixa = useRef<HTMLDivElement>(null)
-  const relevo = useRef<HTMLCanvasElement>(null)
+  const tela = useRef<HTMLCanvasElement>(null)
   const ponta = useRef<HTMLSpanElement>(null)
   const contato = useRef<HTMLDivElement>(null)
   const tunel = useRef<HTMLDivElement>(null)
@@ -105,98 +100,87 @@ export function Trajetoria() {
   useEffect(() => {
     const el = secao.current
     const trilho = faixa.current
-    if (!el || !trilho || !camada.current || !aro.current || !contato.current) return
-    // entrada com a borda curva do Lando (ellipse 70% 0% -> 70% 100%, presa à rolagem): a página clara sobe
-    // como uma cúpula por cima do azul dos projetos, sem corte reto
-    const borda = ScrollTrigger.create({
-      trigger: el,
-      start: 'top bottom',
-      end: 'top top',
-      onUpdate: (self) => {
-        const k = self.progress
-        camada.current!.style.clipPath = k >= 0.999 ? '' : `ellipse(${70 + k * 50}% ${k * 130}% at 50% 100%)`
-      },
-    })
+    if (!el || !trilho || !camada.current || !aro.current || !contato.current || !tela.current) return
     const raiz = document.documentElement
     let ligado = false
+    let vivo = true
     const revelar = [...trilho.querySelectorAll<HTMLElement>('[data-revela]')]
-    const anos = [...trilho.querySelectorAll<HTMLElement>('[data-ano]')]
-    // o scrub: 1 do Lando: a faixa alcança a posição da rolagem com 1 s de atraso
-    const andar = gsap.quickTo(trilho, 'x', { duration: 1, ease: 'power3' })
-    const medir = () => {
-      if (relevo.current) desenharRelevo(relevo.current)
-    }
-    medir()
-    // cada texto e cartão entra com o bloco lima quando chega a 95 % da largura e 90 % da altura da tela
-    // (uma vez só): os primeiros entram enquanto a seção ainda sobe, como os dois primeiros itens do Lando
+    // a faixa alcança a posição da rolagem com 0,6 s de atraso: é essa velocidade que estica os cartões
+    const andar = gsap.quickTo(trilho, 'y', { duration: 0.6, ease: 'power3' })
+    // o canvas da trilha e dos cartões (src/cena/ateAqui.ts); os cartões são pintados com a fonte do site
+    const estado = { alfa: 0, centro: CENTRO }
+    let cena: ReturnType<typeof iniciarAteAqui> = null
+    const molduras = [...trilho.querySelectorAll<HTMLElement>('[data-cartao]')]
+    // a fonte do site (Cabinet Grotesk 800 e 500) carregada antes de pintar os cartões
+    Promise.all([document.fonts.load("800 100px 'Cabinet Grotesk'"), document.fonts.load("500 40px 'Cabinet Grotesk'")]).then(() => {
+      if (!vivo || !tela.current) return
+      const fonte = "'Cabinet Grotesk', sans-serif"
+      const cartoes = molduras.map((m, i) => {
+        const e = ETAPAS[i]!
+        const largo = i % 2 === 0
+        return { el: m, imagem: pintarCartao(largo ? 1600 : 1200, largo ? 1000 : 900, e.ano, e.casa, e.titulo, fonte) }
+      })
+      cena = iniciarAteAqui(tela.current, trilho, cartoes, estado)
+      // sem WebGL, as molduras mostram a imagem parada
+      if (!cena) cartoes.forEach((c) => (c.el.style.backgroundImage = `url(${c.imagem.toDataURL('image/jpeg', 0.9)})`))
+      else molduras.forEach((m) => (m.dataset.gl = '1'))
+    })
+    const quadro = (t: number) => cena?.desenhar(t * 1000)
+    gsap.ticker.add(quadro)
+    // cada texto entra com o bloco azul quando chega a 90 % da altura da tela (uma vez só)
     const revelarVisiveis = () => {
-      const W = innerWidth
       const H = innerHeight
       let faltam = 0
       revelar.forEach((r) => {
         if (r.dataset.on === '1') return
         const b = r.getBoundingClientRect()
-        if (b.left < W * 0.95 && b.top < H * 0.9 && b.top > -H) r.dataset.on = '1'
+        if (b.top < H * 0.9 && b.bottom > 0 && estado.alfa > 0.5) r.dataset.on = '1'
         else faltam++
       })
-      // a faixa ainda anda depois da rolagem parar (o atraso de 1 s): confere a cada quadro até todos entrarem
       if (!faltam) gsap.ticker.remove(revelarVisiveis)
     }
 
     const aplicar = (P: number) => {
-      // 1. a faixa da experiência
+      // 1. "Até aqui"
       const pe = Math.min(1, P / (ESTRADA / TOTAL))
       const W = innerWidth
       const H = innerHeight
-      // em telas desde que a cena prendeu: o título só começa a entrar quando a fila dos projetos já saiu
       const telas = pe * ESTRADA
-      const comeca = 0.15
-      const anda = Math.min(1, Math.max(0, (telas - comeca) / 3.1))
-      const distancia = Math.max(0, trilho.scrollWidth - W)
+      // o fundo e a trilha aparecem por cima do fim dos projetos (a linha deles está no mesmo lugar)
+      estado.alfa = passo(0, 0.3, telas)
+      camada.current!.style.backgroundColor = `rgba(2, 3, 26, ${estado.alfa.toFixed(3)})`
+      trilho.style.opacity = passo(0.05, 0.3, telas).toFixed(3)
+      const comeca = 0.2
+      const percurso = ESTRADA - comeca - 1.25
+      const anda = Math.min(1, Math.max(0, (telas - comeca) / percurso))
+      const distancia = Math.max(0, trilho.scrollHeight - H)
       andar(-distancia * anda)
-      // o relevo do fundo anda para o lado oposto, a 25 % (contra-movimento: dá profundidade à faixa)
-      if (relevo.current) relevo.current.style.transform = `translate3d(${(distancia * anda * 0.25 - W * 0.3).toFixed(1)}px, 0, 0)`
-      // clara desde o começo: a seção dos projetos termina na página clara, com a pílula fechando
-      const claro = 1
-      camada.current!.style.backgroundColor = mistura(claro)
-      camada.current!.style.color = tinta(claro)
-      camada.current!.style.setProperty('--claro', claro.toFixed(3))
-      // o ano anda 4 rem dentro da moldura enquanto o cartão atravessa a tela
-      anos.forEach((a) => {
-        const caixa = a.parentElement!.getBoundingClientRect()
-        const k = Math.min(1, Math.max(0, 1 - caixa.left / W))
-        a.style.transform = `translate3d(${(-2 + k * 4).toFixed(2)}rem, 0, 0)`
-      })
-      // o robô fica fora da tela durante a faixa (não passa por cima dos textos) e sobe até o centro quando o
-      // furo vai abrir
-      const vai = passo(comeca + 3.0, comeca + 3.4, telas)
+      // o robô fica fora da tela durante a trilha e sobe até o centro quando o furo vai abrir
+      const fimTrilha = comeca + percurso
+      const vai = passo(fimTrilha - 0.3, fimTrilha + 0.1, telas)
       if (ponta.current) ponta.current.style.transform = `translate3d(${(W * CENTRO.x).toFixed(1)}px, ${(H * (1.25 + (CENTRO.y - 1.25) * vai)).toFixed(1)}px, 0)`
 
-      // 2. o furo abre e a estrada cresce em direção a ele
-      const abre = gsap.parseEase('power2.in')(Math.min(1, Math.max(0, (telas - (comeca + 3.3)) / (ESTRADA - comeca - 3.3))))
+      // 2. o furo abre onde a trilha termina e a camada cresce em direção a ele
+      const abre = gsap.parseEase('power2.in')(Math.min(1, Math.max(0, (telas - (fimTrilha + 0.05)) / (ESTRADA - fimTrilha - 0.05))))
       const raio = abre * Math.hypot(W, H) * 0.62
       camada.current!.style.setProperty('--furo', `${raio.toFixed(1)}px`)
       camada.current!.style.transform = `scale(${1 + abre * 1.6})`
       camada.current!.style.visibility = abre >= 0.999 ? 'hidden' : 'visible'
-      // o túnel só aparece quando o furo abre (antes disso, por baixo da cena, ainda se vê a seção anterior)
       tunel.current!.style.visibility = abre > 0 || P > ESTRADA / TOTAL ? 'visible' : 'hidden'
       aro.current!.style.transform = `translate(-50%, -50%) scale(${(raio * 2) / 100})`
       aro.current!.style.opacity = abre > 0 && abre < 0.98 ? '1' : '0'
-      // o robô guia para no centro do furo, do mesmo tamanho que o robô do túnel tem no primeiro quadro
       ponta.current?.setAttribute('data-robo-escala', (1 + abre * 0.15).toFixed(3))
+      // (a caixa do robô 3D inclui a antena e a chama; o guia de escala 1 mede 72 px sem elas: daí o 1,15)
 
       // 3. o túnel
       const pt2 = Math.min(1, Math.max(0, (P - ESTRADA / TOTAL) / (TUNEL / TOTAL)))
       progressoTunel.current = pt2
-      // a troca de robô acontece com o furo ainda pequeno, os dois no mesmo ponto e do mesmo tamanho
       const dentro = abre > 0.2
       if (dentro !== ligado) {
         ligado = dentro
         if (dentro) raiz.dataset.tunel = '1'
         else delete raiz.dataset.tunel
       }
-
-      // cabeçalho claro enquanto a cena está escura (do furo até perto da saída branca)
       const escura = abre > 0.3 && pt2 < 0.9
       if ((raiz.dataset.cena === 'escura') !== escura) {
         if (escura) raiz.dataset.cena = 'escura'
@@ -206,7 +190,6 @@ export function Trajetoria() {
       // 4. o contato sobre a luz branca
       const pc = Math.max(0, (P - (ESTRADA + TUNEL) / TOTAL) / (CONTATO / TOTAL))
       contato.current!.dataset.on = pc > 0.15 ? '1' : '0'
-      // o cabeçalho volta a aparecer no contato
       if (pc > 0.15) raiz.dataset.final = '1'
       else delete raiz.dataset.final
     }
@@ -216,22 +199,29 @@ export function Trajetoria() {
       start: 'top top',
       end: 'bottom bottom',
       onUpdate: (self) => aplicar(self.progress),
-      onRefresh: (self) => (medir(), aplicar(self.progress)),
+      onRefresh: (self) => {
+        aplicar(self.progress)
+        cena?.medir()
+      },
       onLeaveBack: () => delete raiz.dataset.tunel,
     })
     gsap.ticker.add(revelarVisiveis)
-    // o túnel só desenha quando a estrada está perto do fim
     const perto = ScrollTrigger.create({
       trigger: el,
       start: () => `top+=${(ESTRADA - 1.5) * innerHeight} top`,
       end: 'bottom bottom',
       onToggle: (self) => setTunelAtivo(self.isActive),
     })
+    const remedir = () => cena?.medir()
+    addEventListener('resize', remedir)
     return () => {
-      borda.kill()
+      vivo = false
       st.kill()
       perto.kill()
       gsap.ticker.remove(revelarVisiveis)
+      gsap.ticker.remove(quadro)
+      removeEventListener('resize', remedir)
+      cena?.destruir()
       delete raiz.dataset.tunel
       delete raiz.dataset.cena
       delete raiz.dataset.final
@@ -239,43 +229,39 @@ export function Trajetoria() {
   }, [])
 
   return (
-    <section ref={secao} className={s.trajetoria} aria-labelledby="trajetoria-titulo" data-tema="claro" data-tema-de="top -40%" data-tema-ate="top -42%" style={{ height: `${(TOTAL + 1) * 100}svh` }}>
+    <section ref={secao} className={s.trajetoria} aria-labelledby="trajetoria-titulo" data-tema="escuro" style={{ height: `${(TOTAL + 1) * 100}svh` }}>
       <div className={s.trajetoriaFixo} data-robo-cena>
         <div ref={tunel} className={s.tunelFundo} aria-label="Animação: o robô voa por um túnel até o contato">
           <Tunel progresso={progressoTunel} ativo={tunelAtivo} />
         </div>
         <div ref={camada} className={s.estradaCamada} style={{ transformOrigin: `${CENTRO.x * 100}% ${CENTRO.y * 100}%`, ['--cx' as string]: `${CENTRO.x * 100}%`, ['--cy' as string]: `${CENTRO.y * 100}%` }}>
-          <canvas ref={relevo} className={s.relevo} aria-hidden />
-          <div ref={faixa} className={s.faixaExp}>
-            <div className={s.expAbre}>
+          <canvas ref={tela} className={s.ateCanvas} aria-hidden />
+          <div ref={faixa} className={s.ateFaixa}>
+            <header className={s.ateTopo}>
               <h2 id="trajetoria-titulo" className={s.expTitulo}>
                 <span data-revela className={s.revela}>
-                  Até
-                </span>
-                <span data-revela className={s.revela}>
-                  aqui
+                  Até aqui
                 </span>
               </h2>
-            </div>
-            <ol className={s.expLista}>
+              <p className={s.ateIntro}>
+                <span data-revela className={s.revela}>
+                  Da primeira formação ao ERP e à IA na 3D Lab, sempre estudando junto com o trabalho.
+                </span>
+              </p>
+            </header>
+            <ol className={s.ateLista}>
               {ETAPAS.map((e, i) => (
-                <li key={e.onde} className={s.expItem} data-i={i}>
-                  <p className={s.expOnde}>
+                <li key={e.onde} className={s.ateItem} data-i={i}>
+                  <div data-cartao className={s.ateCartao} role="img" aria-label={`${e.ano}: ${e.titulo}`}>
+                    {/* o robô senta no canto de cada cartão, cada vez com um gesto */}
+                    <span className={s.ateRobo} data-robo={['sentar', 'joinha', 'acenar', 'dancar'][i]} data-robo-preso aria-hidden />
+                  </div>
+                  <p className={s.ateLegenda}>
                     <span data-revela className={s.revela}>
-                      {e.onde}
+                      <b>{e.onde}</b> — {e.titulo}
                     </span>
                   </p>
-                  <div data-revela className={s.expCartao} aria-hidden>
-                    <span data-ano className={s.expAno} style={{ '--n': e.ano.length } as React.CSSProperties}>
-                      {e.ano}
-                    </span>
-                  </div>
-                  <h3 className={s.expNome}>
-                    <span data-revela className={s.revela}>
-                      {e.titulo}
-                    </span>
-                  </h3>
-                  <p className={s.expTexto}>
+                  <p className={s.ateTexto}>
                     <span data-revela className={s.revela}>
                       {e.texto}
                     </span>

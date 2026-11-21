@@ -5,6 +5,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import {
   AdditiveBlending,
   BackSide,
+  DoubleSide,
+  TubeGeometry,
   BufferAttribute,
   BufferGeometry,
   LineSegments,
@@ -20,6 +22,7 @@ import {
   type Group,
 } from 'three'
 import { projetos, imagensDaParede } from '@/content/projetos'
+import { trilhaTela } from './trilhaTela'
 
 // Os projetos como um mundo em profundidade, no modelo da página de trabalhos do sztanki.com (ver
 // docs/ENGENHARIA_REVERSA.md): cada projeto é uma capa com o brilho da própria imagem, posta numa grade de
@@ -41,8 +44,10 @@ const prende = (x: number) => Math.min(1, Math.max(0, x))
 // a chegada vinda do vale (0 a 1): primeiro as partículas aparecem, enquanto os riscos do vale se dissolvem
 // nelas, e só depois as imagens dos projetos
 type Ref = { current: number }
-const particulas = (c: number) => suave(prende((c - 0.35) / 0.35))
-const imagens = (c: number) => suave(prende((c - 0.7) / 0.3))
+// no fim, enquanto os riscos se juntam na linha, as imagens e a matriz se apagam (o Mundo atualiza a cada quadro)
+let resta = 1
+const particulas = (c: number) => suave(prende((c - 0.35) / 0.35)) * resta
+const imagens = (c: number) => suave(prende((c - 0.7) / 0.3)) * resta * resta
 
 // lugar de cada capa: passeio pela grade sem voltar para a célula anterior (o código do sztanki)
 function lugares(n: number) {
@@ -92,10 +97,12 @@ const fragImagem = /* glsl */ `
   varying vec2 vUv;
   float h1(float n) { return fract(sin(n * 91.345) * 43758.5453); }
   void main() {
-    vec2 b = smoothstep(vec2(0.0), vec2(0.12), min(vUv, 1.0 - vUv));
-    vec3 limpa = texture2D(uImagem, vUv).rgb;
+    vec2 b = smoothstep(vec2(0.0), vec2(0.03), min(vUv, 1.0 - vUv));
+    // vista por trás (na volta, quando a câmera olha o caminho percorrido) a imagem não fica espelhada
+    vec2 uvf = gl_FrontFacing ? vUv : vec2(1.0 - vUv.x, vUv.y);
+    vec3 limpa = texture2D(uImagem, uvf).rgb;
     vec2 cel = vec2(240.0, 180.0);
-    vec2 g = vUv * cel;
+    vec2 g = uvf * cel;
     vec2 c = floor(g) + 0.5;
     vec2 f = fract(g) - 0.5;
     vec3 cor = texture2D(uImagem, c / cel).rgb;
@@ -105,9 +112,9 @@ const fragImagem = /* glsl */ `
     // chuva: em cada coluna, uma cabeça de luz que desce e deixa rastro
     float h = h1(c.x);
     float cab = fract(h * 7.0 + uTempo * (0.08 + h * 0.18));
-    float d = fract(cab - (1.0 - vUv.y));
+    float d = fract(cab - (1.0 - uvf.y));
     float chuva = exp(-d * 14.0) * step(0.45, h);
-    float varre = 0.85 + 0.15 * sin(vUv.y * 900.0 - uTempo * 4.0);
+    float varre = 0.85 + 0.15 * sin(uvf.y * 900.0 - uTempo * 4.0);
     vec3 matriz = (cor * 1.35 + vec3(0.03, 0.05, 0.14) + vec3(0.45, 0.65, 1.0) * chuva * (0.35 + lum)) * ponto * varre + cor * 0.08;
     vec3 c3 = mix(matriz, limpa, 0.72 + 0.28 * uFoco);
     gl_FragColor = vec4(c3, uOpacidade * b.x * b.y);
@@ -130,7 +137,7 @@ const fragBrilho = /* glsl */ `
     vec3 c = min(textureLod(uImagem, clamp(t, 0.1, 0.9), 5.5).rgb, vec3(0.55));
     vec2 fora = max(max(-t, t - 1.0), 0.0) / max(uHalo, 1e-4);
     float queda = pow(1.0 - clamp(length(fora), 0.0, 1.0), 2.5);
-    vec3 cor = c * (queda * (1.0 - miolo) * 0.9 + miolo * 0.05) * uForca;
+    vec3 cor = c * queda * (1.0 - miolo) * 0.9 * uForca;
     // luz somada: não escreve opacidade, para o céu do vale continuar aparecendo por trás na chegada
     gl_FragColor = vec4(cor, 0.0);
   }
@@ -138,7 +145,7 @@ const fragBrilho = /* glsl */ `
 
 function Capa({ textura, largura, altura, fade, chegada, aoClicar }: { textura: Texture; largura: number; altura: number; fade: Ref; chegada: Ref; aoClicar: () => void }) {
   const img = useMemo(
-    () => new ShaderMaterial({ vertexShader: vertPadrao, fragmentShader: fragImagem, uniforms: { uImagem: { value: textura }, uOpacidade: { value: 0 }, uFoco: { value: 0 }, uTempo: { value: 0 } }, transparent: true, depthWrite: false }),
+    () => new ShaderMaterial({ vertexShader: vertPadrao, fragmentShader: fragImagem, uniforms: { uImagem: { value: textura }, uOpacidade: { value: 0 }, uFoco: { value: 0 }, uTempo: { value: 0 } }, transparent: true, depthWrite: false, side: DoubleSide }),
     [textura],
   )
   const halo = 0.32
@@ -149,6 +156,7 @@ function Capa({ textura, largura, altura, fade, chegada, aoClicar }: { textura: 
         fragmentShader: fragBrilho,
         uniforms: { uImagem: { value: textura }, uForca: { value: 0 }, uHalo: { value: halo } },
         transparent: true,
+        side: DoubleSide,
         depthWrite: false,
         blending: AdditiveBlending,
         // luz somada (cor já multiplicada): soma sem escrever opacidade, e o céu do vale continua por trás
@@ -302,6 +310,7 @@ function Parede({ texturas, chegada }: { texturas: Texture[]; chegada: Ref }) {
         }`,
       transparent: true,
       depthWrite: false,
+      side: DoubleSide,
       blending: AdditiveBlending,
       // luz somada (cor já multiplicada): soma sem escrever opacidade, e o céu do vale continua por trás
       premultipliedAlpha: true,
@@ -352,7 +361,9 @@ function Grade({ chegada }: { chegada: Ref }) {
     if (!mat.current) return
     mat.current.uniforms.uFade!.value = particulas(chegada.current)
     mat.current.uniforms.uTempo!.value = st.clock.elapsedTime
-    mat.current.uniforms.uEscala!.value = size.height / (2 * Math.tan((50 * Math.PI) / 360))
+    // pontos em pixels do aparelho: a escala e os limites levam a densidade da tela (no Mac, 2x)
+    mat.current.uniforms.uDpr!.value = st.gl.getPixelRatio()
+    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan((50 * Math.PI) / 360))
   })
   return (
     <points geometry={geo} frustumCulled={false} renderOrder={0}>
@@ -362,11 +373,12 @@ function Grade({ chegada }: { chegada: Ref }) {
         depthWrite={false}
         blending={AdditiveBlending}
         premultipliedAlpha
-        uniforms={{ uTempo: { value: 0 }, uEscala: { value: 800 }, uFade: { value: 1 } }}
+        uniforms={{ uTempo: { value: 0 }, uEscala: { value: 800 }, uFade: { value: 1 }, uDpr: { value: 1 } }}
         vertexShader={/* glsl */ `
           attribute vec2 aDado; attribute vec4 aCor;
-          uniform float uTempo; uniform float uEscala;
+          uniform float uTempo; uniform float uEscala; uniform float uDpr; uniform float uFade;
           varying vec4 vCor;
+          ${surgir}
           void main() {
             float k = fract(aDado.x + uTempo * 6.0 * aDado.y);
             vec3 p = vec3(position.xy, k * 360.0 + (50.0 - 360.0));
@@ -374,8 +386,8 @@ function Grade({ chegada }: { chegada: Ref }) {
             float fundo = -mv.z;
             float pontas = smoothstep(0.0, 0.15, k) * (1.0 - smoothstep(0.95, 1.0, k));
             float pisca = 0.7 + 0.3 * sin(uTempo * (1.0 + fract(aDado.x * 91.0) * 4.0) + aDado.x * 40.0);
-            vCor = vec4(aCor.rgb, aCor.a * pontas * pisca * smoothstep(0.5, 4.0, fundo) * (1.0 - smoothstep(120.0, 200.0, fundo)));
-            gl_PointSize = clamp(0.07 * uEscala / max(fundo, 0.1), 1.0, 3.0);
+            vCor = vec4(aCor.rgb, aCor.a * pontas * pisca * smoothstep(0.5, 4.0, fundo) * (1.0 - smoothstep(120.0, 200.0, fundo)) * surgir(fundo, uFade));
+            gl_PointSize = clamp(0.07 * uEscala / max(fundo, 0.1), 1.3 * uDpr, 3.0 * uDpr);
             gl_Position = projectionMatrix * mv;
           }`}
         fragmentShader={/* glsl */ `
@@ -383,13 +395,23 @@ function Grade({ chegada }: { chegada: Ref }) {
           varying vec4 vCor;
           void main() {
             vec2 q = gl_PointCoord * 2.0 - 1.0;
-            float a = exp(-dot(q, q) * 2.5) * vCor.a * uFade;
+            float a = (1.0 - smoothstep(0.55, 1.0, length(q))) * vCor.a;
             gl_FragColor = vec4(vCor.rgb * a, 0.0);
           }`}
       />
     </points>
   )
 }
+
+// as partículas não acendem de uma vez: nascem atrás de uma frente de luz que vem do fundo até a câmera
+// conforme a chegada avança (e voltam para o fundo na saída). Na frente, um brilho a mais.
+const surgir = /* glsl */ `
+  float surgir(float fundo, float f) {
+    if (f <= 0.001) return 0.0;
+    float frente = mix(440.0, -20.0, f);
+    return smoothstep(frente - 18.0, frente + 18.0, fundo) + exp(-pow((fundo - frente) / 9.0, 2.0)) * 1.8 * (1.0 - f);
+  }
+`
 
 // matriz de fundo: planos de pontos em grade espalhados em profundidade, como o fundo pontilhado do sztanki;
 // em cada coluna uma cabeça de luz desce devagar e acende os pontos por onde passa (a chuva da Matrix)
@@ -426,7 +448,9 @@ function Matriz({ chegada }: { chegada: Ref }) {
     if (!mat.current) return
     mat.current.uniforms.uFade!.value = particulas(chegada.current)
     mat.current.uniforms.uTempo!.value = st.clock.elapsedTime
-    mat.current.uniforms.uEscala!.value = size.height / (2 * Math.tan((50 * Math.PI) / 360))
+    // pontos em pixels do aparelho: a escala e os limites levam a densidade da tela (no Mac, 2x)
+    mat.current.uniforms.uDpr!.value = st.gl.getPixelRatio()
+    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan((50 * Math.PI) / 360))
   })
   return (
     <points geometry={geo} frustumCulled={false} renderOrder={0}>
@@ -436,11 +460,12 @@ function Matriz({ chegada }: { chegada: Ref }) {
         depthWrite={false}
         blending={AdditiveBlending}
         premultipliedAlpha
-        uniforms={{ uTempo: { value: 0 }, uEscala: { value: 800 }, uFade: { value: 0 } }}
+        uniforms={{ uTempo: { value: 0 }, uEscala: { value: 800 }, uFade: { value: 0 }, uDpr: { value: 1 } }}
         vertexShader={/* glsl */ `
           attribute float aColuna;
-          uniform float uTempo; uniform float uEscala; uniform float uFade;
+          uniform float uTempo; uniform float uEscala; uniform float uFade; uniform float uDpr;
           varying float vA; varying float vChuva;
+          ${surgir}
           float h1(float n) { return fract(sin(n * 78.233) * 43758.5453); }
           void main() {
             vec4 mv = modelViewMatrix * vec4(position, 1.0);
@@ -451,8 +476,8 @@ function Matriz({ chegada }: { chegada: Ref }) {
             float d = fract(cab - (1.0 - y));
             vChuva = exp(-d * 9.0) * step(0.62, h);
             float perto = smoothstep(2.0, 9.0, fundo) * (1.0 - smoothstep(150.0, 320.0, fundo));
-            vA = (0.16 + vChuva * 1.1) * perto * uFade;
-            gl_PointSize = clamp(0.06 * uEscala / max(fundo, 0.1), 1.0, 2.6);
+            vA = (0.16 + vChuva * 1.1) * perto * surgir(fundo, uFade);
+            gl_PointSize = clamp(0.06 * uEscala / max(fundo, 0.1), 1.2 * uDpr, 2.6 * uDpr);
             gl_Position = projectionMatrix * mv;
           }`}
         fragmentShader={/* glsl */ `
@@ -492,7 +517,9 @@ function Poeira({ chegada }: { chegada: Ref }) {
     if (!mat.current) return
     mat.current.uniforms.uFade!.value = particulas(chegada.current)
     mat.current.uniforms.uTempo!.value = st.clock.elapsedTime
-    mat.current.uniforms.uEscala!.value = size.height / (2 * Math.tan((50 * Math.PI) / 360))
+    // pontos em pixels do aparelho: a escala e os limites levam a densidade da tela (no Mac, 2x)
+    mat.current.uniforms.uDpr!.value = st.gl.getPixelRatio()
+    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan((50 * Math.PI) / 360))
   })
   return (
     <points geometry={geo} frustumCulled={false} renderOrder={0}>
@@ -502,25 +529,26 @@ function Poeira({ chegada }: { chegada: Ref }) {
         depthWrite={false}
         blending={AdditiveBlending}
         premultipliedAlpha
-        uniforms={{ uTempo: { value: 0 }, uEscala: { value: 800 }, uFade: { value: 0 } }}
+        uniforms={{ uTempo: { value: 0 }, uEscala: { value: 800 }, uFade: { value: 0 }, uDpr: { value: 1 } }}
         vertexShader={/* glsl */ `
           attribute vec2 aDado;
-          uniform float uTempo; uniform float uEscala; uniform float uFade;
+          uniform float uTempo; uniform float uEscala; uniform float uFade; uniform float uDpr;
           varying float vA; varying vec3 vCor;
+          ${surgir}
           void main() {
             vec4 mv = modelViewMatrix * vec4(position, 1.0);
             float fundo = -mv.z;
             float pisca = 0.55 + 0.45 * sin(uTempo * (0.6 + aDado.x * 2.5) + aDado.x * 60.0);
-            vA = uFade * (0.25 + aDado.y * 0.9) * pisca * smoothstep(1.0, 6.0, fundo) * (1.0 - smoothstep(220.0, 380.0, fundo));
+            vA = surgir(fundo, uFade) * (0.25 + aDado.y * 0.9) * pisca * smoothstep(1.0, 6.0, fundo) * (1.0 - smoothstep(220.0, 380.0, fundo));
             vCor = mix(vec3(0.62, 0.75, 1.0), vec3(1.0), aDado.y);
-            gl_PointSize = clamp((0.05 + aDado.y * 0.12) * uEscala / max(fundo, 0.1), 1.0, 3.5);
+            gl_PointSize = clamp((0.05 + aDado.y * 0.12) * uEscala / max(fundo, 0.1), 1.2 * uDpr, 3.5 * uDpr);
             gl_Position = projectionMatrix * mv;
           }`}
         fragmentShader={/* glsl */ `
           varying float vA; varying vec3 vCor;
           void main() {
             vec2 q = gl_PointCoord * 2.0 - 1.0;
-            float a = exp(-dot(q, q) * 3.0) * vA;
+            float a = (1.0 - smoothstep(0.5, 1.0, length(q))) * vA;
             gl_FragColor = vec4(vCor * a, 0.0);
           }`}
       />
@@ -530,7 +558,7 @@ function Poeira({ chegada }: { chegada: Ref }) {
 
 // riscos de velocidade: traços finos que vêm do fundo em direção à câmera, abertos em volta do caminho
 // (as linhas que cortam a tela do sztanki), mais longos quanto mais perto
-function Riscos({ chegada }: { chegada: Ref }) {
+function Riscos({ chegada, junta }: { chegada: Ref; junta: Ref }) {
   const obj = useMemo(() => {
     const n = 420
     const pos = new Float32Array(n * 2 * 3)
@@ -556,17 +584,21 @@ function Riscos({ chegada }: { chegada: Ref }) {
       blending: AdditiveBlending,
       // luz somada (cor já multiplicada): soma sem escrever opacidade, e o céu do vale continua por trás
       premultipliedAlpha: true,
-      uniforms: { uTempo: { value: 0 }, uCamZ: { value: 0 }, uFade: { value: 0 } },
+      uniforms: { uTempo: { value: 0 }, uCamZ: { value: 0 }, uFade: { value: 0 }, uJunta: { value: 0 }, uCamXY: { value: new Vector3() } },
       vertexShader: /* glsl */ `
         attribute vec3 aDado;
-        uniform float uTempo; uniform float uCamZ; uniform float uFade;
+        uniform float uTempo; uniform float uCamZ; uniform float uFade; uniform float uJunta; uniform vec3 uCamXY;
         varying float vA;
         void main() {
-          float k = fract(aDado.x + uTempo * 0.05 * aDado.y);
+          // no fim dos projetos (uJunta) os riscos correm mais e se juntam num plano vertical na frente da câmera:
+          // na tela, uma linha de luz só, no meio, que vira a trilha do "Até aqui"
+          float j = uJunta * uJunta * (3.0 - 2.0 * uJunta);
+          float k = fract(aDado.x + uTempo * 0.05 * aDado.y * (1.0 + j * 3.0));
           float z = uCamZ + 20.0 - (1.0 - k) * 320.0;
-          float comp = mix(1.5, 16.0, k * k) * aDado.y;
-          vec3 p = vec3(position.xy, z + comp * aDado.z);
-          vA = mix(0.0, 1.0, aDado.z) * smoothstep(0.0, 0.3, k) * (1.0 - smoothstep(0.85, 1.0, k)) * 0.55 * uFade;
+          float comp = mix(1.5, 16.0, k * k) * aDado.y * (1.0 + j * 2.0);
+          vec2 xy = mix(position.xy, vec2(0.0, position.y * 1.6), j) + uCamXY.xy * j;
+          vec3 p = vec3(xy, z + comp * aDado.z);
+          vA = mix(0.0, 1.0, aDado.z) * smoothstep(0.0, 0.3, k) * (1.0 - smoothstep(0.85, 1.0, k)) * 0.55 * uFade * (1.0 + j * 1.5);
           gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
         }`,
       fragmentShader: /* glsl */ `
@@ -585,9 +617,75 @@ function Riscos({ chegada }: { chegada: Ref }) {
     // na chegada os riscos daqui continuam os do vale (mais fortes) e assentam no ritmo normal
     const c = chegada.current
     m.uniforms.uFade!.value = particulas(c) * (1 + (1 - imagens(c)) * 1.6)
+    m.uniforms.uJunta!.value = 0
+    ;(m.uniforms.uCamXY!.value as Vector3).copy(st.camera.position)
   })
   useEffect(() => () => (obj.geometry.dispose(), (obj.material as ShaderMaterial).dispose()), [obj])
   return <primitive object={obj} />
+}
+
+// a trilha de luz pelo caminho da câmera: acende do fim para o começo quando a câmera olha para trás. Duas
+// espessuras: a fina de perto e a larga para quando a câmera sobe e vê tudo de cima
+const vertTrilha = /* glsl */ `
+  varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+  void main() {
+    vUv = uv;
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vN = normalMatrix * normal;
+    vV = -mv.xyz;
+    gl_Position = projectionMatrix * mv;
+  }`
+const fragTrilha = /* glsl */ `
+  uniform float uRevela; uniform float uAlfa; uniform float uTempo;
+  varying vec2 vUv; varying vec3 vN; varying vec3 vV;
+  void main() {
+    float frente = 1.0 - uRevela;
+    float acesa = smoothstep(frente - 0.004, frente + 0.004, vUv.x);
+    float face = pow(abs(dot(normalize(vN), normalize(vV))), 1.4);
+    float ponta = exp(-pow((vUv.x - frente) * 160.0, 2.0)) * step(0.001, uRevela) * (1.0 - step(0.999, uRevela));
+    float pulso = 1.0;
+    vec3 cor = mix(vec3(0.35, 0.5, 1.0), vec3(0.92, 0.96, 1.0), face);
+    float a = (face * acesa * pulso + ponta * 3.0) * uAlfa;
+    gl_FragColor = vec4(cor * a, 0.0);
+  }`
+
+function Trilha({ caminho, junta }: { caminho: CatmullRomCurve3; junta: Ref }) {
+  const fina = useMemo(() => new TubeGeometry(caminho, 900, 0.07, 8, false), [caminho])
+  const larga = useMemo(() => new TubeGeometry(caminho, 900, 0.55, 8, false), [caminho])
+  const mats = useMemo(
+    () =>
+      [0, 1].map(
+        () =>
+          new ShaderMaterial({
+            vertexShader: vertTrilha,
+            fragmentShader: fragTrilha,
+            uniforms: { uRevela: { value: 0 }, uAlfa: { value: 0 }, uTempo: { value: 0 } },
+            transparent: true,
+            depthWrite: false,
+            side: DoubleSide,
+            blending: AdditiveBlending,
+            premultipliedAlpha: true,
+          }),
+      ),
+    [],
+  )
+  useFrame((st) => {
+    const j = junta.current
+    const revela = suave(prende(j / 0.4))
+    const alto = suave(prende((j - 0.4) / 0.4))
+    mats.forEach((m, i) => {
+      m.uniforms.uRevela!.value = revela
+      m.uniforms.uTempo!.value = st.clock.elapsedTime
+      m.uniforms.uAlfa!.value = suave(prende(j / 0.06)) * (i === 0 ? 1 - alto * 0.7 : alto)
+    })
+  })
+  useEffect(() => () => (fina.dispose(), larga.dispose(), mats.forEach((m) => m.dispose())), [fina, larga, mats])
+  return (
+    <>
+      <mesh geometry={fina} material={mats[0]} frustumCulled={false} renderOrder={3} />
+      <mesh geometry={larga} material={mats[1]} frustumCulled={false} renderOrder={3} />
+    </>
+  )
 }
 
 // céu: azul fundo com três manchas de cor que se mexem devagar
@@ -631,14 +729,16 @@ function Ceu({ chegada }: { chegada: { current: number } }) {
   )
 }
 
-function Mundo({ progresso, chegada, ativo, abrir }: { progresso: { current: number }; chegada: { current: number }; ativo: (i: number) => void; abrir: (i: number) => void }) {
-  const { camera, gl } = useThree()
+function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; chegada: Ref; junta: Ref; ativo: (i: number) => void; abrir: (i: number) => void }) {
+  const { camera, gl, size } = useThree()
+  const ponto = useMemo(() => new Vector3(), [])
   const [texturas, setTexturas] = useState<Texture[] | null>(null)
   const { capas, caminho } = useMemo(() => lugares(projetos.length), [])
   const fades = useMemo(() => projetos.map(() => ({ current: 0 })), [])
   const entrada = useRef(projetos.map(() => 0))
   const alvo = useMemo(() => new Vector3(), [])
   const olhar = useMemo(() => new Vector3(), [])
+  const cima = useMemo(() => new Vector3(0, 1, 0), [])
   const olharAtual = useRef(new Vector3(0, 0, -40))
   const ultimoAtivo = useRef(-1)
 
@@ -665,17 +765,48 @@ function Mundo({ progresso, chegada, ativo, abrir }: { progresso: { current: num
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05)
+    resta = 1 - suave(prende((junta.current - 0.55) / 0.35))
     caminho.getPointAt(prende(progresso.current), alvo)
     // a chegada: enquanto a câmera do vale ergue os olhos, este mundo desce do alto para o quadro
     const falta = 1 - suave(prende(chegada.current))
     alvo.y -= falta * 26
     alvo.z += falta * 18
+    // a saída ("Até aqui"): a câmera vira para trás e olha o caminho que percorreu, com a trilha de luz
+    // acendendo por ele; depois sobe e olha de cima, e o caminho vira uma linha em pé na tela, a mesma que
+    // continua como a trilha da seção seguinte. Tudo entra como alvo do mesmo amortecimento da rolagem
+    // (sem salto entre o passeio e a virada)
+    olhar.set(alvo.x, alvo.y + falta * 4, alvo.z - 40)
+    cima.set(0, 1, 0)
+    const j = junta.current
+    if (j > 0.001) {
+      const e1 = suave(prende(j / 0.45))
+      const e2 = suave(prende((j - 0.3) / 0.5))
+      const giro = Math.PI * e1
+      const desce = (Math.PI / 2) * e2
+      alvo.set(alvo.x, alvo.y + e1 * 8 + e2 * 102, alvo.z + e2 * 45)
+      olhar.set(Math.sin(giro) * Math.cos(desce) * 40, -Math.sin(desce) * 40, -Math.cos(giro) * Math.cos(desce) * 40).add(alvo)
+      cima.set(0, Math.cos(desce), Math.sin(desce))
+    }
     // amortecido como o controle do sztanki (damping 0,2)
     const k = 1 - Math.exp(-dt / 0.2)
     camera.position.lerp(alvo, k)
-    olhar.set(alvo.x, alvo.y + falta * 4, alvo.z - 40)
     olharAtual.current.lerp(olhar, k)
+    camera.up.lerp(cima, k).normalize()
     camera.lookAt(olharAtual.current)
+    // vista de cima: conta para o "Até aqui" onde a linha está na tela, para ele continuar dali
+    if (j > 0.82) {
+      camera.updateMatrixWorld()
+      const pts: { x: number; y: number }[] = []
+      for (let i = 0; i <= 90; i++) {
+        caminho.getPointAt(i / 90, ponto)
+        ponto.project(camera)
+        if (ponto.z < 1 && ponto.y > -1.6 && ponto.y < 1.6) pts.push({ x: ((ponto.x + 1) / 2) * size.width, y: ((1 - ponto.y) / 2) * size.height })
+      }
+      trilhaTela.pontos = pts
+      // o tubo largo (raio 0,55) visto de cima, a ~110 de altura: metade da largura dele na tela, em px
+      trilhaTela.meia = (0.55 * size.height) / (2 * 110 * Math.tan((50 * Math.PI) / 360))
+      trilhaTela.versao++
+    }
     // quais capas aparecem: as duas à frente (entram em 2 s, saem em 1 s) e somem ao serem atravessadas
     const z = camera.position.z
     let i0 = capas.findIndex((c) => z > c.z + 10)
@@ -685,11 +816,18 @@ function Mundo({ progresso, chegada, ativo, abrir }: { progresso: { current: num
       const e = entrada.current[i]!
       entrada.current[i] = quer ? Math.min(e + dt / 2, 1) : Math.max(e - dt / 1, 0)
       const perto = prende((z - c.z - 3) / 9)
-      fades[i]!.current = suave(entrada.current[i]!) * suave(perto)
+      fades[i]!.current = Math.max(suave(entrada.current[i]!) * suave(perto), suave(prende(junta.current / 0.35)) * 0.95)
     })
     // a capa "da vez" é a mais visível, mas só enquanto a câmera está parada na frente dela: quando avança e a
     // capa cresce até encher a tela, o painel sai (nada de texto por cima da imagem)
     // durante a travessia de uma capa (ela enche a tela) não há painel
+    if (junta.current > 0.05) {
+      if (ultimoAtivo.current !== -1) {
+        ultimoAtivo.current = -1
+        ativo(-1)
+      }
+      return
+    }
     const atravessa = capas.some((c, i) => z - c.z <= 12 && fades[i]!.current > 0.15)
     const melhor = atravessa ? -1 : capas.findIndex((c, i) => z - c.z > 12 && fades[i]!.current > 0.35)
     if (melhor !== ultimoAtivo.current) {
@@ -704,7 +842,8 @@ function Mundo({ progresso, chegada, ativo, abrir }: { progresso: { current: num
       <Matriz chegada={chegada} />
       <Poeira chegada={chegada} />
       <Grade chegada={chegada} />
-      <Riscos chegada={chegada} />
+      <Riscos chegada={chegada} junta={junta} />
+      <Trilha caminho={caminho} junta={junta} />
       {texturas && <Parede texturas={texturas} chegada={chegada} />}
       {texturas &&
         projetos.map((p, i) => (
@@ -716,7 +855,7 @@ function Mundo({ progresso, chegada, ativo, abrir }: { progresso: { current: num
   )
 }
 
-export default function Obras({ progresso, entrada, ativo, abrir }: { progresso: { current: number }; entrada: { current: number }; ativo: (i: number) => void; abrir: (i: number) => void }) {
+export default function Obras({ progresso, entrada, junta, ativo, abrir }: { progresso: Ref; entrada: Ref; junta: Ref; ativo: (i: number) => void; abrir: (i: number) => void }) {
   const raiz = useRef<HTMLDivElement>(null)
   const [visivel, setVisivel] = useState(false)
   useEffect(() => {
@@ -728,8 +867,8 @@ export default function Obras({ progresso, entrada, ativo, abrir }: { progresso:
   }, [])
   return (
     <div ref={raiz} style={{ position: 'absolute', inset: 0 }}>
-      <Canvas frameloop={visivel ? 'always' : 'never'} dpr={[1, 1.5]} camera={{ fov: 50, near: 0.1, far: 1000, position: [-18, -6.75, 8] }} gl={{ antialias: true, alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
-        <Mundo progresso={progresso} chegada={entrada} ativo={ativo} abrir={abrir} />
+      <Canvas frameloop={visivel ? 'always' : 'never'} dpr={[1, 2]} camera={{ fov: 50, near: 0.1, far: 1000, position: [-18, -6.75, 8] }} gl={{ antialias: true, alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
+        <Mundo progresso={progresso} chegada={entrada} junta={junta} ativo={ativo} abrir={abrir} />
       </Canvas>
     </div>
   )

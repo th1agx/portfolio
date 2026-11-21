@@ -26,6 +26,7 @@ export function Projetos() {
   const raiz = useRef<HTMLElement>(null)
   const progresso = useRef(0)
   const entrada = useRef(0)
+  const junta = useRef(0)
   const [ativo, setAtivo] = useState(-1)
   const [aberto, setAberto] = useState(-1)
   const [saindo, setSaindo] = useState(false)
@@ -47,6 +48,7 @@ export function Projetos() {
     const cena = el.querySelector<HTMLElement>('[data-obras-cena]')!
     const vinheta = el.querySelector<HTMLElement>('[data-obras-vinheta]')
     const legenda = el.querySelector<HTMLElement>('[data-obras-painel]')
+    const p0 = (k: number) => Math.max(0, 1 - k * 4).toFixed(3)
     const chegar = (p: number) => {
       entrada.current = p
       // a cena só se mostra quando a câmera do vale já olha para o céu; dentro dela, primeiro as partículas e
@@ -61,11 +63,22 @@ export function Projetos() {
     }
     chegar(0)
     const entra = ScrollTrigger.create({ trigger: el, start: 'top top', end: () => `+=${innerHeight * 0.9}`, onUpdate: (self) => chegar(self.progress), onRefresh: (self) => chegar(self.progress) })
-    const sai = gsap.to(cena, { opacity: 0, ease: 'none', scrollTrigger: { trigger: el, start: 'bottom 140%', end: 'bottom bottom', scrub: true } })
+    // a saída: nada de apagar a luz. No último trecho, ainda presa, a câmera vira e olha o caminho percorrido,
+    // com a trilha de luz acendendo por ele, e sobe até ver tudo de cima: o caminho vira a linha em pé que
+    // continua como a trilha do "Até aqui" (Trajetoria)
+    const sai = ScrollTrigger.create({
+      trigger: el,
+      start: 'bottom 280%',
+      end: 'bottom 100%',
+      onUpdate: (self) => {
+        junta.current = self.progress
+        if (legenda) legenda.style.opacity = p0(self.progress)
+      },
+    })
     return () => {
       st.kill()
       entra.kill()
-      sai.scrollTrigger?.kill()
+      sai.kill()
     }
   }, [])
 
@@ -105,14 +118,14 @@ export function Projetos() {
   const q = aberto >= 0 ? projetos[aberto] : null
 
   return (
-    <section ref={raiz} id="trabalho" className={s.obras} aria-labelledby="obras-titulo" data-tema="lima" data-sem-robo style={{ height: `${projetos.length * 120 + 100}svh` }}>
+    <section ref={raiz} id="trabalho" className={s.obras} aria-labelledby="obras-titulo" data-tema="lima" data-sem-robo style={{ height: `${projetos.length * 120 + 160}svh` }}>
       <h2 id="obras-titulo" className="visually-hidden">
         Projetos
       </h2>
       <div className={s.obrasPreso}>
         {/* tudo o que está preso à tela aparece e some junto: nenhuma borda da caixa fica à vista */}
         <div className={s.obrasCena} data-obras-cena>
-          <Obras progresso={progresso} entrada={entrada} ativo={setAtivo} abrir={abrir} />
+          <Obras progresso={progresso} entrada={entrada} junta={junta} ativo={setAtivo} abrir={abrir} />
           <div className={s.obrasVinheta} data-obras-vinheta aria-hidden />
           <div className={s.obrasPainel} data-obras-painel aria-live="polite">
             {p && (

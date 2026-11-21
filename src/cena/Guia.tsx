@@ -46,6 +46,8 @@ function Robo({ ancoras, inter, dom }: { ancoras: { current: Ancora[] }; inter: 
   const pos = useRef({ x: -200, y: 0 })
   const escala = useRef(1)
   const inclina = useRef(0)
+  // troca de âncora dentro de uma cena presa (de um cartão para o outro): um voo em arco, não um salto
+  const vooPreso = useRef({ el: null as HTMLElement | null, inicio: -10, x: 0, y: 0 })
 
   const inicio = useRef(performance.now() / 1000)
   useFrame((_, dt) => {
@@ -68,11 +70,14 @@ function Robo({ ancoras, inter, dom }: { ancoras: { current: Ancora[] }; inter: 
     while (i < pontos.length - 1 && rol >= pontos[i + 1]!.chegada) i++
     // âncoras dentro de uma cena presa (data-robo-preso): enquanto a cena ocupa a tela, o robô segue a âncora
     // direto, porque a posição dela no documento não diz nada (ela anda com a cena, não com a página)
-    const preso = pontos.find((p) => {
+    // com várias âncoras na mesma cena (os cartões do "Até aqui"), vale a visível mais perto do meio da tela
+    const presos = pontos.filter((p) => {
       if (p.a.el.dataset.roboPreso === undefined) return false
       const c = p.a.el.closest('[data-robo-cena]')?.getBoundingClientRect()
       return !!c && c.top <= 1 && c.bottom >= vh - 1
     })
+    const visiveis = presos.filter((p) => p.y > vh * 0.12 && p.y < vh * 0.88)
+    const preso = (visiveis.length ? visiveis : presos).sort((a, b) => Math.abs(a.y - vh * 0.45) - Math.abs(b.y - vh * 0.45))[0]
     const A = preso ?? pontos[i]!
     const B = preso ?? pontos[Math.min(i + 1, pontos.length - 1)]!
     const t = B === A ? 0 : Math.min(1, Math.max(0, (rol - A.chegada) / (B.chegada - A.chegada)))
@@ -84,6 +89,27 @@ function Robo({ ancoras, inter, dom }: { ancoras: { current: Ancora[] }; inter: 
     const ancora = (t < 0.5 ? A : B).a
     it.ancoraAtual = voando ? null : ancora
     let proxima: AcaoRobo = voando ? 'voar' : (ACOES[ancora.acao] ?? 'parado')
+    let emVoo = false
+    const vp = vooPreso.current
+    if (preso) {
+      if (vp.el !== preso.a.el) {
+        if (vp.el) {
+          vp.inicio = agora
+          vp.x = pos.current.x
+          vp.y = pos.current.y
+        }
+        vp.el = preso.a.el
+      }
+      const u = Math.min(1, (agora - vp.inicio) / 1.1)
+      if (u < 1) {
+        const e = u * u * (3 - 2 * u)
+        alvoX = vp.x + (preso.x - vp.x) * e
+        alvoY = vp.y + (preso.y - vp.y) * e - Math.sin(Math.PI * u) * 110
+        proxima = 'voar'
+        emVoo = true
+        it.ancoraAtual = null
+      }
+    } else vp.el = null
 
     // 2. o roubo do cursor sobrepõe tudo
     const r = it.roubo
@@ -147,15 +173,15 @@ function Robo({ ancoras, inter, dom }: { ancoras: { current: Ancora[] }; inter: 
     }
 
     // 4. movimento suave até o alvo
-    const s = 1 - Math.exp(-(r.fase ? 6 : 9) * dt)
+    const s = 1 - Math.exp(-(r.fase ? 6 : emVoo ? 16 : 9) * dt)
     pos.current.x += (alvoX - pos.current.x) * s
     pos.current.y += (alvoY - pos.current.y) * s
     // a escala é lida da âncora a cada quadro: uma seção pode mudá-la com a rolagem (a estrada encolhe o robô no furo)
     const ea = Number(A.a.el.dataset.roboEscala ?? A.a.escala)
     const eb = Number(B.a.el.dataset.roboEscala ?? B.a.escala)
     escala.current += (ea + (eb - ea) * viagem - escala.current) * s
-    const indoPara = r.fase ? Math.sign(alvoX - pos.current.x) : Math.sign(B.x - A.x)
-    inclina.current += ((voando || r.fase ? indoPara * -0.35 : 0) - inclina.current) * s
+    const indoPara = r.fase || emVoo ? Math.sign(alvoX - pos.current.x) : Math.sign(B.x - A.x)
+    inclina.current += ((voando || r.fase || emVoo ? indoPara * -0.35 : 0) - inclina.current) * s
     acao.current = proxima
 
     // olha para o cursor

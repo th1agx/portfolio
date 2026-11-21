@@ -85,6 +85,9 @@ export function Ideia() {
         <span className={s.ancoraBotao} data-robo="joinha" aria-hidden />
       </div>
       </div>
+      {/* mais dois pontos do robô no vale: ele acompanha a caminhada pelos faróis */}
+      <span className={s.ancoraVale} style={{ top: '52%' }} data-robo="acenar" aria-hidden />
+      <span className={s.ancoraVale} style={{ top: '76%' }} data-robo="sim" aria-hidden />
       {/* a vaga onde o painel do topo pousa depois de viajar pelo caminho curvo */}
       <div className={s.pouso} data-pouso aria-hidden />
     </section>

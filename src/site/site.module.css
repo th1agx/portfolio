@@ -681,7 +681,132 @@
 
 .trajetoria {
   position: relative;
-  z-index: 2;
+  z-index: 3;
+  /* começa por cima do fim dos projetos: a cena se prende ainda com a linha de luz deles na tela */
+  margin-top: -130svh;
+}
+
+/* "Até aqui": o canvas da trilha e dos cartões (src/cena/ateAqui.ts) e, por cima, os textos */
+.ateCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ateFaixa {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 78svh var(--margem) 0;
+  will-change: transform;
+}
+
+.ateTopo {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: end;
+  gap: 4vw;
+}
+
+.ateIntro {
+  max-width: 30ch;
+  font-size: clamp(20px, 1.7vw, 28px);
+  line-height: 1.3;
+  color: rgb(232 237 245 / 0.78);
+}
+
+.ateLista {
+  display: flex;
+  flex-direction: column;
+  gap: 16svh;
+  margin: 18svh 0 0;
+  padding: 0 0 100svh;
+  list-style: none;
+}
+
+/* como a galeria do orchestrated: um cartão grande à esquerda, o seguinte menor e mais baixo à direita */
+.ateItem {
+  width: 54vw;
+}
+
+.ateItem:nth-child(even) {
+  align-self: flex-end;
+  width: 34vw;
+  margin-top: -6svh;
+}
+
+.ateRobo {
+  position: absolute;
+  right: 8%;
+  top: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.ancoraVale {
+  position: absolute;
+  left: 72%;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.ateCartao {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 4px;
+  background: #e8edf5 center / cover no-repeat;
+}
+
+.ateItem:nth-child(even) .ateCartao {
+  aspect-ratio: 4 / 3;
+}
+
+/* com WebGL o cartão é desenhado no canvas (curvando com a rolagem): a moldura só reserva o lugar */
+.ateCartao[data-gl='1'] {
+  background: none;
+}
+
+.ateLegenda {
+  margin-top: 18px;
+  font-size: 16px;
+  color: var(--apagado);
+}
+
+.ateLegenda b {
+  font-weight: 500;
+  color: var(--sobre-grafite);
+}
+
+.ateLegenda .revela::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin: 0 12px 2px 0;
+  border-radius: 50%;
+  background: var(--sobre-grafite);
+}
+
+.ateTexto {
+  margin-top: 6px;
+  font-size: 16px;
+  color: var(--apagado);
+}
+
+@media (max-width: 700px) {
+  .ateTopo {
+    grid-template-columns: 1fr;
+  }
+
+  .ateItem,
+  .ateItem:nth-child(even) {
+    width: 100%;
+    margin-top: 0;
+  }
 }
 
 /* linhas de relevo (as do fundo do Lando): aparecem conforme o fundo clareia */
@@ -876,8 +1001,8 @@
 .estradaCamada {
   position: absolute;
   inset: 0;
-  background: #f5f5f2;
-  color: #050505;
+  background: transparent;
+  color: var(--sobre-grafite);
   --furo: 0px;
   -webkit-mask: radial-gradient(circle at var(--cx) var(--cy), transparent var(--furo), #000 calc(var(--furo) + 1px));
   mask: radial-gradient(circle at var(--cx) var(--cy), transparent var(--furo), #000 calc(var(--furo) + 1px));
@@ -930,6 +1055,8 @@
   top: 0;
   height: 100svh;
   overflow: hidden;
+  /* ela fica por cima do fim dos projetos: não pode roubar o clique das capas (o contato liga de volta) */
+  pointer-events: none;
 }
 
 .pontaEstrada {
@@ -1422,7 +1549,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0, 0, 40, 0.65) 100%);
+  background: radial-gradient(ellipse 80% 75% at 50% 50%, transparent 65%, rgba(0, 0, 40, 0.4) 100%);
 }
 
 .obrasPainel {
