@@ -332,7 +332,7 @@
   position: relative;
   padding: 16vw var(--margem) 16vw;
   /* espaço para a sequência: o cartão pousa, o texto passa e o cartão sai */
-  min-height: 190vh;
+  min-height: 410vh;
   /* duas colunas: o texto e a vaga do painel; uma não invade a outra em nenhuma largura */
   display: grid;
   grid-template-columns: minmax(0, 1fr) 38vw;
@@ -340,7 +340,87 @@
   align-items: start;
 }
 
-/* a grade de quadrados ao fundo foi removida a pedido: cara de IA */
+/* fundo lunar: a camada cobre a seção e o canvas fica preso à tela enquanto ela passa */
+.luaCamada {
+  position: absolute;
+  /* passa uma tela além da seção: o vale continua preso enquanto os projetos nascem por cima dele */
+  inset: 0 0 -220svh;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.luaPreso {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+/* rótulo de um farol: preso ao alto da coluna de luz (o JS move e escala em perspectiva), sempre do lado de
+   dentro do vale */
+.farol {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  gap: 0.3em;
+  padding-left: 18px;
+  transform-origin: 0 0;
+  white-space: nowrap;
+  will-change: transform, opacity;
+}
+
+.farol[data-lado='e'] {
+  padding: 0 18px 0 0;
+  text-align: right;
+}
+
+.farolNome {
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  font-size: 56px;
+  line-height: 1;
+  color: var(--sobre-grafite);
+}
+
+.farolValor {
+  font-size: 24px;
+  color: var(--sobre-grafite);
+}
+
+.farolLei {
+  font-size: 18px;
+  color: var(--apagado);
+}
+
+@media (max-width: 700px) {
+  .farolNome {
+    font-size: 38px;
+  }
+
+  .farolValor {
+    font-size: 18px;
+  }
+
+  .farolLei {
+    font-size: 15px;
+  }
+}
+
+.luaCanvas {
+  display: block;
+  width: 100%;
+  height: 100svh;
+  /* o alto do céu já é o Deep Blue da página; a borda do canvas some num degradê */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
+}
+
+.ideia > .ideiaTexto,
+.ideia > .pouso {
+  z-index: 1;
+}
 
 .ideiaTexto {
   position: relative;
@@ -355,14 +435,6 @@
 }
 
 
-.linha {
-  position: absolute;
-  inset: -8vw 0 0;
-  width: 100%;
-  height: calc(100% + 8vw);
-  pointer-events: none;
-  overflow: visible;
-}
 
 .titulo {
   position: relative;
@@ -1324,3 +1396,423 @@
   height: 100%;
 }
 
+
+/* ---------- Trabalho: o mundo em profundidade (sztanki.com/work) ---------- */
+.obras {
+  position: relative;
+  z-index: 2;
+  color: var(--sobre-grafite);
+}
+
+.obrasPreso {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.obrasCena {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+/* vinheta e um leve tom azul nas bordas, como a lente da cena do sztanki */
+.obrasVinheta {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0, 0, 40, 0.65) 100%);
+}
+
+.obrasPainel {
+  position: absolute;
+  left: 50%;
+  bottom: max(96px, 13svh);
+  width: min(820px, calc(100% - 2 * var(--margem)));
+  translate: -50% 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* a legenda: como a de um filme, uma linha centrada no pé da tela; clicar abre o projeto */
+.obrasLegenda {
+  pointer-events: auto;
+  display: block;
+  padding: 10px 6px;
+  background: none;
+  border: 0;
+  color: var(--sobre-grafite);
+  font: inherit;
+  font-size: clamp(16px, 1.35vw, 21px);
+  line-height: 1.45;
+  text-align: center;
+  text-wrap: balance;
+  cursor: pointer;
+  animation: obrasEntra 900ms cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+
+.obrasLegenda b {
+  font-weight: 600;
+  margin-right: 0.5em;
+}
+
+.obrasLegenda span {
+  color: rgba(232, 237, 245, 0.8);
+}
+
+@keyframes obrasEntra {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 -20% 0);
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* o projeto aberto: sobe em cúpula curva como as outras passagens do site, no Deep Blue do topo, com o nome
+   em escala de título, a imagem em matriz de pontos, a explicação, a stack e o próximo projeto */
+.obraAberta {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(84px, 9vw, 140px) var(--margem) 0;
+  background: #000080;
+  color: var(--sobre-grafite);
+  animation: abreCupula 1s cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+
+.obraAberta[data-saindo='1'] {
+  animation: fechaCupula 520ms cubic-bezier(0.7, 0, 0.2, 1) both;
+}
+
+@keyframes abreCupula {
+  from {
+    clip-path: ellipse(70% 0% at 50% 100%);
+  }
+  to {
+    clip-path: ellipse(160% 160% at 50% 100%);
+  }
+}
+
+@keyframes fechaCupula {
+  from {
+    clip-path: ellipse(160% 160% at 50% 100%);
+  }
+  to {
+    clip-path: ellipse(70% 0% at 50% 100%);
+  }
+}
+
+.obraAberta p,
+.obraAberta h3,
+.obraAberta ul,
+.obraAberta figure {
+  margin: 0;
+}
+
+.obraFechar {
+  position: fixed;
+  top: clamp(20px, 2.4vw, 36px);
+  right: var(--margem);
+  z-index: 61;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sobre-grafite);
+  color: #000080;
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 250ms var(--ease), transform 400ms var(--ease);
+}
+
+.obraFechar svg {
+  width: 12px;
+  height: 12px;
+  transition: transform 500ms var(--ease);
+}
+
+.obraFechar:hover {
+  background: #fff;
+}
+
+.obraFechar:hover svg {
+  transform: rotate(90deg);
+}
+
+/* o nome: uma linha que abre da esquerda com o bloco azul vivo encolhendo por cima (o mesmo do título) */
+.obraAbertaNome {
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  line-height: 0.9;
+  font-size: clamp(56px, 10.5vw, 190px);
+  padding-bottom: 0.06em;
+}
+
+.obraAbertaNome span {
+  position: relative;
+  display: inline-block;
+  animation: nomeAbre 700ms cubic-bezier(0.215, 0.61, 0.355, 1) 420ms both;
+}
+
+.obraAbertaNome span::after {
+  content: '';
+  position: absolute;
+  inset: 0 -0.04em;
+  background: var(--azul-vivo);
+  transform-origin: right center;
+  animation: nomeBloco 650ms cubic-bezier(0.455, 0.03, 0.515, 0.955) 760ms both;
+}
+
+@keyframes nomeAbre {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 -0.1em 0 0);
+  }
+}
+
+@keyframes nomeBloco {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.obraAbertaTopo {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(28px, 4vw, 80px);
+  align-items: end;
+  margin-top: clamp(32px, 4vw, 64px);
+}
+
+.obraAbertaLado {
+  display: grid;
+  gap: 32px;
+  align-content: end;
+  animation: sobeSuave 900ms cubic-bezier(0.19, 1, 0.22, 1) 900ms both;
+}
+
+.obraAbertaFrase {
+  font-size: clamp(22px, 2.2vw, 34px);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.obraAbertaLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.obraAbertaLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 26px;
+  border-radius: 999px;
+  background: var(--sobre-grafite);
+  color: #000080;
+  font-size: 16px;
+  text-decoration: none;
+  transition: background 250ms var(--ease), color 250ms var(--ease);
+}
+
+.obraAbertaLink + .obraAbertaLink {
+  background: #000;
+  color: var(--sobre-grafite);
+}
+
+.obraAbertaLink svg {
+  width: 12px;
+  height: 12px;
+  transition: transform 400ms var(--ease);
+}
+
+.obraAbertaLink:hover {
+  background: var(--azul-vivo);
+  color: #fff;
+}
+
+.obraAbertaLink:hover svg {
+  transform: translate(2px, -2px);
+}
+
+/* a imagem: por baixo a limpa, por cima a mesma em pontos (máscara de pontos); com o mouse, os pontos somem */
+.obraAbertaFigura {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #000;
+  animation: figuraAbre 1.2s cubic-bezier(0.19, 1, 0.22, 1) 700ms both;
+}
+
+.obraAbertaFigura img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 1.2s var(--ease), opacity 700ms var(--ease);
+}
+
+.obraAbertaMatriz {
+  -webkit-mask-image: radial-gradient(circle at center, #000 0 42%, transparent 52%);
+  mask-image: radial-gradient(circle at center, #000 0 42%, transparent 52%);
+  -webkit-mask-size: 7px 7px;
+  mask-size: 7px 7px;
+  filter: saturate(1.3) brightness(1.5);
+}
+
+.obraAbertaFigura img:first-child {
+  opacity: 0.18;
+}
+
+.obraAbertaFigura:hover img {
+  transform: scale(1.04);
+}
+
+.obraAbertaFigura:hover img:first-child {
+  opacity: 1;
+}
+
+.obraAbertaFigura:hover .obraAbertaMatriz {
+  opacity: 0;
+}
+
+@keyframes figuraAbre {
+  from {
+    clip-path: inset(100% 0 0 0 round 18px);
+    transform: translateY(60px);
+  }
+  to {
+    clip-path: inset(0 0 0 0 round 18px);
+    transform: none;
+  }
+}
+
+@keyframes sobeSuave {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+}
+
+.obraAbertaSobre {
+  columns: 2 320px;
+  column-gap: clamp(28px, 4vw, 80px);
+  margin-top: clamp(72px, 9vw, 160px);
+  font-size: clamp(17px, 1.25vw, 20px);
+  line-height: 1.55;
+}
+
+.obraAbertaSobre p {
+  break-inside: avoid;
+  margin-bottom: 1.1em;
+}
+
+/* a stack: as tecnologias em escala grande, uma depois da outra */
+.obraAbertaPilha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2em 0.9em;
+  margin-top: clamp(56px, 7vw, 120px);
+  list-style: none;
+  padding: 0;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  font-size: clamp(30px, 4vw, 64px);
+  line-height: 1.05;
+  color: rgb(232 237 245 / 0.42);
+}
+
+.obraAbertaPilha li {
+  transition: color 300ms var(--ease);
+}
+
+.obraAbertaPilha li:hover {
+  color: var(--sobre-grafite);
+}
+
+/* o próximo projeto: o fim da página aberta é o começo da seguinte */
+.obraProxima {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  width: calc(100% + 2 * var(--margem));
+  margin: clamp(80px, 10vw, 180px) calc(-1 * var(--margem)) 0;
+  padding: clamp(40px, 5vw, 80px) var(--margem) clamp(48px, 6vw, 96px);
+  border: 0;
+  background: #000;
+  color: var(--sobre-grafite);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 400ms var(--ease);
+}
+
+.obraProxima span {
+  font-size: 16px;
+  color: var(--apagado);
+}
+
+.obraProxima b {
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  letter-spacing: var(--track-display);
+  font-size: clamp(48px, 8vw, 150px);
+  line-height: 0.95;
+  transition: transform 700ms var(--ease);
+}
+
+.obraProxima:hover {
+  background: var(--azul-vivo);
+}
+
+.obraProxima:hover b {
+  transform: translateX(0.12em);
+}
+
+@media (max-width: 800px) {
+  .obraAbertaTopo {
+    grid-template-columns: 1fr;
+  }
+
+  .obraAbertaFigura {
+    order: -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .obraAberta,
+  .obraAberta[data-saindo='1'],
+  .obraAbertaNome span,
+  .obraAbertaNome span::after,
+  .obraAbertaLado,
+  .obraAbertaFigura,
+  .obrasLegenda {
+    animation: none;
+  }
+
+  .obraAbertaNome span::after {
+    transform: scaleX(0);
+  }
+}

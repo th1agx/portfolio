@@ -27,8 +27,8 @@ export function Heroi() {
     if (!el || !assinatura || !pouso || !ideia) return
     type P = { x: number; y: number; w: number }
     // geometria medida sem transformação. Pontos da viagem, como pos1, pos2 e pos3 do site do Lando: o painel
-    // no topo, o centro da tela e a vaga reservada na seção seguinte. Depois de pousar, fica parado na vaga
-    // enquanto o texto passa ao lado e, quando a seção termina, sai com ela pelo alto (como o cartão do Lando).
+    // no topo, o centro da tela e a vaga reservada na seção seguinte. Depois de pousar, sobe junto com o título
+    // e o texto da seção, como se fizesse parte dela.
     let g = { x0: 0, y0: 0, w0: 1, h0: 1, pouso: 1, saida: 2, pontos: [] as P[] }
     const medir = () => {
       el.style.transform = ''
@@ -39,7 +39,6 @@ export function Heroi() {
       pouso.style.height = `${(pouso.offsetWidth * r.height) / r.width}px`
       const y = window.scrollY
       const rp = pouso.getBoundingClientRect()
-      const fimIdeia = ideia.getBoundingClientRect().bottom + y
       const x0 = r.left + r.width / 2
       const y0 = r.top + y + r.height / 2
       g = {
@@ -49,9 +48,9 @@ export function Heroi() {
         h0: r.height,
         // pousa quando a vaga chega a 42% da altura da tela
         pouso: Math.max(1, rp.top + y + rp.height / 2 - vh * 0.42),
-        // solta da vaga antes da janela dos projetos nascer (ela prende quando falta uma tela para a seção
-        // acabar): o cartão já saiu pelo alto quando a janela aparece
-        saida: Math.max(2, fimIdeia - vh * 1.55),
+        // depois de pousar não fica preso: sobe junto com o título e o texto da seção (o vale fica livre para os
+        // faróis dos dois lados)
+        saida: Math.max(1, rp.top + y + rp.height / 2 - vh * 0.42),
         pontos: [
           { x: x0, y: y0, w: r.width },
           { x: vw * 0.58, y: vh * 0.5, w: r.width * 0.5 },
@@ -90,8 +89,8 @@ export function Heroi() {
       el.style.transform = `translate3d(${p.x - g.x0}px, ${p.y + y - g.y0}px, 0) scale(${escala})`
       // como no Lando: no topo ocupa a tela, sem canto; vira cartão de canto redondo ao encolher
       el.style.borderRadius = `${(18 * Math.min(1, viagem * 5)) / escala}px`
-      // sem fundo no topo (só o recorte sobre a página); ganha o fundo de cartão ao encolher
-      el.style.backgroundColor = `rgba(232, 237, 245, ${Math.min(1, viagem * 4).toFixed(3)})`
+      // sem fundo no topo (só o recorte sobre a página); ao encolher ganha o Deep Blue do topo, como cartão
+      el.style.backgroundColor = `rgba(0, 0, 128, ${Math.min(1, viagem * 4).toFixed(3)})`
       // a assinatura é escrita da esquerda para a direita durante a viagem e se apaga ao pousar:
       // marca nenhuma fica em cima do rosto
       const escreve = Math.min(1, Math.max(0, (viagem - 0.12) / 0.5))
@@ -120,6 +119,7 @@ export function Heroi() {
       <div
         ref={painel}
         className={s.painel}
+        data-retrato
         aria-label="Retrato de Thiago Antunes, metade humano e metade robô. O cursor revela a versão robô."
         onClick={() => gsap.to(inteiro, { current: inteiro.current > 0.5 ? 0 : 1, duration: 1.5, ease: 'expo.inOut', overwrite: true })}
       >

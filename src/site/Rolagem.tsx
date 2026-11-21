@@ -19,7 +19,14 @@ export function Rolagem() {
     const tique = (t: number) => lenis.raf(t * 1000)
     gsap.ticker.add(tique)
     gsap.ticker.lagSmoothing(0)
+    // um projeto aberto por cima da página para a rolagem até fechar
+    const parar = () => lenis.stop()
+    const seguir = () => lenis.start()
+    addEventListener('rolagem:parar', parar)
+    addEventListener('rolagem:seguir', seguir)
     return () => {
+      removeEventListener('rolagem:parar', parar)
+      removeEventListener('rolagem:seguir', seguir)
       gsap.ticker.remove(tique)
       lenis.destroy()
     }

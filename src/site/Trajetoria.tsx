@@ -106,6 +106,17 @@ export function Trajetoria() {
     const el = secao.current
     const trilho = faixa.current
     if (!el || !trilho || !camada.current || !aro.current || !contato.current) return
+    // entrada com a borda curva do Lando (ellipse 70% 0% -> 70% 100%, presa à rolagem): a página clara sobe
+    // como uma cúpula por cima do azul dos projetos, sem corte reto
+    const borda = ScrollTrigger.create({
+      trigger: el,
+      start: 'top bottom',
+      end: 'top top',
+      onUpdate: (self) => {
+        const k = self.progress
+        camada.current!.style.clipPath = k >= 0.999 ? '' : `ellipse(${70 + k * 50}% ${k * 130}% at 50% 100%)`
+      },
+    })
     const raiz = document.documentElement
     let ligado = false
     const revelar = [...trilho.querySelectorAll<HTMLElement>('[data-revela]')]
@@ -217,6 +228,7 @@ export function Trajetoria() {
       onToggle: (self) => setTunelAtivo(self.isActive),
     })
     return () => {
+      borda.kill()
       st.kill()
       perto.kill()
       gsap.ticker.remove(revelarVisiveis)

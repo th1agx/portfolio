@@ -16,3 +16,4 @@ reference/
 # configuração local do Claude Code e notas de engenharia reversa de outro site: não publicar
 .claude/
 docs/LUSION_REA.md
+.playwright-mcp/
