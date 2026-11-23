@@ -435,9 +435,20 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
     gl.bindVertexArray(null)
   }
 
+  // Renderização sob demanda: quem chama só desenha enquanto a cena está à vista. Ao voltar, a velocidade da faixa
+  // é medida de novo a partir da posição atual (sem isso, o primeiro quadro leria um salto enorme e esticaria os
+  // cartões)
+  const retomar = () => {
+    ultimo = performance.now()
+    yAntes = faixa.getBoundingClientRect().top
+    esticar = 0
+    atividade = 0
+  }
+
   return {
     medir,
     desenhar,
+    retomar,
     destruir: () => {
       texturas.forEach((t) => gl.deleteTexture(t))
       ;[bufUv, bufTrilha, bufPontos].forEach((b) => gl.deleteBuffer(b))

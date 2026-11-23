@@ -264,18 +264,24 @@ export type Farol = { x: number; z: number; rotulo: HTMLElement }
 
 export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: string, farois: Farol[] = []) {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, premultipliedAlpha: false })
-  if (!gl || gl.isContextLost()) return () => {}
+  if (!gl || gl.isContextLost()) return { parar: () => {}, pronta: Promise.resolve() }
+  // O shader do terreno é pesado e o driver leva de 0,3 a 0,5 s para compilar. Perguntar o resultado logo depois
+  // de compilar (getShaderParameter, getAttribLocation...) faz a thread principal esperar. Aqui a compilação
+  // roda em paralelo (KHR_parallel_shader_compile) e só se pergunta quando o driver já terminou (ver `quadro`).
+  const paralela = gl.getExtension('KHR_parallel_shader_compile')
+  const shaders: WebGLShader[] = []
   const compilar = (v: string, f: string) => {
     const p = gl.createProgram()!
     for (const [tipo, src] of [[gl.VERTEX_SHADER, v], [gl.FRAGMENT_SHADER, f]] as const) {
       const s = gl.createShader(tipo)!
       gl.shaderSource(s, src)
       gl.compileShader(s)
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s))
+      shaders.push(s)
       gl.attachShader(p, s)
     }
+    // a posição do vértice fica na entrada 0 sem precisar perguntar à placa depois
+    gl.bindAttribLocation(p, 0, 'aPos')
     gl.linkProgram(p)
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(p))
     return p
   }
   const tela = compilar(vertTela, fragTela)
@@ -285,23 +291,26 @@ export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: 
   const bufTela = gl.createBuffer()
   gl.bindBuffer(gl.ARRAY_BUFFER, bufTela)
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
-  const aPos = gl.getAttribLocation(tela, 'aPos')
-  gl.enableVertexAttribArray(aPos)
-  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
+  gl.enableVertexAttribArray(0)
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
 
   gl.bindVertexArray(null)
 
-  const ut = (n: string) => gl.getUniformLocation(tela, n)
+  // a localização de cada uniform é pedida à placa uma vez só (antes, ~12 consultas por quadro)
+  const locais = new Map<string, WebGLUniformLocation | null>()
+  const ut = (n: string) => {
+    let l = locais.get(n)
+    if (l === undefined) locais.set(n, (l = gl.getUniformLocation(tela, n)))
+    return l
+  }
 
   let vivo = true
   let carregadas = 0
   const texturas: WebGLTexture[] = []
-  const textura = (unidade: number, url: string, nome: string) => {
+  const textura = (unidade: number, url: string) => {
     const t = gl.createTexture()!
     texturas.push(t)
-    const img = new Image()
-    img.decoding = 'async'
-    img.onload = () => {
+    const subir = (img: TexImageSource) => {
       if (!vivo) return
       gl.activeTexture(gl.TEXTURE0 + unidade)
       gl.bindTexture(gl.TEXTURE_2D, t)
@@ -311,14 +320,25 @@ export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: 
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-      gl.useProgram(tela)
-      gl.uniform1i(ut(nome), unidade)
       carregadas++
+      if ('close' in img) img.close()
     }
-    img.src = url
+    // o decode do WebP de 1536 px na thread principal custava ~0,5 s num computador fraco: o createImageBitmap
+    // decodifica fora dela. Sem ele (ou se falhar), cai no <img> de antes
+    const comImagem = () => {
+      const img = new Image()
+      img.decoding = 'async'
+      img.onload = () => subir(img)
+      img.src = url
+    }
+    if (typeof createImageBitmap !== 'function') return comImagem()
+    fetch(url)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
+      .then((b) => createImageBitmap(b))
+      .then(subir, comImagem)
   }
-  textura(0, `${base}/lua/pedra-cor.webp`, 'uCor')
-  textura(1, `${base}/lua/pedra-altura.webp`, 'uAltura')
+  textura(0, `${base}/lua/pedra-cor.webp`)
+  textura(1, `${base}/lua/pedra-altura.webp`)
 
   const toque = matchMedia('(pointer: coarse)').matches
   const reduzir = matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -339,6 +359,20 @@ export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: 
   const sair = () => (luz.alvo = 0)
   addEventListener('pointermove', mover, { passive: true })
   document.documentElement.addEventListener('pointerleave', sair)
+
+  // Renderização sob demanda: (1) fora da área do vale (a camada vai uma tela além da seção) o laço não faz nada;
+  // (2) com tudo parado (sem rolagem, mouse ou toque há 1,5 s) o vale desenha 30 quadros por segundo em vez de 60:
+  // só o cintilar das estrelas e o grão se mexem, e a 30 quadros não se vê diferença. Qualquer gesto volta a 60 na
+  // hora, e a estrela cadente (um risco rápido) sempre sai a 60.
+  let atividade = performance.now()
+  const acordar = () => (atividade = performance.now())
+  const gestos = ['scroll', 'pointermove', 'pointerdown', 'wheel', 'touchstart', 'touchmove', 'keydown', 'resize'] as const
+  for (const e of gestos) addEventListener(e, acordar, { passive: true })
+  let perto = true
+  const io = new IntersectionObserver(([e]) => (perto = !!e?.isIntersecting), { rootMargin: '130% 0px 130% 0px' })
+  io.observe(secao)
+  // a estrela cadente do shader: um risco curto a cada 9 s (ver `cadente`), ativo no começo de cada período
+  const cadenteAtiva = (tempo: number) => (tempo / 9) % 1 < 0.09
 
   let W = 1
   let H = 1
@@ -368,11 +402,49 @@ export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: 
     return k * k * (3 - 2 * k)
   }
   const foco = 1 / Math.tan((52 * Math.PI) / 360)
+  // o programa só é usado depois que o driver terminou de compilar; só então se pergunta pelos erros e pelos
+  // uniforms (perguntar antes faria a thread esperar)
+  let programaPronto = false
+  let avisou = false
+  let resolverPronta = () => {}
+  const pronta = new Promise<void>((ok) => (resolverPronta = ok))
+  const finalizar = () => {
+    for (const s of shaders) if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s))
+    if (!gl.getProgramParameter(tela, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(tela))
+    gl.useProgram(tela)
+    gl.uniform1i(ut('uCor'), 0)
+    gl.uniform1i(ut('uAltura'), 1)
+  }
   const quadro = (agora: number) => {
     id = requestAnimationFrame(quadro)
+    if (!programaPronto) {
+      if (paralela && !gl.getProgramParameter(tela, paralela.COMPLETION_STATUS_KHR)) return
+      finalizar()
+      programaPronto = true
+    }
+    if (!avisou && carregadas >= 2) {
+      avisou = true
+      resolverPronta()
+    }
+    if (!perto) {
+      // longe do vale: nada a desenhar
+      canvas.style.visibility = 'hidden'
+      presenca = 0
+      farois.forEach((fa, k) => {
+        if ((mostra[k] ?? 0) !== 0) {
+          mostra[k] = 0
+          fa.rotulo.style.opacity = '0'
+        }
+      })
+      ultimo = agora
+      return
+    }
+    const quieto = canvas.style.visibility === 'visible' && agora - atividade > 1500 && !cadenteAtiva((agora / 1000) % 1000)
+    if (quieto && agora - ultimo < 29) return
     const dt = Math.min(0.1, Math.max(1 / 240, (agora - ultimo) / 1000))
     ultimo = agora
-    if (canvas.style.visibility === 'visible' && document.visibilityState === 'visible') {
+    // o medidor de desempenho só conta quadros a 60 (parado, a 30, ele baixaria a resolução sem motivo)
+    if (!quieto && canvas.style.visibility === 'visible' && document.visibilityState === 'visible') {
       media += (dt - media) * 0.05
       if (++contados > 90 && media > 1 / 30 && escala > teto * 0.75) {
         escala = Math.max(teto * 0.75, escala * 0.9)
@@ -486,9 +558,11 @@ export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: 
   }
   id = requestAnimationFrame(quadro)
 
-  return () => {
+  const parar = () => {
     vivo = false
     cancelAnimationFrame(id)
+    io.disconnect()
+    for (const e of gestos) removeEventListener(e, acordar)
     removeEventListener('pointermove', mover)
     removeEventListener('resize', tamanho)
     document.documentElement.removeEventListener('pointerleave', sair)
@@ -497,4 +571,5 @@ export function iniciarLua(canvas: HTMLCanvasElement, secao: HTMLElement, base: 
     gl.deleteBuffer(bufTela)
     gl.deleteProgram(tela)
   }
+  return { parar, pronta }
 }

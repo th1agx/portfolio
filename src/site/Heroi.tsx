@@ -120,6 +120,7 @@ export function Heroi() {
         ref={painel}
         className={s.painel}
         data-retrato
+        role="img"
         aria-label="Retrato de Thiago Antunes, metade humano e metade robô. O cursor revela a versão robô."
         onClick={() => gsap.to(inteiro, { current: inteiro.current > 0.5 ? 0 : 1, duration: 1.5, ease: 'expo.inOut', overwrite: true })}
       >

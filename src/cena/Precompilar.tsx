@@ -2,14 +2,18 @@
 
 import { useEffect } from 'react'
 import { useThree } from '@react-three/fiber'
-import type { Material, Object3D, Texture } from 'three'
+import { HalfFloatType, WebGLRenderTarget, type Material, type Object3D, type Texture } from 'three'
+import { sinalizar } from '@/site/fila'
 
 // O three.js só compila o shader de um material e só envia a textura para a placa na primeira vez que o
 // objeto é desenhado. Como cada projeto e cada trecho do túnel ficam escondidos até a vez deles, isso caía no
-// meio da rolagem (travadas de 0,5 a 1,5 s, medidas no build). Aqui, logo depois de a cena montar, tudo é
-// mostrado por um instante, compilado em paralelo (compileAsync usa KHR_parallel_shader_compile), as texturas
-// são enviadas, cada objeto volta ao estado em que estava e um quadro é desenhado.
-export function Precompilar() {
+// meio da rolagem (travadas de 0,4 a 1 s, medidas). Aqui, logo depois de a cena montar com TUDO dentro (inclusive
+// as imagens dos projetos, que chegam por último), os shaders compilam em paralelo (compileAsync usa
+// KHR_parallel_shader_compile), as texturas são enviadas uma por vez, com uma pausa entre elas para a página
+// continuar respondendo, e um quadro é desenhado fora da tela. No fim, avisa a fila (src/site/fila.ts).
+const pausa = () => new Promise<void>((ok) => setTimeout(ok, 0))
+
+export function Precompilar({ nome, post = false }: { nome: string; post?: boolean }) {
   const gl = useThree((s) => s.gl)
   const scene = useThree((s) => s.scene)
   const camera = useThree((s) => s.camera)
@@ -31,20 +35,38 @@ export function Precompilar() {
         }
       })
       try {
-        await gl.compileAsync(scene, camera)
-        if (vivo) texturas.forEach((t) => gl.initTexture(t))
+        const pedidos: Promise<unknown>[] = [gl.compileAsync(scene, camera)]
+        // Com pós-processamento (bloom), a cena é desenhada dentro de um render target, e o three.js põe isso na
+        // chave do programa: sem compilar também nesse modo, os shaders de verdade só compilavam no primeiro quadro
+        // visível (travada na rolagem). Qualquer render target com a mesma configuração dá a mesma chave.
+        if (post) {
+          const alvo = new WebGLRenderTarget(4, 4, { type: HalfFloatType })
+          const antes = gl.getRenderTarget()
+          gl.setRenderTarget(alvo)
+          pedidos.push(gl.compileAsync(scene, camera))
+          gl.setRenderTarget(antes)
+          Promise.all(pedidos).finally(() => alvo.dispose())
+        }
+        await Promise.all(pedidos)
+        for (const t of texturas) {
+          if (!vivo) break
+          gl.initTexture(t)
+          await pausa()
+        }
+        // um quadro com TUDO visível (inclusive o que está escondido até a vez dele): sobe a geometria para a placa
+        // e passa pelo pós-processamento. Fora da tela, mesmo com a cena parada (frameloop 'never'). Só depois cada
+        // objeto volta ao estado em que estava.
+        if (vivo) advance(performance.now())
       } finally {
         escondidos.forEach((o) => (o.visible = false))
       }
-      // o pós-processamento (bloom, vinheta) compila os próprios shaders no primeiro quadro: desenha um agora,
-      // ainda fora da tela, mesmo quando a cena está parada (frameloop 'never')
-      if (vivo) advance(performance.now())
+      sinalizar(nome)
     })
     return () => {
       vivo = false
       cancelAnimationFrame(id)
     }
-  }, [gl, scene, camera, advance])
+  }, [gl, scene, camera, advance, nome, post])
 
   return null
 }

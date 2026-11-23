@@ -23,6 +23,7 @@ import {
 } from 'three'
 import { projetos, imagensDaParede } from '@/content/projetos'
 import { trilhaTela } from './trilhaTela'
+import { Precompilar } from './Precompilar'
 
 // Os projetos como um mundo em profundidade, no modelo da página de trabalhos do sztanki.com (ver
 // docs/ENGENHARIA_REVERSA.md): cada projeto é uma capa com o brilho da própria imagem, posta numa grade de
@@ -30,6 +31,9 @@ import { trilhaTela } from './trilhaTela'
 // caminho que para 16 unidades na frente de cada capa e então atravessa para a próxima; a rolagem só diz onde
 // ela está no caminho. Atrás, uma parede de imagens desfocadas e azuladas espalhadas até 400 de fundura,
 // partículas correndo pelas linhas de uma grade e um céu azul com manchas de cor.
+
+// cor compartilhada das partículas brancas da grade (antes: um Color novo para cada uma das 150 mil)
+const BRANCO = new Color('#ffffff')
 
 const CEL_L = 18
 const CEL_A = 13.5
@@ -220,11 +224,18 @@ function Parede({ texturas, chegada }: { texturas: Texture[]; chegada: Ref }) {
     const ctx = canvas.getContext('2d')!
     const rects: number[][] = []
     texturas.forEach((t, i) => {
-      const im = t.image as HTMLImageElement
+      const im = t.image as CanvasImageSource & { width: number; height: number }
       const x = (i % cols) * CL
       const y = Math.floor(i / cols) * CA
       const s = Math.max(CL / im.width, CA / im.height)
+      ctx.save()
+      // a textura chega de cabeça para baixo (ver o carregamento em Mundo): desvira dentro da própria célula
+      if (t.userData.invertida) {
+        ctx.translate(0, 2 * y + CA)
+        ctx.scale(1, -1)
+      }
       ctx.drawImage(im, x + (CL - im.width * s) / 2, y + (CA - im.height * s) / 2, im.width * s, im.height * s)
+      ctx.restore()
       rects.push([(x + 16) / canvas.width, 1 - (y + CA - 16) / canvas.height, 480 / canvas.width, 352 / canvas.height])
     })
     const atlas = new CanvasTexture(canvas)
@@ -346,10 +357,21 @@ function Grade({ chegada }: { chegada: Ref }) {
     const cor = new Float32Array(total * 4)
     for (let i = 0; i < total; i++) {
       const f = faixas[i % faixas.length]!
-      pos.set([f.x, f.y, 0], i * 3)
-      dado.set([rnd(), (0.7 + rnd() * 0.6) / 360], i * 2)
-      const c = rnd() < 0.15 ? new Color('#ffffff') : f.cor
-      cor.set([c.r, c.g, c.b, 0.5 + rnd() * 0.5], i * 4)
+      // escrita direta nos arrays (sem alocar um array temporário por partícula); a ordem das chamadas a rnd()
+      // é a mesma de antes, então o resultado é idêntico
+      const p3 = i * 3
+      pos[p3] = f.x
+      pos[p3 + 1] = f.y
+      pos[p3 + 2] = 0
+      const p2 = i * 2
+      dado[p2] = rnd()
+      dado[p2 + 1] = (0.7 + rnd() * 0.6) / 360
+      const c = rnd() < 0.15 ? BRANCO : f.cor
+      const p4 = i * 4
+      cor[p4] = c.r
+      cor[p4 + 1] = c.g
+      cor[p4 + 2] = c.b
+      cor[p4 + 3] = 0.5 + rnd() * 0.5
     }
     const g = new BufferGeometry()
     g.setAttribute('position', new BufferAttribute(pos, 3))
@@ -434,7 +456,9 @@ function Matriz({ chegada }: { chegada: Ref }) {
       const dx = (k % 2) * passo * 0.5
       for (let x = 0; x < nx; x++)
         for (let y = 0; y < ny; y++) {
-          pos.set([-L / 2 + x * passo + dx, -A / 2 + y * passo, z], i * 3)
+          pos[i * 3] = -L / 2 + x * passo + dx
+          pos[i * 3 + 1] = -A / 2 + y * passo
+          pos[i * 3 + 2] = z
           col[i] = x + k * 1000
           i++
         }
@@ -505,8 +529,11 @@ function Poeira({ chegada }: { chegada: Ref }) {
     let s = 13
     const rnd = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646
     for (let i = 0; i < n; i++) {
-      pos.set([(rnd() - 0.5) * 180, (rnd() - 0.5) * 110, 30 - rnd() * 420], i * 3)
-      dado.set([rnd(), Math.pow(rnd(), 3)], i * 2)
+      pos[i * 3] = (rnd() - 0.5) * 180
+      pos[i * 3 + 1] = (rnd() - 0.5) * 110
+      pos[i * 3 + 2] = 30 - rnd() * 420
+      dado[i * 2] = rnd()
+      dado[i * 2 + 1] = Math.pow(rnd(), 3)
     }
     const g = new BufferGeometry()
     g.setAttribute('position', new BufferAttribute(pos, 3))
@@ -745,19 +772,32 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
   useEffect(() => {
     const loader = new TextureLoader()
     let vivo = true
-    Promise.all(
-      imagensDaParede.map(
-        (src) =>
-          new Promise<Texture>((ok) =>
-            loader.load(src, (t) => {
-              t.colorSpace = SRGBColorSpace
-              t.minFilter = LinearMipmapLinearFilter
-              t.anisotropy = gl.capabilities.getMaxAnisotropy()
-              ok(t)
-            }),
-          ),
-      ),
-    ).then((ts) => vivo && setTexturas(ts))
+    const aniso = gl.capabilities.getMaxAnisotropy()
+    const ajustar = (t: Texture) => {
+      t.colorSpace = SRGBColorSpace
+      t.minFilter = LinearMipmapLinearFilter
+      t.anisotropy = aniso
+      return t
+    }
+    // o decode de nove JPEGs de 2048 px na thread principal custava mais de 1 s num computador fraco. O
+    // createImageBitmap decodifica fora dela (e já entrega a imagem de cabeça para baixo, como o WebGL quer);
+    // sem ele, cai no TextureLoader de antes
+    const carregar = async (src: string): Promise<Texture> => {
+      try {
+        if (typeof createImageBitmap !== 'function') throw new Error('sem createImageBitmap')
+        const resp = await fetch(src)
+        if (!resp.ok) throw new Error(String(resp.status))
+        const bmp = await createImageBitmap(await resp.blob(), { imageOrientation: 'flipY' })
+        const t = new Texture(bmp)
+        t.flipY = false
+        t.userData.invertida = true
+        t.needsUpdate = true
+        return ajustar(t)
+      } catch {
+        return new Promise<Texture>((ok) => loader.load(src, (t) => ok(ajustar(t))))
+      }
+    }
+    Promise.all(imagensDaParede.map(carregar)).then((ts) => vivo && setTexturas(ts))
     return () => {
       vivo = false
     }
@@ -851,6 +891,9 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
             <Capa textura={texturas[i]!} largura={CEL_L} altura={CEL_A} fade={fades[i]!} chegada={chegada} aoClicar={() => abrir(i)} />
           </group>
         ))}
+      {/* só depois das imagens: a parede e as capas só existem quando as texturas chegam, e os shaders delas precisam
+          compilar antes de o visitante chegar (antes, compilavam no primeiro quadro visível: travada de ~1 s) */}
+      {texturas && <Precompilar nome="obras" />}
     </>
   )
 }

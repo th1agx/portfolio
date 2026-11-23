@@ -7,6 +7,7 @@ import { gsap } from 'gsap'
 import { Contato } from './Contato'
 import { iniciarAteAqui, pintarCartao } from '@/cena/ateAqui'
 import s from './site.module.css'
+import { agendar, aguardar } from './fila'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -96,6 +97,8 @@ export function Trajetoria() {
   const tunel = useRef<HTMLDivElement>(null)
   const progressoTunel = useRef(0)
   const [tunelAtivo, setTunelAtivo] = useState(false)
+  // o túnel e os cartões em WebGL só são criados quando o visitante chega perto (ou o navegador fica ocioso)
+  const [montarTunel, setMontarTunel] = useState(false)
 
   useEffect(() => {
     const el = secao.current
@@ -112,20 +115,53 @@ export function Trajetoria() {
     let cena: ReturnType<typeof iniciarAteAqui> = null
     const molduras = [...trilho.querySelectorAll<HTMLElement>('[data-cartao]')]
     // a fonte do site (Cabinet Grotesk 800 e 500) carregada antes de pintar os cartões
-    Promise.all([document.fonts.load("800 100px 'Cabinet Grotesk'"), document.fonts.load("500 40px 'Cabinet Grotesk'")]).then(() => {
-      if (!vivo || !tela.current) return
-      const fonte = "'Cabinet Grotesk', sans-serif"
-      const cartoes = molduras.map((m, i) => {
-        const e = ETAPAS[i]!
-        const largo = i % 2 === 0
-        return { el: m, imagem: pintarCartao(largo ? 1600 : 1200, largo ? 1000 : 900, e.ano, e.casa, e.titulo, fonte) }
-      })
-      cena = iniciarAteAqui(tela.current, trilho, cartoes, estado)
-      // sem WebGL, as molduras mostram a imagem parada
-      if (!cena) cartoes.forEach((c) => (c.el.style.backgroundImage = `url(${c.imagem.toDataURL('image/jpeg', 0.9)})`))
-      else molduras.forEach((m) => (m.dataset.gl = '1'))
+    // O túnel e os cartões entram na fila de montagem (src/site/fila.ts), um de cada vez, depois do retrato, do robô,
+    // do vale e dos projetos; se a tela chegar perto da cena antes disso, montam na hora.
+    const cancelarTunel = agendar({
+      nome: 'tunel',
+      ordem: 4,
+      el,
+      margem: '250% 0px',
+      rodar: () => {
+        setMontarTunel(true)
+        return aguardar('tunel', 15000)
+      },
     })
-    const quadro = (t: number) => cena?.desenhar(t * 1000)
+    const cancelarCartoes = agendar({
+      nome: 'ate-aqui',
+      ordem: 5,
+      el,
+      margem: '250% 0px',
+      rodar: async () => {
+        await Promise.all([document.fonts.load("800 100px 'Cabinet Grotesk'"), document.fonts.load("500 40px 'Cabinet Grotesk'")])
+        if (!vivo || !tela.current) return
+        const fonte = "'Cabinet Grotesk', sans-serif"
+        // um cartão por vez, com uma pausa entre eles (pintar os quatro de uma vez prendia a thread por centenas de ms)
+        const cartoes: { el: HTMLElement; imagem: HTMLCanvasElement }[] = []
+        for (let i = 0; i < molduras.length; i++) {
+          const e = ETAPAS[i]!
+          const largo = i % 2 === 0
+          cartoes.push({ el: molduras[i]!, imagem: pintarCartao(largo ? 1600 : 1200, largo ? 1000 : 900, e.ano, e.casa, e.titulo, fonte) })
+          await new Promise<void>((ok) => setTimeout(ok, 0))
+          if (!vivo || !tela.current) return
+        }
+        cena = iniciarAteAqui(tela.current, trilho, cartoes, estado)
+        // sem WebGL, as molduras mostram a imagem parada
+        if (!cena) cartoes.forEach((c) => (c.el.style.backgroundImage = `url(${c.imagem.toDataURL('image/jpeg', 0.9)})`))
+        else molduras.forEach((m) => (m.dataset.gl = '1'))
+      },
+    })
+    // Renderização sob demanda: o canvas dos cartões e da trilha só desenha enquanto o fundo desta cena está visível
+    // (alfa > 0) e a camada não foi coberta pelo furo; ao sair, desenha um último quadro, que limpa o canvas. Antes,
+    // ele limpava e lia o layout 60 vezes por segundo a página inteira, mesmo no topo e no contato.
+    let desenhando = false
+    const quadro = (t: number) => {
+      if (!cena) return
+      const quer = estado.alfa > 0.001 && camada.current!.style.visibility !== 'hidden'
+      if (quer && !desenhando) cena.retomar()
+      if (quer || desenhando) cena.desenhar(t * 1000)
+      desenhando = quer
+    }
     gsap.ticker.add(quadro)
     // cada texto entra com o bloco azul quando chega a 90 % da altura da tela (uma vez só)
     const revelarVisiveis = () => {
@@ -216,6 +252,8 @@ export function Trajetoria() {
     addEventListener('resize', remedir)
     return () => {
       vivo = false
+      cancelarTunel()
+      cancelarCartoes()
       st.kill()
       perto.kill()
       gsap.ticker.remove(revelarVisiveis)
@@ -232,7 +270,7 @@ export function Trajetoria() {
     <section ref={secao} className={s.trajetoria} aria-labelledby="trajetoria-titulo" data-tema="escuro" style={{ height: `${(TOTAL + 1) * 100}svh` }}>
       <div className={s.trajetoriaFixo} data-robo-cena>
         <div ref={tunel} className={s.tunelFundo} aria-label="Animação: o robô voa por um túnel até o contato">
-          <Tunel progresso={progressoTunel} ativo={tunelAtivo} />
+          {montarTunel && <Tunel progresso={progressoTunel} ativo={tunelAtivo} />}
         </div>
         <div ref={camada} className={s.estradaCamada} style={{ transformOrigin: `${CENTRO.x * 100}% ${CENTRO.y * 100}%`, ['--cx' as string]: `${CENTRO.x * 100}%`, ['--cy' as string]: `${CENTRO.y * 100}%` }}>
           <canvas ref={tela} className={s.ateCanvas} aria-hidden />

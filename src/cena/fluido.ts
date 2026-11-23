@@ -189,6 +189,22 @@ export class Fluido {
     return this.tinta.ler.texture
   }
 
+  /**
+   * Compila os shaders do fluido em paralelo (sem travar a thread principal) antes do primeiro quadro. Eles rodam
+   * dentro de render targets, e o three.js põe isso na chave do programa: por isso a compilação é pedida com um
+   * render target ativo, para o programa pronto ser o mesmo que o desenho vai usar.
+   */
+  compilar(): Promise<void> {
+    const antes = this.gl.getRenderTarget()
+    this.gl.setRenderTarget(this.vel.ler)
+    const pedidos = Object.values(this.materiais).map((m) => {
+      this.quadro.material = m
+      return this.gl.compileAsync(this.cena, this.camera)
+    })
+    this.gl.setRenderTarget(antes)
+    return Promise.all(pedidos).then(() => undefined)
+  }
+
   tamanho(larguraTela: number, alturaTela: number) {
     this.w = Math.max(16, Math.round(larguraTela * this.op.resolucao))
     this.h = Math.max(16, Math.round(alturaTela * this.op.resolucao))

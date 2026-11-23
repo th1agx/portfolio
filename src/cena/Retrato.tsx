@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { Color, LinearFilter, ShaderMaterial, SRGBColorSpace, TextureLoader, type Mesh } from 'three'
 import { Fluido } from './fluido'
 import { gsap } from 'gsap'
 import { arquivo } from '@/content/caminho'
+import { sinalizar } from '@/site/fila'
 
 // O topo como o do landonorris.com (docs/ENGENHARIA_REVERSA.md): o Thiago recortado, sem fundo, sobre a página
 // clara, num plano com relevo que gira de leve com o mouse. O cursor deixa uma mancha que revela, por baixo, a
@@ -117,8 +118,8 @@ const fragmento = /* glsl */ `
   }
 `
 
-function Plano({ alvo, inteiro }: { alvo: { current: HTMLDivElement | null }; inteiro: { current: number } }) {
-  const { size, viewport, gl } = useThree()
+function Plano({ alvo, inteiro, aoPronto, pronto }: { alvo: { current: HTMLDivElement | null }; inteiro: { current: number }; aoPronto: () => void; pronto: boolean }) {
+  const { size, viewport, gl, scene, camera } = useThree()
   const malha = useRef<Mesh>(null)
   const [humano, robo, aura] = useLoader(TextureLoader, [arquivo('/retrato/humano.webp'), arquivo('/retrato/robo.webp'), arquivo('/retrato/aura.png')])
   for (const t of [humano!, robo!]) {
@@ -161,10 +162,28 @@ function Plano({ alvo, inteiro }: { alvo: { current: HTMLDivElement | null }; in
   const cursor = useRef({ x: 0.5, y: 0.5, px: 0.5, py: 0.5, dentro: false, movido: 0, mexendo: true, inicio: performance.now(), ocioso: -1 })
   const giro = useRef({ x: 0, y: 0 })
 
+  // Antes do primeiro quadro, os shaders do retrato e do fluido compilam em paralelo (compileAsync): a thread
+  // principal fica livre e o retrato desenha de uma vez, em vez de o navegador travar esperando o driver.
+  // Só então o canvas começa a renderizar (aoPronto) e a animação de entrada começa a contar.
+  useEffect(() => {
+    let vivo = true
+    Promise.all([gl.compileAsync(scene, camera), fluido.compilar()])
+      .catch(() => {})
+      .then(() => vivo && aoPronto())
+    return () => {
+      vivo = false
+    }
+  }, [gl, scene, camera, fluido, material, aoPronto])
+
+  const reveladoUmaVez = useRef(false)
   useEffect(() => {
     const reduzir = matchMedia('(prefers-reduced-motion: reduce)').matches
-    material.uniforms.uRevela!.value = reduzir ? 1 : 0
-    if (!reduzir) gsap.to(material.uniforms.uRevela!, { value: 1, duration: 1.1, ease: 'power3.out', delay: 0.25 })
+    if (!reveladoUmaVez.current) material.uniforms.uRevela!.value = reduzir ? 1 : 0
+    // a animação de entrada começa quando o canvas passa a desenhar (antes, o retrato nem estava na tela)
+    if (pronto && !reveladoUmaVez.current) {
+      reveladoUmaVez.current = true
+      if (!reduzir) gsap.to(material.uniforms.uRevela!, { value: 1, duration: 1.1, ease: 'power3.out', delay: 0.25 })
+    }
     const mover = (e: PointerEvent) => {
       const el = alvo.current
       if (!el) return
@@ -178,7 +197,7 @@ function Plano({ alvo, inteiro }: { alvo: { current: HTMLDivElement | null }; in
     }
     window.addEventListener('pointermove', mover, { passive: true })
     return () => window.removeEventListener('pointermove', mover)
-  }, [alvo, material])
+  }, [alvo, material, pronto])
 
   // tamanho: o plano cobre a vista com folga para o giro; a foto fica no meio, como o rosto do Lando
   useEffect(() => {
@@ -245,7 +264,13 @@ function Plano({ alvo, inteiro }: { alvo: { current: HTMLDivElement | null }; in
     k.py = y
   }
 
+  const primeiroQuadro = useRef(false)
   useFrame((estado, delta) => {
+    // o primeiro quadro do retrato está na tela: libera o resto da página para montar (src/site/fila.ts)
+    if (!primeiroQuadro.current) {
+      primeiroQuadro.current = true
+      requestAnimationFrame(() => requestAnimationFrame(() => sinalizar('retrato')))
+    }
     passo(performance.now(), Math.min(delta, 1 / 30))
     material.uniforms.uTempo!.value = estado.clock.elapsedTime
     material.uniforms.uInteiro!.value = inteiro.current
@@ -272,6 +297,9 @@ function Plano({ alvo, inteiro }: { alvo: { current: HTMLDivElement | null }; in
 export default function RetratoCena({ inteiro }: { inteiro: { current: number } }) {
   const raiz = useRef<HTMLDivElement>(null)
   const [visivel, setVisivel] = useState(true)
+  // o canvas só começa a desenhar com os shaders já compilados (ver Plano)
+  const [pronto, setPronto] = useState(false)
+  const aoPronto = useCallback(() => setPronto(true), [])
   useEffect(() => {
     const el = raiz.current
     if (!el) return
@@ -284,12 +312,12 @@ export default function RetratoCena({ inteiro }: { inteiro: { current: number } 
       <Canvas
         // o painel viaja encolhendo (transform): o tamanho vem do elemento, não da caixa já encolhida
         resize={{ offsetSize: true }}
-        frameloop={visivel ? 'always' : 'never'}
+        frameloop={visivel && pronto ? 'always' : 'never'}
         dpr={[1, 1.75]}
         camera={{ fov: 30, position: [0, 0, 10], near: 1, far: 40 }}
         gl={{ antialias: true, alpha: true, premultipliedAlpha: true }}
       >
-        <Plano alvo={raiz} inteiro={inteiro} />
+        <Plano alvo={raiz} inteiro={inteiro} aoPronto={aoPronto} pronto={pronto} />
       </Canvas>
     </div>
   )

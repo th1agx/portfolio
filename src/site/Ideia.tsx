@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import s from './site.module.css'
 import { iniciarLua } from '@/cena/lua'
 import { arquivo } from '@/content/caminho'
+import { agendar } from './fila'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -33,9 +34,33 @@ export function Ideia() {
 
   // o fundo lunar (chão de pedra do orchestrated), no lugar do fundo branco, com os faróis das camadas
   useEffect(() => {
-    if (!lua.current || !secao.current) return
+    const canvas = lua.current
+    const el = secao.current
+    if (!canvas || !el) return
     const farois = FAROIS.map((f, i) => ({ x: f.x, z: f.z, rotulo: rotulos.current[i]! })).filter((f) => f.rotulo)
-    return iniciarLua(lua.current, secao.current, arquivo(''), farois)
+    let parar: (() => void) | null = null
+    // entra na fila de montagem depois do retrato e do robô (src/site/fila.ts); se a tela chegar perto do vale
+    // antes disso, monta na hora
+    const cancelar = agendar({
+      nome: 'lua',
+      // o vale é grande e começa onde o herói termina: vem antes do robô (que é pequeno) e, se o visitante começar
+      // a rolar antes da vez dele, monta na hora (margem 0: o vale começa exatamente no fim da primeira tela)
+      ordem: 1,
+      el,
+      // margem negativa: o vale começa colado no fim da primeira tela, e o IntersectionObserver conta elemento
+      // encostado na borda como visível (com 0px montaria já no carregamento)
+      margem: '-2% 0px',
+      rodar: () => {
+        const r = iniciarLua(canvas, el, arquivo(''), farois)
+        parar = r.parar
+        // pronta = programa compilado e texturas na placa; se algo falhar, não segura a fila por mais de 6 s
+        return Promise.race([r.pronta, new Promise<void>((ok) => setTimeout(ok, 6000))])
+      },
+    })
+    return () => {
+      cancelar()
+      parar?.()
+    }
   }, [])
 
   useEffect(() => {

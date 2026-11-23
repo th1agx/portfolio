@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Lightformer } from '@react-three/drei'
-import { Group, OrthographicCamera } from 'three'
+import { BufferGeometry, DoubleSide, Group, HalfFloatType, Mesh, MeshBasicMaterial, OrthographicCamera, PerspectiveCamera, PlaneGeometry, PMREMGenerator, Scene, WebGLCubeRenderTarget, type Material, type WebGLRenderTarget } from 'three'
 import { RoboAgente, type AcaoRobo } from './RoboAgente'
+import { sinalizar } from '@/site/fila'
 
 // O robô guia: pequeno, numa camada transparente por cima da página. Ele voa de um ponto marcado no
 // conteúdo (elementos com data-robo) para o próximo conforme a rolagem e, ao chegar, faz a ação daquele
@@ -36,10 +37,12 @@ type Interacao = {
   ancoraAtual: Ancora | null
 }
 type Dom = { alvo: HTMLButtonElement | null; balao: HTMLDivElement | null; cursor: HTMLDivElement | null }
+// o que o robô diz ao renderizador: está na tela neste quadro / estava no anterior
+type Desenho = { visivel: boolean; anterior: boolean }
 
 const ALTURA = 72 // altura do robô na tela, em px, com escala 1
 
-function Robo({ ancoras, inter, dom }: { ancoras: { current: Ancora[] }; inter: { current: Interacao }; dom: { current: Dom } }) {
+function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }; inter: { current: Interacao }; dom: { current: Dom }; desenho: { current: Desenho } }) {
   const grupo = useRef<Group>(null)
   const acao = useRef<AcaoRobo>('acenar')
   const olhar = useRef({ x: 0, y: 0 })
@@ -194,6 +197,7 @@ function Robo({ ancoras, inter, dom }: { ancoras: { current: Ancora[] }; inter: 
     g.rotation.set(0, 0.25, inclina.current)
     const visivel = pos.current.y > -vh * 0.5 && pos.current.y < vh * 1.4 && !document.documentElement.dataset.tunel && !folga
     g.visible = visivel
+    desenho.current.visivel = visivel
 
     // 5. DOM que acompanha o robô: área clicável, balão de fala e o cursor carregado
     const d = dom.current
@@ -222,6 +226,100 @@ function Robo({ ancoras, inter, dom }: { ancoras: { current: Ancora[] }; inter: 
   )
 }
 
+// Renderização sob demanda: a lógica do robô (posição, ações, DOM) segue rodando a cada quadro, mas a placa de
+// vídeo só desenha quando ele está na tela. Ao sumir (projetos, túnel, fora do quadro), desenha um último quadro
+// vazio para limpar o canvas. Voltou a aparecer, o próximo quadro já desenha (a decisão é do mesmo quadro).
+function Renderizador({ desenho }: { desenho: { current: Desenho } }) {
+  useFrame(({ gl, scene, camera }) => {
+    const d = desenho.current
+    if (d.visivel || d.anterior) gl.render(scene, camera)
+    d.anterior = d.visivel
+  }, 1)
+  return null
+}
+
+// Compila os shaders do robô em paralelo (compileAsync) antes do primeiro quadro; o canvas só começa a desenhar
+// quando termina, e a fila (src/site/fila.ts) só segue para a próxima cena depois disso.
+function Aquecer({ aoPronto }: { aoPronto: () => void }) {
+  const gl = useThree((s) => s.gl)
+  const scene = useThree((s) => s.scene)
+  const get = useThree((s) => s.get)
+  useEffect(() => {
+    let vivo = true
+    // a câmera é a ortográfica da CameraTela (o efeito dela roda antes deste): o three.js põe o tipo de câmera
+    // na chave do programa, então compilar com a câmera padrão faria o primeiro quadro compilar tudo de novo
+    gl.compileAsync(scene, get().camera)
+      .catch(() => {})
+      .then(() => vivo && aoPronto())
+    return () => {
+      vivo = false
+    }
+  }, [gl, scene, get, aoPronto])
+  return null
+}
+
+// O Environment do drei desenha o cubemap de luz de forma síncrona assim que monta, e o shader dos Lightformers
+// levava ~0,7 s para compilar com a thread principal parada esperando. Aqui esse mesmo shader (mesmo material, mesmo
+// tipo de render target, mesma câmera: o three.js põe tudo isso na chave do programa) compila em paralelo ANTES de o
+// Environment existir; quando termina, o cubemap sai em milissegundos.
+function PreLuz({ aoPronto }: { aoPronto: () => void }) {
+  const gl = useThree((s) => s.gl)
+  useEffect(() => {
+    let vivo = true
+    const cena = new Scene()
+    const material = new MeshBasicMaterial({ toneMapped: false, side: DoubleSide })
+    const malha = new Mesh(new PlaneGeometry(1, 1), material)
+    cena.add(malha)
+    const alvo = new WebGLCubeRenderTarget(4)
+    alvo.texture.type = HalfFloatType
+    const antes = gl.getRenderTarget()
+    gl.setRenderTarget(alvo)
+    const pedidos: Promise<unknown>[] = [gl.compileAsync(cena, new PerspectiveCamera(90, 1, 0.1, 1000))]
+    // O que de fato travava era o pré-filtro do ambiente (PMREM): na primeira vez que um material usa o cubemap, o
+    // three.js converte-o com dois shaders (CubemapToCubeUV e a convolução GGX) e espera o driver compilar. Aqui os
+    // mesmos shaders compilam em paralelo antes (o PMREMGenerator interno do renderer reaproveita o programa do cache).
+    // Usa campos internos do three.js (versão fixa no package-lock); se mudarem, só deixa de adiantar e volta ao
+    // comportamento de antes.
+    let gerador: { dispose: () => void } | null = null
+    try {
+      const g = new PMREMGenerator(gl) as unknown as {
+        compileCubemapShader: () => void
+        _setSize: (n: number) => void
+        _allocateTargets: () => WebGLRenderTarget
+        _ggxMaterial: Material | null
+        dispose: () => void
+      }
+      gerador = g
+      g._setSize(128)
+      const rt = g._allocateTargets() // cria os materiais da convolução
+      g.compileCubemapShader()
+      if (g._ggxMaterial) {
+        const plana = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
+        gl.setRenderTarget(rt)
+        pedidos.push(gl.compileAsync(new Mesh(new BufferGeometry(), g._ggxMaterial), plana))
+      }
+      rt.dispose()
+    } catch {
+      /* sem adiantar */
+    }
+    gl.setRenderTarget(antes)
+    Promise.all(pedidos)
+      .catch(() => {})
+      .then(() => {
+        malha.geometry.dispose()
+        alvo.dispose()
+        if (vivo) aoPronto()
+      })
+    return () => {
+      vivo = false
+      // os materiais do gerador seguram o programa no cache enquanto o robô monta; só saem junto com a cena
+      const g = gerador
+      if (g) setTimeout(() => g.dispose(), 30000)
+    }
+  }, [gl, aoPronto])
+  return null
+}
+
 function CameraTela() {
   const { size, set } = useThree()
   const camera = useMemo(() => new OrthographicCamera(0, 1, 0, -1, -2000, 2000), [])
@@ -248,6 +346,14 @@ export default function Guia() {
     ancoraAtual: null,
   })
   const dom = useRef<Dom>({ alvo: null, balao: null, cursor: null })
+  const desenho = useRef<Desenho>({ visivel: false, anterior: false })
+  const [pronto, setPronto] = useState(false)
+  const [luzOk, setLuzOk] = useState(false)
+  const aoLuz = useCallback(() => setLuzOk(true), [])
+  const aoPronto = useCallback(() => {
+    setPronto(true)
+    sinalizar('guia')
+  }, [])
 
   useEffect(() => {
     const ler = () => {
@@ -298,15 +404,23 @@ export default function Guia() {
   return (
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: 40, pointerEvents: 'none' }} aria-hidden>
-        <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: true }} style={{ pointerEvents: 'none' }}>
+        <Canvas dpr={[1, 2]} frameloop={pronto ? 'always' : 'never'} gl={{ antialias: true, alpha: true }} style={{ pointerEvents: 'none' }}>
           <CameraTela />
+          <Renderizador desenho={desenho} />
+          <PreLuz aoPronto={aoLuz} />
           <hemisphereLight args={['#ffffff', '#9a9a92', 1.2]} />
           <directionalLight position={[300, 600, 800]} intensity={2} />
-          <Environment resolution={128} frames={1}>
-            <Lightformer form="rect" intensity={2.5} position={[-2, 4, 5]} scale={[6, 4, 1]} />
-            <Lightformer form="rect" intensity={1} position={[4, 0, 3]} scale={[3, 6, 1]} />
-          </Environment>
-          <Robo ancoras={ancoras} inter={inter} dom={dom} />
+          {/* o ambiente e o robô só montam com o shader da luz já compilado (PreLuz); o Aquecer compila o robô */}
+          {luzOk && (
+            <>
+              <Environment resolution={128} frames={1}>
+                <Lightformer form="rect" intensity={2.5} position={[-2, 4, 5]} scale={[6, 4, 1]} />
+                <Lightformer form="rect" intensity={1} position={[4, 0, 3]} scale={[3, 6, 1]} />
+              </Environment>
+              <Aquecer aoPronto={aoPronto} />
+              <Robo ancoras={ancoras} inter={inter} dom={dom} desenho={desenho} />
+            </>
+          )}
         </Canvas>
       </div>
       <button

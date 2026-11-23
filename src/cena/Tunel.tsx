@@ -425,7 +425,7 @@ export default function Tunel({ progresso, ativo = true }: { progresso: { curren
         <Corredor progresso={progresso} />
         <ParedeDeSimbolos />
         <Sala />
-        <Precompilar />
+        <Precompilar nome="tunel" post />
       </Suspense>
       <Boca />
       <Poeira />

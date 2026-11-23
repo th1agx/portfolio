@@ -7,6 +7,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { projetos } from '@/content/projetos'
 import s from './site.module.css'
+import { agendar, aguardar } from './fila'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -30,6 +31,9 @@ export function Projetos() {
   const [ativo, setAtivo] = useState(-1)
   const [aberto, setAberto] = useState(-1)
   const [saindo, setSaindo] = useState(false)
+  // a cena 3D só monta quando o visitante chega perto (ou o navegador fica ocioso), para o custo de compilar os
+  // shaders e subir as texturas não cair no carregamento da página
+  const [montar, setMontar] = useState(false)
   const fechar = useRef<HTMLButtonElement>(null)
   const voltarPara = useRef<HTMLElement | null>(null)
 
@@ -75,7 +79,20 @@ export function Projetos() {
         if (legenda) legenda.style.opacity = p0(self.progress)
       },
     })
+    // entra na fila de montagem depois do retrato, do robô e do vale (src/site/fila.ts); se a tela chegar perto
+    // antes disso, monta na hora. Pronto = shaders compilados e texturas na placa (Precompilar)
+    const cancelar = agendar({
+      nome: 'obras',
+      ordem: 3,
+      el,
+      margem: '250% 0px',
+      rodar: () => {
+        setMontar(true)
+        return aguardar('obras', 15000)
+      },
+    })
     return () => {
+      cancelar()
       st.kill()
       entra.kill()
       sai.kill()
@@ -125,7 +142,7 @@ export function Projetos() {
       <div className={s.obrasPreso}>
         {/* tudo o que está preso à tela aparece e some junto: nenhuma borda da caixa fica à vista */}
         <div className={s.obrasCena} data-obras-cena>
-          <Obras progresso={progresso} entrada={entrada} junta={junta} ativo={setAtivo} abrir={abrir} />
+          {montar && <Obras progresso={progresso} entrada={entrada} junta={junta} ativo={setAtivo} abrir={abrir} />}
           <div className={s.obrasVinheta} data-obras-vinheta aria-hidden />
           <div className={s.obrasPainel} data-obras-painel aria-live="polite">
             {p && (
