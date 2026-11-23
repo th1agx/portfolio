@@ -5,6 +5,7 @@ import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import s from './site.module.css'
 import { iniciarLua } from '@/cena/lua'
+import { vigiarContexto } from '@/cena/contexto'
 import { arquivo } from '@/content/caminho'
 import { agendar, sinalizar } from './fila'
 
@@ -39,6 +40,7 @@ export function Ideia() {
     if (!canvas || !el) return
     const farois = FAROIS.map((f, i) => ({ x: f.x, z: f.z, rotulo: rotulos.current[i]! })).filter((f) => f.rotulo)
     let parar: (() => void) | null = null
+    let soltarContexto: (() => void) | null = null
     // entra na fila de montagem depois do retrato e do robô (src/site/fila.ts); se a tela chegar perto do vale
     // antes disso, monta na hora
     const cancelar = agendar({
@@ -53,6 +55,11 @@ export function Ideia() {
       rodar: () => {
         const r = iniciarLua(canvas, el, arquivo(''), farois)
         parar = r.parar
+        // contexto WebGL perdido e devolvido pelo navegador: o vale é montado de novo no mesmo canvas
+        soltarContexto = vigiarContexto(canvas, () => {
+          parar?.()
+          parar = iniciarLua(canvas, el, arquivo(''), farois).parar
+        })
         // a tela de abertura marca o vale como pronto (src/site/Abertura.tsx)
         r.pronta.then(() => sinalizar('lua'))
         // pronta = programa compilado e texturas na placa; se algo falhar, não segura a fila por mais de 6 s
@@ -61,6 +68,7 @@ export function Ideia() {
     })
     return () => {
       cancelar()
+      soltarContexto?.()
       parar?.()
     }
   }, [])

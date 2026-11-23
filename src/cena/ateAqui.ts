@@ -163,7 +163,7 @@ void main() {
   saida = vec4(vec3(0.5, 0.65, 1.0) * a, 0.0);
 }`
 
-export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, cartoes: CartaoTrilha[], estado: { alfa: number; centro: { x: number; y: number } }) {
+export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, cartoes: CartaoTrilha[], estado: { alfa: number; centro: { x: number; y: number }; recolhe?: number }) {
   const gl = canvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true })
   if (!gl || gl.isContextLost()) return null
   const compilar = (v: string, f: string) => {
@@ -365,12 +365,15 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
     let cabeca = 0
     let melhor = 1e9
     const tam = caminho.length
+    // a trilha é puxada para cima e some: a ponta de baixo sobe até sair da tela (recolhe 0 .. 1). Perto da ponta ela afina
+    const recolhe = estado.recolhe ?? 0
+    const corte = recolhe > 0.001 ? H * (1.02 - recolhe * 1.3) : Infinity
     // o trecho contínuo que passa pela tela (sem pular pontos: a faixa de triângulos não pode ter buraco)
     let i0 = -1
     let i1 = -1
     for (let i = 0; i < tam; i++) {
       const y = caminho[i]!.y + topo
-      if (y > -160 && y < H + 160) {
+      if (y > -160 && y < H + 160 && y < corte) {
         if (i0 < 0) i0 = i
         i1 = i
       }
@@ -380,7 +383,7 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
       if (i > 0) ao += Math.hypot(p.x - caminho[i - 1]!.x, p.y - caminho[i - 1]!.y)
       const y = p.y + topo
       // o ponto da vez: onde a trilha cruza o meio da altura da tela
-      const dm = Math.abs(y - H * estado.centro.y)
+      const dm = Math.abs(y - Math.min(H * estado.centro.y, corte - 30))
       if (dm < melhor) {
         melhor = dm
         cabeca = ao / comprimento
@@ -388,13 +391,17 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
       if (i < i0 || i > i1) continue
       const a = caminho[Math.max(0, i - 1)]!
       const b = caminho[Math.min(tam - 1, i + 1)]!
+      const fp = Number.isFinite(corte) ? Math.min(1, Math.max(0, (corte - y) / 220)) : 1
+      const m = meiaLargura * (0.1 + 0.9 * fp * fp * (3 - 2 * fp))
       let nx = -(b.y - a.y)
       let ny = b.x - a.x
       const l = Math.hypot(nx, ny) || 1
       nx /= l
       ny /= l
       const t = ao / comprimento
-      vis.push(p.x + nx * meiaLargura, y + ny * meiaLargura, -1, t, p.x - nx * meiaLargura, y - ny * meiaLargura, 1, t)
+      // o lado vale -1..1 na largura cheia; ao afinar, vale só a fração, e o brilho ao redor continua com a mesma medida em px
+      const lado = m / meiaLargura
+      vis.push(p.x + nx * m, y + ny * m, -lado, t, p.x - nx * m, y - ny * m, lado, t)
     }
     if (vis.length >= 16) {
       if (buf.length < vis.length) buf = new Float32Array(vis.length * 2)

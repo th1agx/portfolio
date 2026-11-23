@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useLoader } from '@react-three/fiber'
+import { useRecuperacao } from './contexto'
 import { Precompilar } from './Precompilar'
 import { Environment, Lightformer } from '@react-three/drei'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
@@ -414,8 +415,10 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
 }
 
 export default function Tunel({ progresso, ativo = true }: { progresso: { current: number }; ativo?: boolean }) {
+  const rec = useRecuperacao()
   return (
-    <Canvas frameloop={ativo ? 'always' : 'never'} dpr={[1, 1.5]} camera={{ fov: 58, near: 0.1, far: 140, position: [-2.6, -0.8, 18] }} onCreated={({ scene }) => (scene.fog = new Fog('#050508', 8, 46))}>
+    <Canvas key={rec.chave} frameloop={ativo ? 'always' : 'never'} dpr={[1, 1.5]} camera={{ fov: 58, near: 0.1, far: 140, position: [-2.6, -0.8, 18] }} onCreated={({ scene }) => (scene.fog = new Fog('#050508', 8, 46))}>
+      {rec.filho}
       <ambientLight intensity={0.35} />
       <directionalLight position={[3, 6, 5]} intensity={0.8} />
       <Environment resolution={128} frames={1}>

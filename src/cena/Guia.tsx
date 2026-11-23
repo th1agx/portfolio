@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { useRecuperacao } from './contexto'
 import { Environment, Lightformer } from '@react-three/drei'
 import { BufferGeometry, DoubleSide, Group, HalfFloatType, Mesh, MeshBasicMaterial, OrthographicCamera, PerspectiveCamera, PlaneGeometry, PMREMGenerator, Scene, WebGLCubeRenderTarget, type Material, type WebGLRenderTarget } from 'three'
 import { RoboAgente, type AcaoRobo } from './RoboAgente'
@@ -51,6 +52,8 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
   const inclina = useRef(0)
   // troca de âncora dentro de uma cena presa (de um cartão para o outro): um voo em arco, não um salto
   const vooPreso = useRef({ el: null as HTMLElement | null, inicio: -10, x: 0, y: 0 })
+  // entrada e saída das áreas sem robô (os projetos): um voo com tempo e arco, não uma perseguição que parece teletransporte
+  const vooFolga = useRef({ antes: false, inicio: -10, x: 0, y: 0 })
 
   const inicio = useRef(performance.now() / 1000)
   useFrame((_, dt) => {
@@ -174,6 +177,24 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
       alvoY = -120
       proxima = 'voar'
     }
+    // 3b. ao entrar ou sair da área sem robô, ele faz um voo de 1,6 s em arco, saindo de onde está e chegando ao destino
+    // (que continua a andar com a rolagem). Vale nos dois sentidos: descendo ele sai pelo canto, subindo ele volta
+    const vf = vooFolga.current
+    if (folga !== vf.antes) {
+      vf.antes = folga
+      vf.inicio = agora
+      vf.x = pos.current.x
+      vf.y = pos.current.y
+    }
+    const uf = Math.min(1, (agora - vf.inicio) / 1.6)
+    if (uf < 1 && !r.fase) {
+      const e = uf * uf * (3 - 2 * uf)
+      alvoX = vf.x + (alvoX - vf.x) * e
+      alvoY = vf.y + (alvoY - vf.y) * e - Math.sin(Math.PI * uf) * 90
+      proxima = 'voar'
+      emVoo = true
+      it.ancoraAtual = null
+    }
 
     // 4. movimento suave até o alvo
     const s = 1 - Math.exp(-(r.fase ? 6 : emVoo ? 16 : 9) * dt)
@@ -195,7 +216,7 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     g.scale.setScalar(tamanho)
     g.position.set(pos.current.x, -(pos.current.y - tamanho), 0)
     g.rotation.set(0, 0.25, inclina.current)
-    const visivel = pos.current.y > -vh * 0.5 && pos.current.y < vh * 1.4 && !document.documentElement.dataset.tunel && !folga
+    const visivel = pos.current.y > -vh * 0.5 && pos.current.y < vh * 1.4 && !document.documentElement.dataset.tunel && (!folga || uf < 1)
     g.visible = visivel
     desenho.current.visivel = visivel
 
@@ -401,10 +422,12 @@ export default function Guia() {
     if (alvo) document.getElementById(alvo)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  const rec = useRecuperacao()
   return (
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: 40, pointerEvents: 'none' }} aria-hidden>
-        <Canvas dpr={[1, 2]} frameloop={pronto ? 'always' : 'never'} gl={{ antialias: true, alpha: true }} style={{ pointerEvents: 'none' }}>
+        <Canvas key={rec.chave} dpr={[1, 2]} frameloop={pronto ? 'always' : 'never'} gl={{ antialias: true, alpha: true }} style={{ pointerEvents: 'none' }}>
+          {rec.filho}
           <CameraTela />
           <Renderizador desenho={desenho} />
           <PreLuz aoPronto={aoLuz} />

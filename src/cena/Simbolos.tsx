@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
+import { useRecuperacao } from './contexto'
 import { Environment, Lightformer } from '@react-three/drei'
 import { BufferGeometry, Color, InstancedMesh, MeshPhysicalMaterial, Object3D, Ray, Vector3 } from 'three'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
@@ -127,6 +128,7 @@ function Pecas({ corIndice, ativo }: { corIndice: number; ativo: { current: bool
 }
 
 export default function Simbolos() {
+  const rec = useRecuperacao()
   const [corIndice, setCorIndice] = useState(0)
   const [visivel, setVisivel] = useState(true)
   const raiz = useRef<HTMLDivElement>(null)
@@ -143,6 +145,7 @@ export default function Simbolos() {
   return (
     <div ref={raiz} style={{ position: 'absolute', inset: 0 }} onPointerEnter={() => (ativo.current = true)} onPointerLeave={() => (ativo.current = false)}>
       <Canvas
+        key={rec.chave}
         // o painel viaja encolhendo (transform): o tamanho vem do elemento, não da caixa já encolhida
         resize={{ offsetSize: true }}
         frameloop={visivel ? 'always' : 'never'}
@@ -152,6 +155,7 @@ export default function Simbolos() {
         onClick={() => setCorIndice((i) => i + 1)}
         style={{ cursor: 'pointer' }}
       >
+        {rec.filho}
         <color attach="background" args={['#161618']} />
         <hemisphereLight args={['#f4f4ff', '#25262b', 0.6]} />
         <directionalLight position={[-8, 12, 10]} intensity={2.2} />

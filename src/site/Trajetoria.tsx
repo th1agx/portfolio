@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { gsap } from 'gsap'
 import { Contato } from './Contato'
 import { iniciarAteAqui, pintarCartao } from '@/cena/ateAqui'
+import { vigiarContexto } from '@/cena/contexto'
 import s from './site.module.css'
 import { agendar, aguardar, sinalFeito } from './fila'
 
@@ -111,8 +112,9 @@ export function Trajetoria() {
     // a faixa alcança a posição da rolagem com 0,6 s de atraso: é essa velocidade que estica os cartões
     const andar = gsap.quickTo(trilho, 'y', { duration: 0.6, ease: 'power3' })
     // o canvas da trilha e dos cartões (src/cena/ateAqui.ts); os cartões são pintados com a fonte do site
-    const estado = { alfa: 0, centro: CENTRO }
+    const estado = { alfa: 0, centro: CENTRO, recolhe: 0 }
     let cena: ReturnType<typeof iniciarAteAqui> = null
+    let soltarContexto: (() => void) | null = null
     const molduras = [...trilho.querySelectorAll<HTMLElement>('[data-cartao]')]
     // a fonte do site (Cabinet Grotesk 800 e 500) carregada antes de pintar os cartões
     // O túnel e os cartões entram na fila de montagem (src/site/fila.ts), um de cada vez, depois do retrato, do robô,
@@ -149,6 +151,14 @@ export function Trajetoria() {
           if (!vivo || !tela.current) return
         }
         cena = iniciarAteAqui(tela.current, trilho, cartoes, estado)
+        // contexto WebGL perdido e devolvido pelo navegador: a trilha e os cartões são refeitos no mesmo canvas
+        soltarContexto = vigiarContexto(tela.current, () => {
+          if (!vivo || !tela.current) return
+          soltarContexto?.()
+      cena?.destruir()
+          cena = iniciarAteAqui(tela.current, trilho, cartoes, estado)
+          desenhando = false
+        })
         // sem WebGL, as molduras mostram a imagem parada
         if (!cena) cartoes.forEach((c) => (c.el.style.backgroundImage = `url(${c.imagem.toDataURL('image/jpeg', 0.9)})`))
         else molduras.forEach((m) => (m.dataset.gl = '1'))
@@ -187,6 +197,8 @@ export function Trajetoria() {
       const telas = pe * ESTRADA
       // o fundo e a trilha aparecem por cima do fim dos projetos (a linha deles está no mesmo lugar)
       estado.alfa = passo(0, 0.3, telas)
+      // a trilha que vem das Obras é puxada para cima e some, em vez de descer entre os cartões
+      estado.recolhe = passo(0.1, 1.2, telas)
       camada.current!.style.backgroundColor = `rgba(2, 3, 26, ${estado.alfa.toFixed(3)})`
       trilho.style.opacity = passo(0.05, 0.3, telas).toFixed(3)
       const comeca = 0.2

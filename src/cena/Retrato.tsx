@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
+import { useRecuperacao } from './contexto'
 import { Color, LinearFilter, ShaderMaterial, SRGBColorSpace, TextureLoader, type Mesh } from 'three'
 import { Fluido } from './fluido'
 import { gsap } from 'gsap'
@@ -325,6 +326,7 @@ export default function RetratoCena({ inteiro }: { inteiro: { current: number } 
   // Com a tela de abertura por cima (src/site/Abertura.tsx), o retrato desenha só o primeiro quadro e espera: por baixo dela
   // ninguém o vê, e deixá-lo rodando gastava a placa de vídeo e acumulava tinta do passeio do cursor, que aparecia de uma vez
   // na troca. Quando a abertura sai, ele retoma com a tinta limpa
+  const rec = useRecuperacao()
   const [segurar, setSegurar] = useState(false)
   const aoPrimeiroQuadro = useCallback(() => {
     if (document.documentElement.dataset.abertura !== '1') return
@@ -341,6 +343,7 @@ export default function RetratoCena({ inteiro }: { inteiro: { current: number } 
   return (
     <div ref={raiz} style={{ position: 'absolute', inset: 0 }}>
       <Canvas
+        key={rec.chave}
         // o painel viaja encolhendo (transform): o tamanho vem do elemento, não da caixa já encolhida
         resize={{ offsetSize: true }}
         frameloop={visivel && pronto && !segurar ? 'always' : 'never'}
@@ -348,6 +351,7 @@ export default function RetratoCena({ inteiro }: { inteiro: { current: number } 
         camera={{ fov: 30, position: [0, 0, 10], near: 1, far: 40 }}
         gl={{ antialias: true, alpha: true, premultipliedAlpha: true }}
       >
+        {rec.filho}
         <Plano alvo={raiz} inteiro={inteiro} aoPronto={aoPronto} aoPrimeiroQuadro={aoPrimeiroQuadro} pronto={pronto} />
       </Canvas>
     </div>

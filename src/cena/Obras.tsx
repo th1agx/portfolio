@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { useRecuperacao } from './contexto'
 import {
   AdditiveBlending,
   BackSide,
@@ -929,6 +930,7 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
 
 export default function Obras({ progresso, entrada, junta, ativo, abrir }: { progresso: Ref; entrada: Ref; junta: Ref; ativo: (i: number) => void; abrir: (i: number) => void }) {
   const raiz = useRef<HTMLDivElement>(null)
+  const rec = useRecuperacao()
   const [visivel, setVisivel] = useState(false)
   useEffect(() => {
     const el = raiz.current
@@ -939,7 +941,8 @@ export default function Obras({ progresso, entrada, junta, ativo, abrir }: { pro
   }, [])
   return (
     <div ref={raiz} style={{ position: 'absolute', inset: 0 }}>
-      <Canvas frameloop={visivel ? 'always' : 'never'} dpr={[1, 2]} camera={{ fov: 50, near: 0.1, far: 1000, position: [-18, -6.75, 8] }} gl={{ antialias: true, alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
+      <Canvas key={rec.chave} frameloop={visivel ? 'always' : 'never'} dpr={[1, 2]} camera={{ fov: 50, near: 0.1, far: 1000, position: [-18, -6.75, 8] }} gl={{ antialias: true, alpha: true }} onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}>
+        {rec.filho}
         <Mundo progresso={progresso} chegada={entrada} junta={junta} ativo={ativo} abrir={abrir} />
       </Canvas>
     </div>
