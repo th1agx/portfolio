@@ -7,7 +7,7 @@ import { gsap } from 'gsap'
 import { Contato } from './Contato'
 import { iniciarAteAqui, pintarCartao } from '@/cena/ateAqui'
 import s from './site.module.css'
-import { agendar, aguardar } from './fila'
+import { agendar, aguardar, sinalFeito } from './fila'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -133,6 +133,9 @@ export function Trajetoria() {
       el,
       margem: '250% 0px',
       rodar: async () => {
+        // a trilha começa na linha das Obras (src/cena/trilhaTela.ts): se a visita pulou direto até aqui, espera as Obras
+        // montarem e publicarem essa linha (no máximo 12 s), senão a trilha nasce como uma reta
+        if (!sinalFeito('obras')) await aguardar('obras', 12000)
         await Promise.all([document.fonts.load("800 100px 'Cabinet Grotesk'"), document.fonts.load("500 40px 'Cabinet Grotesk'")])
         if (!vivo || !tela.current) return
         const fonte = "'Cabinet Grotesk', sans-serif"

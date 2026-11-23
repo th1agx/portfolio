@@ -14,6 +14,7 @@ import {
   CatmullRomCurve3,
   Color,
   LinearMipmapLinearFilter,
+  PerspectiveCamera,
   ShaderMaterial,
   SRGBColorSpace,
   Texture,
@@ -768,6 +769,34 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
   const cima = useMemo(() => new Vector3(0, 1, 0), [])
   const olharAtual = useRef(new Vector3(0, 0, -40))
   const ultimoAtivo = useRef(-1)
+
+  // A linha que o "Até aqui" continua é a vista de cima do caminho, na pose final da câmera. Ela só era calculada
+  // quando a câmera chegava ali de verdade (rolando devagar); quem pulava direto para a seção (barra de rolagem, âncora,
+  // máquina lenta que não alcança a câmera) ficava sem a curva e via uma reta no lugar. Aqui a pose final é calculada
+  // na hora de montar, e o cálculo ao vivo (abaixo) só a refina
+  useEffect(() => {
+    const fim = new Vector3()
+    caminho.getPointAt(1, fim)
+    fim.set(fim.x, fim.y + 8 + 102, fim.z + 45)
+    const cam = new PerspectiveCamera(50, size.width / size.height, 0.1, 1000)
+    cam.position.copy(fim)
+    cam.up.set(0, 0, 1)
+    cam.lookAt(fim.x, fim.y - 40, fim.z)
+    cam.updateMatrixWorld()
+    cam.updateProjectionMatrix()
+    const p = new Vector3()
+    const pts: { x: number; y: number }[] = []
+    for (let i = 0; i <= 90; i++) {
+      caminho.getPointAt(i / 90, p)
+      p.project(cam)
+      if (p.z < 1 && p.y > -1.6 && p.y < 1.6) pts.push({ x: ((p.x + 1) / 2) * size.width, y: ((1 - p.y) / 2) * size.height })
+    }
+    if (pts.length >= 2) {
+      trilhaTela.pontos = pts
+      trilhaTela.meia = (0.55 * size.height) / (2 * 110 * Math.tan((50 * Math.PI) / 360))
+      trilhaTela.versao++
+    }
+  }, [caminho, size.width, size.height])
 
   useEffect(() => {
     const loader = new TextureLoader()
