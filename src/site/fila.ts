@@ -8,14 +8,15 @@
 // pronta (sinal com o nome dela). Se o visitante chega perto de uma cena (a tela chega a `margem` dela), a cena
 // passa na frente da fila e monta na hora: o custo é o mesmo de antes, nunca pior.
 
-type Sinal = { p: Promise<void>; ok: () => void }
+type Sinal = { p: Promise<void>; ok: () => void; feito: boolean }
 const sinais = new Map<string, Sinal>()
 const sinal = (nome: string): Sinal => {
   let s = sinais.get(nome)
   if (!s) {
-    let ok = () => {}
-    const p = new Promise<void>((r) => (ok = r))
-    s = { p, ok }
+    let resolver = () => {}
+    const p = new Promise<void>((r) => (resolver = r))
+    const novo: Sinal = { p, feito: false, ok: () => ((novo.feito = true), resolver()) }
+    s = novo
     sinais.set(nome, s)
   }
   return s
@@ -23,6 +24,8 @@ const sinal = (nome: string): Sinal => {
 
 /** a cena `nome` terminou de preparar (shaders compilados, texturas na placa) */
 export const sinalizar = (nome: string) => sinal(nome).ok()
+/** o sinal de `nome` já chegou de verdade (não por tempo esgotado) */
+export const sinalFeito = (nome: string) => sinal(nome).feito
 /** espera o sinal de `nome`; se ele nunca vier (WebGL indisponível, erro), solta depois de `limite` ms */
 export const aguardar = (nome: string, limite = 8000) =>
   Promise.race([sinal(nome).p, new Promise<void>((r) => setTimeout(r, limite))])
@@ -66,11 +69,17 @@ const proxima = () => {
   const t = pendentes.find((x) => !x.iniciada)
   if (!t) return
   ocupado = true
-  momentoOcioso()
+  // com a tela de abertura por cima, o visitante ainda não está vendo nem mexendo em nada: as cenas que ela espera (o
+  // vale e o robô, ordem 1 e 2) correm sem esperar calma e escalonam pouco. As do resto da página (projetos, túnel,
+  // cartões) esperam a abertura sair e um momento ocioso, como sem ela: não há por que baixá-las antes
+  const comAbertura = document.documentElement.dataset.abertura === '1'
+  const pressa = comAbertura && t.ordem <= 1
+  ;(comAbertura && !pressa ? aguardar('abertura', 20000) : Promise.resolve())
+    .then(() => momentoOcioso(pressa ? 0 : 700))
     // a compilação de shaders agora roda em paralelo (sem prender a thread principal), então a próxima cena não
     // precisa esperar esta terminar: começa até 900 ms depois do início dela, o que escalona os trechos
     // síncronos (montar componentes, enviar texturas) sem atrasar o robô e o vale
-    .then(() => (t.iniciada ? undefined : Promise.race([executar(t), new Promise<void>((ok) => setTimeout(ok, 900))])))
+    .then(() => (t.iniciada ? undefined : Promise.race([executar(t), new Promise<void>((ok) => setTimeout(ok, pressa ? 150 : 900))])))
     .catch(() => {})
     .finally(() => {
       ocupado = false
@@ -89,13 +98,19 @@ const armar = () => {
   if (armado) return
   armado = true
   ouvir()
-  // libera depois do primeiro quadro do retrato e da animação de entrada dele (1,35 s); se o retrato não vier
-  // (sem WebGL, erro), libera de qualquer jeito depois de 7 s
+  // libera depois do primeiro quadro do retrato. Com a tela de abertura por cima (src/site/Abertura.tsx), a entrada do
+  // retrato só começa quando ela abre, então a fila segue logo e o vale e o robô carregam por trás dela; sem a
+  // abertura, espera a animação de entrada do retrato (1,35 s). Se o retrato não vier (sem WebGL, erro), libera
+  // de qualquer jeito depois de 7 s
   aguardar('retrato', 7000).then(() => {
-    setTimeout(() => {
-      liberado = true
-      proxima()
-    }, 1500)
+    const comAbertura = document.documentElement.dataset.abertura === '1'
+    setTimeout(
+      () => {
+        liberado = true
+        proxima()
+      },
+      comAbertura ? 250 : 1500,
+    )
   })
 }
 

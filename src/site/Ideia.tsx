@@ -6,7 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import s from './site.module.css'
 import { iniciarLua } from '@/cena/lua'
 import { arquivo } from '@/content/caminho'
-import { agendar } from './fila'
+import { agendar, sinalizar } from './fila'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -53,6 +53,8 @@ export function Ideia() {
       rodar: () => {
         const r = iniciarLua(canvas, el, arquivo(''), farois)
         parar = r.parar
+        // a tela de abertura marca o vale como pronto (src/site/Abertura.tsx)
+        r.pronta.then(() => sinalizar('lua'))
         // pronta = programa compilado e texturas na placa; se algo falhar, não segura a fila por mais de 6 s
         return Promise.race([r.pronta, new Promise<void>((ok) => setTimeout(ok, 6000))])
       },

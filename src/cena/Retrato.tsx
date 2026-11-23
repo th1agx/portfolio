@@ -6,7 +6,7 @@ import { Color, LinearFilter, ShaderMaterial, SRGBColorSpace, TextureLoader, typ
 import { Fluido } from './fluido'
 import { gsap } from 'gsap'
 import { arquivo } from '@/content/caminho'
-import { sinalizar } from '@/site/fila'
+import { aguardar, sinalizar } from '@/site/fila'
 
 // O topo como o do landonorris.com (docs/ENGENHARIA_REVERSA.md): o Thiago recortado, sem fundo, sobre a página
 // clara, num plano com relevo que gira de leve com o mouse. O cursor deixa uma mancha que revela, por baixo, a
@@ -179,10 +179,17 @@ function Plano({ alvo, inteiro, aoPronto, pronto }: { alvo: { current: HTMLDivEl
   useEffect(() => {
     const reduzir = matchMedia('(prefers-reduced-motion: reduce)').matches
     if (!reveladoUmaVez.current) material.uniforms.uRevela!.value = reduzir ? 1 : 0
-    // a animação de entrada começa quando o canvas passa a desenhar (antes, o retrato nem estava na tela)
+    // a animação de entrada começa quando o canvas já desenha E a tela de abertura começou a abrir (o retrato sobe
+    // enquanto o furo cresce; src/site/Abertura.tsx). Sem abertura, o sinal já vem na hora
     if (pronto && !reveladoUmaVez.current) {
       reveladoUmaVez.current = true
-      if (!reduzir) gsap.to(material.uniforms.uRevela!, { value: 1, duration: 1.1, ease: 'power3.out', delay: 0.25 })
+      if (!reduzir)
+        aguardar('abertura', 14000).then(() => {
+          // a abertura terminou mostrando o rosto inteiro no mesmo enquadramento: o retrato entra já revelado, sem a onda,
+          // e a abertura se dissolve por cima dele. Sem abertura (página aberta no meio), a entrada de sempre
+          if (document.documentElement.dataset.aberturaVista === '1') material.uniforms.uRevela!.value = 1
+          else gsap.to(material.uniforms.uRevela!, { value: 1, duration: 1.1, ease: 'power3.out', delay: 0.25 })
+        })
     }
     const mover = (e: PointerEvent) => {
       const el = alvo.current
