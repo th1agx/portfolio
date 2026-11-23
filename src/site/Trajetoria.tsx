@@ -7,6 +7,8 @@ import { gsap } from 'gsap'
 import { Contato } from './Contato'
 import { iniciarAteAqui, pintarCartao } from '@/cena/ateAqui'
 import { vigiarContexto } from '@/cena/contexto'
+import { iniciarPortal } from '@/cena/portalTunel'
+import { bocaTela, escalaDoRoboNaBoca, raioDaBocaNaTela } from '@/cena/trilhaTela'
 import s from './site.module.css'
 import { agendar, aguardar, sinalFeito } from './fila'
 
@@ -35,12 +37,20 @@ const ETAPAS = [
 
 // o furo abre no centro da tela
 const CENTRO = { x: 0.5, y: 0.52 }
+// px de deslocamento da âncora dos pés do robô guia, por unidade de escala, para o centro dele cair onde o robô do túnel aparece
+const ANCORA_PES = 16.6
 
 // quanto da rolagem cada parte usa (em telas)
-const ESTRADA = 6.2
+const ESTRADA = 7.7
+// telas de rolagem reservadas, no fim da estrada, para o furo abrir (eram 1,25: rolando rápido, a abertura mal aparecia)
+const RESERVA_FURO = 2.75
 const TUNEL = 14
 const CONTATO = 1.2
 const TOTAL = ESTRADA + TUNEL + CONTATO
+
+// O buraco por onde o robô entra no túnel: um círculo recortado da camada da estrada (subcaminho para o evenodd). O buraco
+// negro desenhado em volta dele está em src/cena/buracoNegro.ts
+const circuloOco = (cx: number, cy: number, r: number) => 'M' + (cx - r).toFixed(1) + ' ' + cy.toFixed(1) + 'a' + r.toFixed(1) + ' ' + r.toFixed(1) + ' 0 1 0 ' + (2 * r).toFixed(1) + ' 0a' + r.toFixed(1) + ' ' + r.toFixed(1) + ' 0 1 0 ' + (-2 * r).toFixed(1) + ' 0Z'
 
 const passo = (a: number, b: number, x: number) => {
   const k = Math.min(1, Math.max(0, (x - a) / (b - a)))
@@ -90,7 +100,7 @@ export function desenharRelevo(c: HTMLCanvasElement, cor = 'rgba(5,5,5,0.09)') {
 export function Trajetoria() {
   const secao = useRef<HTMLElement>(null)
   const camada = useRef<HTMLDivElement>(null)
-  const aro = useRef<HTMLDivElement>(null)
+  const aro = useRef<HTMLCanvasElement>(null)
   const faixa = useRef<HTMLDivElement>(null)
   const tela = useRef<HTMLCanvasElement>(null)
   const ponta = useRef<HTMLSpanElement>(null)
@@ -112,7 +122,7 @@ export function Trajetoria() {
     // a faixa alcança a posição da rolagem com 0,6 s de atraso: é essa velocidade que estica os cartões
     const andar = gsap.quickTo(trilho, 'y', { duration: 0.6, ease: 'power3' })
     // o canvas da trilha e dos cartões (src/cena/ateAqui.ts); os cartões são pintados com a fonte do site
-    const estado = { alfa: 0, centro: CENTRO, recolhe: 0 }
+    const estado = { alfa: 0, centro: CENTRO, recolhe: 0, cartoes: 1 }
     let cena: ReturnType<typeof iniciarAteAqui> = null
     let soltarContexto: (() => void) | null = null
     const molduras = [...trilho.querySelectorAll<HTMLElement>('[data-cartao]')]
@@ -189,7 +199,81 @@ export function Trajetoria() {
       if (!faltam) gsap.ticker.remove(revelarVisiveis)
     }
 
-    const aplicar = (P: number) => {
+    // a boca do túnel em volta do furo (src/cena/portalTunel.ts): criada só quando o furo começa a abrir, desenhado a cada
+    // quadro enquanto aparece (o gás gira) e apagado quando o furo já cobre a tela
+    const tinta = aro.current!
+    let buraco: ReturnType<typeof iniciarPortal> = null
+    let tentouBuraco = false
+    let soltarBuracoCtx: (() => void) | null = null
+    const bn = { W: 0, H: 0, R: 0, vis: 0, ultimo: 0, boca: 1 }
+    const criarBuraco = () => {
+      tentouBuraco = true
+      buraco = iniciarPortal(tinta)
+      if (buraco)
+        soltarBuracoCtx = vigiarContexto(tinta, () => {
+          buraco?.destruir()
+          buraco = iniciarPortal(tinta)
+        })
+    }
+    const quadroBuraco = (t: number) => {
+      if (!buraco) return
+      tinta.style.opacity = bn.vis > 0 ? '1' : '0'
+      if (bn.vis > 0 || bn.ultimo > 0) buraco.desenhar(bn.W, bn.H, bn.W * CENTRO.x, bn.H * CENTRO.y, bn.R, bn.vis, t, bn.boca)
+      bn.ultimo = bn.vis
+    }
+    gsap.ticker.add(quadroBuraco)
+
+    // tudo o que depende de quanto o furo está aberto (`abre`, de 0 a 1): o recorte da camada, a escala dela, a boca do túnel em
+    // volta, o robô guia na entrada e os marcadores do túnel
+    const ab = { alvo: 0, atual: 0, P: 0, vai: 0, pt2: 0 }
+    const aplicarAbre = (abre: number) => {
+      const W = innerWidth
+      const H = innerHeight
+      const { P, vai, pt2 } = ab
+      const raio = abre * Math.hypot(W, H) * 0.62
+      // o buraco é um círculo recortado da camada; a boca do túnel desenhada em volta tem o raio que ele mostra na tela
+      camada.current!.style.clipPath = raio > 0.5 ? `path(evenodd, 'M0 0H${W}V${H}H0Z${circuloOco(W * CENTRO.x, H * CENTRO.y, raio)}')` : 'none'
+      bn.W = W
+      bn.H = H
+      bn.R = raio * (1 + abre * 1.6)
+      bn.boca = bn.R > 1 ? Math.min(1, raioDaBocaNaTela(bn.R, H) / bn.R) : 1
+      bn.vis = abre > 0 && abre < 0.97 ? Math.min(1, abre * 10) * (1 - passo(0.75, 0.97, abre)) : 0
+      if (bn.vis > 0 && !tentouBuraco) criarBuraco()
+      camada.current!.style.transform = `scale(${1 + abre * 1.6})`
+      camada.current!.style.visibility = abre >= 0.999 ? 'hidden' : 'visible'
+      tunel.current!.style.visibility = abre > 0 || P > ESTRADA / TOTAL ? 'visible' : 'hidden'
+      // o robô do túnel tem o tamanho proporcional à altura da janela e o guia tem px fixos: a escala do guia na entrada segue
+      // o raio do furo (a câmera do túnel se aproxima junto) e a altura da janela
+      bocaTela.R = bn.R
+      bocaTela.H = H
+      const escalaRobo = 1 + (escalaDoRoboNaBoca(bn.R, H) - 1) * vai
+      ponta.current?.setAttribute('data-robo-escala', escalaRobo.toFixed(3))
+      // o centro do robô do túnel fica, em relação ao centro do furo, a uma distância proporcional ao tamanho dele; o guia é
+      // ancorado pelos pés, então o deslocamento da âncora tem de crescer com a escala (16,6 px por unidade, medido na tela)
+      if (ponta.current) ponta.current.style.transform = `translate3d(${(W * CENTRO.x).toFixed(1)}px, ${(H * (1.25 + (CENTRO.y - 1.25) * vai) + ANCORA_PES * escalaRobo * vai).toFixed(1)}px, 0)`
+      const dentro = abre > 0.2
+      if (dentro !== ligado) {
+        ligado = dentro
+        if (dentro) raiz.dataset.tunel = '1'
+        else delete raiz.dataset.tunel
+      }
+      const escura = abre > 0.3 && pt2 < 0.9
+      if ((raiz.dataset.cena === 'escura') !== escura) {
+        if (escura) raiz.dataset.cena = 'escura'
+        else delete raiz.dataset.cena
+      }
+    }
+    // o furo que se vê segue o alvo da rolagem com constante de tempo de ~0,5 s
+    const suavizarAbre = (_t: number, dtMs: number) => {
+      const dif = ab.alvo - ab.atual
+      if (dif === 0) return
+      if (Math.abs(dif) < 0.0004) ab.atual = ab.alvo
+      else ab.atual += dif * (1 - Math.exp(-(dtMs / 1000) * 2.0))
+      aplicarAbre(ab.atual)
+    }
+    gsap.ticker.add(suavizarAbre)
+
+    const aplicar = (P: number, snap = false) => {
       // 1. "Até aqui"
       const pe = Math.min(1, P / (ESTRADA / TOTAL))
       const W = innerWidth
@@ -202,41 +286,28 @@ export function Trajetoria() {
       camada.current!.style.backgroundColor = `rgba(2, 3, 26, ${estado.alfa.toFixed(3)})`
       trilho.style.opacity = passo(0.05, 0.3, telas).toFixed(3)
       const comeca = 0.2
-      const percurso = ESTRADA - comeca - 1.25
+      const percurso = ESTRADA - comeca - RESERVA_FURO
       const anda = Math.min(1, Math.max(0, (telas - comeca) / percurso))
       const distancia = Math.max(0, trilho.scrollHeight - H)
       andar(-distancia * anda)
       // o robô fica fora da tela durante a trilha e sobe até o centro quando o furo vai abrir
       const fimTrilha = comeca + percurso
+      // os cartões e os textos saem de cena quando o furo começa a abrir (o último, esticado pela velocidade da rolagem e
+      // ampliado com a camada, virava uma fita branca no canto da tela)
+      estado.cartoes = 1 - passo(fimTrilha - 0.1, fimTrilha + 0.3, telas)
+      trilho.style.opacity = (passo(0.05, 0.3, telas) * estado.cartoes).toFixed(3)
       const vai = passo(fimTrilha - 0.3, fimTrilha + 0.1, telas)
-      if (ponta.current) ponta.current.style.transform = `translate3d(${(W * CENTRO.x).toFixed(1)}px, ${(H * (1.25 + (CENTRO.y - 1.25) * vai)).toFixed(1)}px, 0)`
 
-      // 2. o furo abre onde a trilha termina e a camada cresce em direção a ele
-      const abre = gsap.parseEase('power2.in')(Math.min(1, Math.max(0, (telas - (fimTrilha + 0.05)) / (ESTRADA - fimTrilha - 0.05))))
-      const raio = abre * Math.hypot(W, H) * 0.62
-      camada.current!.style.setProperty('--furo', `${raio.toFixed(1)}px`)
-      camada.current!.style.transform = `scale(${1 + abre * 1.6})`
-      camada.current!.style.visibility = abre >= 0.999 ? 'hidden' : 'visible'
-      tunel.current!.style.visibility = abre > 0 || P > ESTRADA / TOTAL ? 'visible' : 'hidden'
-      aro.current!.style.transform = `translate(-50%, -50%) scale(${(raio * 2) / 100})`
-      aro.current!.style.opacity = abre > 0 && abre < 0.98 ? '1' : '0'
-      ponta.current?.setAttribute('data-robo-escala', (1 + abre * 0.15).toFixed(3))
-      // (a caixa do robô 3D inclui a antena e a chama; o guia de escala 1 mede 72 px sem elas: daí o 1,15)
-
-      // 3. o túnel
-      const pt2 = Math.min(1, Math.max(0, (P - ESTRADA / TOTAL) / (TUNEL / TOTAL)))
-      progressoTunel.current = pt2
-      const dentro = abre > 0.2
-      if (dentro !== ligado) {
-        ligado = dentro
-        if (dentro) raiz.dataset.tunel = '1'
-        else delete raiz.dataset.tunel
-      }
-      const escura = abre > 0.3 && pt2 < 0.9
-      if ((raiz.dataset.cena === 'escura') !== escura) {
-        if (escura) raiz.dataset.cena = 'escura'
-        else delete raiz.dataset.cena
-      }
+      // 2. o furo abre onde a trilha termina e a camada cresce em direção a ele. O alvo vem da rolagem; o furo que se vê o
+      // segue no tempo (suavizarAbre), então a abertura leva cerca de um segundo mesmo com rolagem rápida, e o fechamento também
+      ab.alvo = gsap.parseEase('power1.inOut')(Math.min(1, Math.max(0, (telas - (fimTrilha + 0.05)) / (ESTRADA - fimTrilha - 0.05))))
+      ab.P = P
+      ab.vai = vai
+      if (snap) ab.atual = ab.alvo
+      // 3. o túnel (progresso da rolagem)
+      ab.pt2 = Math.min(1, Math.max(0, (P - ESTRADA / TOTAL) / (TUNEL / TOTAL)))
+      progressoTunel.current = ab.pt2
+      aplicarAbre(ab.atual)
 
       // 4. o contato sobre a luz branca
       const pc = Math.max(0, (P - (ESTRADA + TUNEL) / TOTAL) / (CONTATO / TOTAL))
@@ -244,14 +315,14 @@ export function Trajetoria() {
       if (pc > 0.15) raiz.dataset.final = '1'
       else delete raiz.dataset.final
     }
-    aplicar(0)
+    aplicar(0, true)
     const st = ScrollTrigger.create({
       trigger: el,
       start: 'top top',
       end: 'bottom bottom',
       onUpdate: (self) => aplicar(self.progress),
       onRefresh: (self) => {
-        aplicar(self.progress)
+        aplicar(self.progress, true)
         cena?.medir()
       },
       onLeaveBack: () => delete raiz.dataset.tunel,
@@ -259,7 +330,7 @@ export function Trajetoria() {
     gsap.ticker.add(revelarVisiveis)
     const perto = ScrollTrigger.create({
       trigger: el,
-      start: () => `top+=${(ESTRADA - 1.5) * innerHeight} top`,
+      start: () => `top+=${(ESTRADA - 3.0) * innerHeight} top`,
       end: 'bottom bottom',
       onToggle: (self) => setTunelAtivo(self.isActive),
     })
@@ -273,6 +344,10 @@ export function Trajetoria() {
       perto.kill()
       gsap.ticker.remove(revelarVisiveis)
       gsap.ticker.remove(quadro)
+      gsap.ticker.remove(quadroBuraco)
+      gsap.ticker.remove(suavizarAbre)
+      soltarBuracoCtx?.()
+      buraco?.destruir()
       removeEventListener('resize', remedir)
       cena?.destruir()
       delete raiz.dataset.tunel
@@ -325,7 +400,7 @@ export function Trajetoria() {
           </div>
           <span ref={ponta} className={s.pontaEstrada} data-robo="voar" data-robo-preso aria-hidden />
         </div>
-        <div ref={aro} className={s.furoAro} style={{ left: `${CENTRO.x * 100}%`, top: `${CENTRO.y * 100}%` }} aria-hidden />
+        <canvas ref={aro} className={s.buracoTela} aria-hidden />
         <div ref={contato} className={s.contatoCamada} data-on="0">
           <Contato />
         </div>

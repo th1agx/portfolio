@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useRecuperacao } from './contexto'
+import { bocaTela, roboBoca } from './trilhaTela'
 import { Environment, Lightformer } from '@react-three/drei'
 import { BufferGeometry, DoubleSide, Group, HalfFloatType, Mesh, MeshBasicMaterial, OrthographicCamera, PerspectiveCamera, PlaneGeometry, PMREMGenerator, Scene, WebGLCubeRenderTarget, type Material, type WebGLRenderTarget } from 'three'
 import { RoboAgente, type AcaoRobo } from './RoboAgente'
@@ -37,7 +38,7 @@ type Interacao = {
   roubo: { fase: 0 | 1 | 2 | 3; inicio: number; feito: boolean }
   ancoraAtual: Ancora | null
 }
-type Dom = { alvo: HTMLButtonElement | null; balao: HTMLDivElement | null; cursor: HTMLDivElement | null }
+type Dom = { tela: HTMLDivElement | null; alvo: HTMLButtonElement | null; balao: HTMLDivElement | null; cursor: HTMLDivElement | null }
 // o que o robô diz ao renderizador: está na tela neste quadro / estava no anterior
 type Desenho = { visivel: boolean; anterior: boolean }
 
@@ -49,9 +50,11 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
   const olhar = useRef({ x: 0, y: 0 })
   const pos = useRef({ x: -200, y: 0 })
   const escala = useRef(1)
+  // ao entrar no túnel o robô guia se dissolve (e volta, ao sair), em vez de sumir de uma vez enquanto o do túnel aparece
+  const dissolve = useRef(1)
   const inclina = useRef(0)
   // troca de âncora dentro de uma cena presa (de um cartão para o outro): um voo em arco, não um salto
-  const vooPreso = useRef({ el: null as HTMLElement | null, inicio: -10, x: 0, y: 0 })
+  const vooPreso = useRef({ el: null as HTMLElement | null, inicio: -10, x: 0, y: 0, dur: 0.8 })
   // entrada e saída das áreas sem robô (os projetos): um voo com tempo e arco, não uma perseguição que parece teletransporte
   const vooFolga = useRef({ antes: false, inicio: -10, x: 0, y: 0 })
 
@@ -82,8 +85,12 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
       const c = p.a.el.closest('[data-robo-cena]')?.getBoundingClientRect()
       return !!c && c.top <= 1 && c.bottom >= vh - 1
     })
-    const visiveis = presos.filter((p) => p.y > vh * 0.12 && p.y < vh * 0.88)
-    const preso = (visiveis.length ? visiveis : presos).sort((a, b) => Math.abs(a.y - vh * 0.45) - Math.abs(b.y - vh * 0.45))[0]
+    // O robô fica na âncora enquanto ela ainda cabe na tela (ele é ~72 px mais alto que ela): quando ela sobe demais, passa
+    // para a próxima, e se essa ainda está lá embaixo ele a espera na beirada de baixo, subindo com o cartão. Antes só trocava
+    // no meio do caminho entre os cartões, quando a âncora velha já estava cortada no alto e o robô ficava tampado
+    const ordenados = [...presos].sort((a, b) => a.y - b.y)
+    const pegar = ordenados.find((p) => p.y > vh * 0.15) ?? ordenados[ordenados.length - 1]
+    const preso = pegar ? { ...pegar, y: Math.min(pegar.y, vh * 0.9) } : undefined
     const A = preso ?? pontos[i]!
     const B = preso ?? pontos[Math.min(i + 1, pontos.length - 1)]!
     const t = B === A ? 0 : Math.min(1, Math.max(0, (rol - A.chegada) / (B.chegada - A.chegada)))
@@ -103,14 +110,16 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
           vp.inicio = agora
           vp.x = pos.current.x
           vp.y = pos.current.y
+          // o voo dura mais quanto mais longe é o destino: 850 px em 0,45 s pareciam teletransporte
+          vp.dur = Math.min(1.7, 0.55 + Math.hypot(preso.x - pos.current.x, preso.y - pos.current.y) * 0.0009)
         }
         vp.el = preso.a.el
       }
-      const u = Math.min(1, (agora - vp.inicio) / 1.1)
+      const u = Math.min(1, (agora - vp.inicio) / vp.dur)
       if (u < 1) {
         const e = u * u * (3 - 2 * u)
         alvoX = vp.x + (preso.x - vp.x) * e
-        alvoY = vp.y + (preso.y - vp.y) * e - Math.sin(Math.PI * u) * 110
+        alvoY = vp.y + (preso.y - vp.y) * e - Math.sin(Math.PI * u) * 70
         proxima = 'voar'
         emVoo = true
         it.ancoraAtual = null
@@ -198,12 +207,23 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
 
     // 4. movimento suave até o alvo
     const s = 1 - Math.exp(-(r.fase ? 6 : emVoo ? 16 : 9) * dt)
-    pos.current.x += (alvoX - pos.current.x) * s
-    pos.current.y += (alvoY - pos.current.y) * s
+    // na entrada do túnel (âncora com escala dinâmica) o robô acompanha o alvo sem atraso: ele cresce junto com o furo, e
+    // qualquer atraso aparecia como um degrau na troca com o robô do túnel
+    const naBoca = !!preso && preso.a.el.dataset.roboEscala !== undefined && !emVoo && !r.fase
+    // com o furo aberto e o túnel desenhando, o alvo é exatamente onde o robô do túnel aparece (posição e tamanho)
+    const colado = naBoca && roboBoca.ativo && performance.now() - roboBoca.t < 150 ? Math.min(1, bocaTela.R / 60) : 0
+    if (colado > 0) {
+      alvoX += (roboBoca.x - alvoX) * colado
+      alvoY += (roboBoca.y + (ALTURA * roboBoca.escala) / 2 - alvoY) * colado
+    }
+    const sp = naBoca ? 1 - Math.exp(-45 * dt) : s
+    pos.current.x += (alvoX - pos.current.x) * sp
+    pos.current.y += (alvoY - pos.current.y) * sp
     // a escala é lida da âncora a cada quadro: uma seção pode mudá-la com a rolagem (a estrada encolhe o robô no furo)
     const ea = Number(A.a.el.dataset.roboEscala ?? A.a.escala)
     const eb = Number(B.a.el.dataset.roboEscala ?? B.a.escala)
-    escala.current += (ea + (eb - ea) * viagem - escala.current) * s
+    const escalaAlvo = ea + (eb - ea) * viagem
+    escala.current += (escalaAlvo + (roboBoca.escala - escalaAlvo) * colado - escala.current) * (naBoca ? 1 : s)
     const indoPara = r.fase || emVoo ? Math.sign(alvoX - pos.current.x) : Math.sign(B.x - A.x)
     inclina.current += ((voando || r.fase || emVoo ? indoPara * -0.35 : 0) - inclina.current) * s
     acao.current = proxima
@@ -216,7 +236,9 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     g.scale.setScalar(tamanho)
     g.position.set(pos.current.x, -(pos.current.y - tamanho), 0)
     g.rotation.set(0, 0.25, inclina.current)
-    const visivel = pos.current.y > -vh * 0.5 && pos.current.y < vh * 1.4 && !document.documentElement.dataset.tunel && (!folga || uf < 1)
+    dissolve.current += ((document.documentElement.dataset.tunel ? 0 : 1) - dissolve.current) * (1 - Math.exp(-9 * dt))
+    if (dom.current.tela) dom.current.tela.style.opacity = dissolve.current.toFixed(3)
+    const visivel = pos.current.y > -vh * 0.5 && pos.current.y < vh * 1.4 && dissolve.current > 0.02 && (!folga || uf < 1)
     g.visible = visivel
     desenho.current.visivel = visivel
 
@@ -366,7 +388,7 @@ export default function Guia() {
     roubo: { fase: 0, inicio: 0, feito: false },
     ancoraAtual: null,
   })
-  const dom = useRef<Dom>({ alvo: null, balao: null, cursor: null })
+  const dom = useRef<Dom>({ tela: null, alvo: null, balao: null, cursor: null })
   const desenho = useRef<Desenho>({ visivel: false, anterior: false })
   const [pronto, setPronto] = useState(false)
   const [luzOk, setLuzOk] = useState(false)
@@ -425,7 +447,7 @@ export default function Guia() {
   const rec = useRecuperacao()
   return (
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 40, pointerEvents: 'none' }} aria-hidden>
+      <div ref={(el) => void (dom.current.tela = el)} style={{ position: 'fixed', inset: 0, zIndex: 40, pointerEvents: 'none' }} aria-hidden>
         <Canvas key={rec.chave} dpr={[1, 2]} frameloop={pronto ? 'always' : 'never'} gl={{ antialias: true, alpha: true }} style={{ pointerEvents: 'none' }}>
           {rec.filho}
           <CameraTela />

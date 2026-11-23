@@ -163,7 +163,7 @@ void main() {
   saida = vec4(vec3(0.5, 0.65, 1.0) * a, 0.0);
 }`
 
-export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, cartoes: CartaoTrilha[], estado: { alfa: number; centro: { x: number; y: number }; recolhe?: number }) {
+export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, cartoes: CartaoTrilha[], estado: { alfa: number; centro: { x: number; y: number }; recolhe?: number; cartoes?: number }) {
   const gl = canvas.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true })
   if (!gl || gl.isContextLost()) return null
   const compilar = (v: string, f: string) => {
@@ -429,10 +429,11 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
     gl.uniform1f(u(pCartao, 'uAtividade'), atividade)
     gl.uniform1f(u(pCartao, 'uTempo'), tempo)
     gl.uniform1f(u(pCartao, 'uFase'), fase)
-    gl.uniform1f(u(pCartao, 'uAlfa'), Math.min(1, estado.alfa))
+    gl.uniform1f(u(pCartao, 'uAlfa'), Math.min(1, estado.alfa) * (estado.cartoes ?? 1))
     gl.activeTexture(gl.TEXTURE0)
     gl.uniform1i(u(pCartao, 'uImagem'), 0)
     cartoes.forEach((c, i) => {
+      if ((estado.cartoes ?? 1) < 0.003) return
       const r = c.el.getBoundingClientRect()
       if (r.bottom < -H * 0.5 || r.top > H * 1.2) return
       gl.bindTexture(gl.TEXTURE_2D, texturas[i]!)

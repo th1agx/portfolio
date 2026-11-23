@@ -6,11 +6,13 @@ import { useRecuperacao } from './contexto'
 import { Precompilar } from './Precompilar'
 import { Environment, Lightformer } from '@react-three/drei'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
-import { AdditiveBlending, BoxGeometry, DirectionalLight, Color, Fog, Group, InstancedMesh, MathUtils, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Points, TorusGeometry } from 'three'
+import type { BloomEffect } from 'postprocessing'
+import { AdditiveBlending, BoxGeometry, DirectionalLight, Color, Fog, Group, InstancedMesh, MathUtils, Mesh, MeshBasicMaterial, MeshStandardMaterial, Object3D, PerspectiveCamera, Points, TorusGeometry, Vector3 } from 'three'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { RoboAgente, type AcaoRobo } from './RoboAgente'
 import { arquivo } from '@/content/caminho'
+import { bocaTela, distanciaEntrada, roboBoca } from './trilhaTela'
 
 // O túnel: uma animação só, sem texto. O robô agente, agora grande, voa por cinco trechos e a câmera o
 // segue, mudando de distância e de ângulo em cada um:
@@ -207,24 +209,10 @@ function Riscos({ progresso }: { progresso: { current: number } }) {
   return <instancedMesh ref={ref} args={[geo, mat, n]} />
 }
 
-// a boca do túnel: um anel lima grosso e um segundo, fino, que pulsa; é o que a câmera vê na entrada
+// A entrada é uma só: o aro e os anéis do furo na página (src/cena/portalTunel.ts). Um aro 3D aqui dentro virava uma segunda
+// porta logo atrás da primeira, então a boca do túnel não desenha nada.
 function Boca() {
-  const fino = useRef<Mesh>(null)
-  useFrame((st) => {
-    if (fino.current) fino.current.scale.setScalar(1 + Math.sin(st.clock.elapsedTime * 2.2) * 0.04 + 0.06)
-  })
-  return (
-    <group position={[0, 0, 1]}>
-      <mesh>
-        <torusGeometry args={[RAIO + 0.15, 0.22, 16, 96]} />
-        <meshBasicMaterial color={new Color(LIMA).multiplyScalar(2)} toneMapped={false} />
-      </mesh>
-      <mesh ref={fino}>
-        <torusGeometry args={[RAIO + 0.5, 0.03, 8, 96]} />
-        <meshBasicMaterial color={new Color(LIMA).multiplyScalar(1.4)} toneMapped={false} transparent opacity={0.7} />
-      </mesh>
-    </group>
-  )
+  return null
 }
 
 // a sala: o túnel acaba num vão escuro com símbolos gigantes boiando devagar em volta do caminho
@@ -320,7 +308,7 @@ const sino = (a: number, b: number, x: number) => {
   return Math.sin(t * Math.PI)
 }
 
-function Corredor({ progresso }: { progresso: { current: number } }) {
+function Corredor({ progresso, bloom }: { progresso: { current: number }; bloom: { current: BloomEffect | null } }) {
   const grupo = useRef<Group>(null)
   const acao = useRef<AcaoRobo>('voar')
   const fundo = useMemo(() => new Color(), [])
@@ -329,6 +317,8 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
   const zSuave = useRef(INICIO)
   const olharTras = useRef(1)
   const luzFrente = useRef<DirectionalLight>(null)
+  const proj1 = useMemo(() => new Vector3(), [])
+  const proj2 = useMemo(() => new Vector3(), [])
   const corpo = useRef<Group>(null)
   useEffect(() => {
     if (luzFrente.current && grupo.current) luzFrente.current.target = grupo.current
@@ -344,6 +334,8 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
     const chegou = p > 0.95
     // na sala ele se vira para a câmera e acena; no resto, voa
     const naSala = sino(Z_SALA - 8, Z_PORTAIS + 14, z)
+    // o brilho (bloom) cresce aos poucos depois da troca com o robô guia, que é nítido: sem isso o robô "estourava" de luz de uma vez
+    if (bloom.current) bloom.current.intensity = 0.1 + 1.0 * MathUtils.smoothstep(INICIO - z, 0, 22)
     // na boca do túnel ele ainda está de frente para a câmera, como o robô guia que entrou no furo;
     // quando começa a avançar, se vira e mergulha
     const deFrente = z > INICIO - 2.5
@@ -351,7 +343,7 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
     olharTras.current += ((chegou || naSala > 0.6 || deFrente ? 1 : 0) - olharTras.current) * (1 - Math.exp(-dt * 3))
     // a mesma luz de frente que o robô guia tem, forte na entrada e sumindo dentro do túnel
     if (luzFrente.current) {
-      luzFrente.current.intensity = 2.2 * MathUtils.smoothstep(z, -10, INICIO)
+      luzFrente.current.intensity = 1.3 * MathUtils.smoothstep(z, -10, INICIO)
       luzFrente.current.position.set(state.camera.position.x + 3, state.camera.position.y + 6, state.camera.position.z + 2)
     }
 
@@ -373,7 +365,11 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
     const veloz = MathUtils.smoothstep(-z, -Z_RISCOS - 4, -Z_RISCOS + 10) * (1 - MathUtils.smoothstep(-z, COMPRIMENTO - 24, COMPRIMENTO - 10))
     // na entrada a câmera está longe, diante da boca, e se aproxima enquanto o robô avança
     const entrada = MathUtils.smoothstep(z, -12, INICIO)
-    const camZ = z + 6.5 + entrada * 9 + naSala * 11 - veloz * 2
+    // na entrada a câmera se aproxima da boca conforme o furo da página abre (a borda do furo é a boca do túnel); quando o robô
+    // começa a avançar, passa para o caminho de sempre
+    const camForma = z + 6.5 + entrada * 9 + naSala * 11 - veloz * 2
+    const camBoca = 1 + distanciaEntrada(bocaTela.R, state.size.height)
+    const camZ = MathUtils.lerp(camForma, camBoca, MathUtils.smoothstep(z, INICIO - 8, INICIO))
     const camX = Math.sin(z * 0.12) * 1.1 * (1 - naSala) + Math.sin(t * 0.4) * 0.3 + naSala * 7
     const camY = Math.cos(z * 0.09) * 0.6 + 0.4 + naSala * 2.5 - veloz * 0.9
     state.camera.position.set(camX, camY, camZ)
@@ -384,6 +380,19 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
     if (Math.abs(cam.fov - fov) > 0.05) {
       cam.fov = fov
       cam.updateProjectionMatrix()
+    }
+
+    // onde o robô está na tela (centro e altura): o robô guia da página usa isso na entrada, para a troca não ter salto
+    if (grupo.current) {
+      cam.updateMatrixWorld()
+      const c = grupo.current.position
+      const a = proj1.set(c.x, c.y, c.z).project(cam)
+      const b = proj2.set(c.x, c.y + 0.75, c.z).project(cam)
+      roboBoca.x = ((a.x + 1) / 2) * state.size.width
+      roboBoca.y = ((1 - a.y) / 2) * state.size.height
+      roboBoca.escala = (Math.abs(b.y - a.y) * state.size.height) / 72
+      roboBoca.ativo = z >= INICIO - 0.01
+      roboBoca.t = performance.now()
     }
 
     // a cor do ar muda a cada trecho e clareia na saída
@@ -406,9 +415,9 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
   return (
     <group ref={grupo} scale={0.75}>
       <group ref={corpo}>
-        <RoboAgente acao={acao} brilho={1.6} />
+        <RoboAgente acao={acao} brilho={1.2} />
       </group>
-      <pointLight position={[0, 1.5, 2]} intensity={14} distance={10} color="#e8edf5" />
+      <pointLight position={[0, 1.5, 2]} intensity={3} distance={10} color="#e8edf5" />
       <directionalLight ref={luzFrente} intensity={0} />
     </group>
   )
@@ -416,6 +425,7 @@ function Corredor({ progresso }: { progresso: { current: number } }) {
 
 export default function Tunel({ progresso, ativo = true }: { progresso: { current: number }; ativo?: boolean }) {
   const rec = useRecuperacao()
+  const bloom = useRef<BloomEffect>(null)
   return (
     <Canvas key={rec.chave} frameloop={ativo ? 'always' : 'never'} dpr={[1, 1.5]} camera={{ fov: 58, near: 0.1, far: 140, position: [-2.6, -0.8, 18] }} onCreated={({ scene }) => (scene.fog = new Fog('#050508', 8, 46))}>
       {rec.filho}
@@ -425,7 +435,7 @@ export default function Tunel({ progresso, ativo = true }: { progresso: { curren
         <Lightformer form="rect" intensity={2} position={[0, 5, 4]} scale={[8, 3, 1]} />
       </Environment>
       <Suspense fallback={null}>
-        <Corredor progresso={progresso} />
+        <Corredor progresso={progresso} bloom={bloom} />
         <ParedeDeSimbolos />
         <Sala />
         <Precompilar nome="tunel" post />
@@ -437,7 +447,7 @@ export default function Tunel({ progresso, ativo = true }: { progresso: { curren
       <Riscos progresso={progresso} />
       <Saida />
       <EffectComposer multisampling={0}>
-        <Bloom intensity={1.1} luminanceThreshold={0.6} luminanceSmoothing={0.2} mipmapBlur />
+        <Bloom ref={bloom} intensity={1.1} luminanceThreshold={0.6} luminanceSmoothing={0.2} mipmapBlur />
         <Vignette offset={0.25} darkness={0.7} />
       </EffectComposer>
     </Canvas>
