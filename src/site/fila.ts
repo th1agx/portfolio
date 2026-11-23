@@ -73,13 +73,15 @@ const proxima = () => {
   // vale e o robô, ordem 1 e 2) correm sem esperar calma e escalonam pouco. As do resto da página (projetos, túnel,
   // cartões) esperam a abertura sair e um momento ocioso, como sem ela: não há por que baixá-las antes
   const comAbertura = document.documentElement.dataset.abertura === '1'
-  const pressa = comAbertura && t.ordem <= 1
+  const pressa = comAbertura && t.ordem <= 2
   ;(comAbertura && !pressa ? aguardar('abertura', 20000) : Promise.resolve())
     .then(() => momentoOcioso(pressa ? 0 : 700))
     // a compilação de shaders agora roda em paralelo (sem prender a thread principal), então a próxima cena não
     // precisa esperar esta terminar: começa até 900 ms depois do início dela, o que escalona os trechos
     // síncronos (montar componentes, enviar texturas) sem atrasar o robô e o vale
-    .then(() => (t.iniciada ? undefined : Promise.race([executar(t), new Promise<void>((ok) => setTimeout(ok, pressa ? 150 : 900))])))
+    // sob a abertura (ninguém mexendo) a próxima começa logo; fora dela, uma de cada vez: sobrepor montagens era o que
+    // travava a rolagem logo depois da abertura (o robô, as obras e o túnel montando juntos)
+    .then(() => (t.iniciada ? undefined : pressa ? Promise.race([executar(t), new Promise<void>((ok) => setTimeout(ok, 150))]) : executar(t)))
     .catch(() => {})
     .finally(() => {
       ocupado = false

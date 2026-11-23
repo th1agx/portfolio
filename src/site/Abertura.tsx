@@ -21,8 +21,9 @@ import s from './abertura.module.css'
 // Sem WebGL 2, com movimento reduzido ou com a página aberta no meio, a abertura não aparece.
 
 const ETAPAS = [
-  { sinal: 'retrato', peso: 0.62 },
-  { sinal: 'lua', peso: 0.38 },
+  { sinal: 'retrato', peso: 0.5 },
+  { sinal: 'lua', peso: 0.3 },
+  { sinal: 'guia', peso: 0.2 },
 ]
 
 type Ponte = {
@@ -150,11 +151,15 @@ export function Abertura() {
             window.setTimeout(() => w.terminate(), 50)
           },
         }
-      } catch {
-        // o canvas já foi entregue (modo estrito em desenvolvimento) ou o navegador recusou: segue na thread principal
+      } catch (e) {
+        // sai sem registrar a limpeza, então solta aqui o travamento da página (senão a roda do mouse fica presa para sempre)
+        soltar()
         reiniciando.current = true
+        // o canvas já foi entregue a um Worker (o modo estrito do React, em desenvolvimento, roda o efeito duas vezes): um
+        // canvas novo resolve e o Worker segue. Outro erro (navegador recusou): segue na thread principal
+        const jaEntregue = e instanceof DOMException && e.name === 'InvalidStateError'
         setChave((k) => k + 1)
-        setModo('principal')
+        if (!jaEntregue) setModo('principal')
         return
       }
     } else {
@@ -216,7 +221,7 @@ export function Abertura() {
       if (reiniciando.current) reiniciando.current = false
       else sinalizar('abertura')
     }
-  }, [modo])
+  }, [modo, chave])
 
   if (!ativa) return null
 
