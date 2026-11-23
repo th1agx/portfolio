@@ -7,6 +7,7 @@ import { Fluido } from './fluido'
 import { gsap } from 'gsap'
 import { arquivo } from '@/content/caminho'
 import { aguardar, sinalizar } from '@/site/fila'
+import { tempoGlobal } from '@/site/tempoGlobal'
 
 // O topo como o do landonorris.com (docs/ENGENHARIA_REVERSA.md): o Thiago recortado, sem fundo, sobre a página
 // clara, num plano com relevo que gira de leve com o mouse. O cursor deixa uma mancha que revela, por baixo, a
@@ -118,7 +119,7 @@ const fragmento = /* glsl */ `
   }
 `
 
-function Plano({ alvo, inteiro, aoPronto, pronto }: { alvo: { current: HTMLDivElement | null }; inteiro: { current: number }; aoPronto: () => void; pronto: boolean }) {
+function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { current: HTMLDivElement | null }; inteiro: { current: number }; aoPronto: () => void; aoPrimeiroQuadro: () => void; pronto: boolean }) {
   const { size, viewport, gl, scene, camera } = useThree()
   const malha = useRef<Mesh>(null)
   const [humano, robo, aura] = useLoader(TextureLoader, [arquivo('/retrato/humano.webp'), arquivo('/retrato/robo.webp'), arquivo('/retrato/aura.png')])
@@ -183,15 +184,27 @@ function Plano({ alvo, inteiro, aoPronto, pronto }: { alvo: { current: HTMLDivEl
     // enquanto o furo cresce; src/site/Abertura.tsx). Sem abertura, o sinal já vem na hora
     if (pronto && !reveladoUmaVez.current) {
       reveladoUmaVez.current = true
-      if (!reduzir)
-        aguardar('abertura', 14000).then(() => {
-          // a abertura terminou mostrando o rosto inteiro no mesmo enquadramento: o retrato entra já revelado, sem a onda,
-          // e a abertura se dissolve por cima dele. Sem abertura (página aberta no meio), a entrada de sempre
-          if (document.documentElement.dataset.aberturaVista === '1') material.uniforms.uRevela!.value = 1
-          else gsap.to(material.uniforms.uRevela!, { value: 1, duration: 1.1, ease: 'power3.out', delay: 0.25 })
-        })
+      if (!reduzir) {
+        if (document.documentElement.dataset.aberturaVista === '1') {
+          // A tela de abertura termina mostrando o rosto inteiro no mesmo enquadramento e se dissolve por cima do retrato:
+          // ele já espera aqui embaixo, revelado (sem a onda de entrada, que seria uma segunda "carga" da foto), com o
+          // mesmo relevo e o mesmo relógio das curvas de nível. O passeio do cursor invisível só começa quando ela sai
+          material.uniforms.uRevela!.value = 1
+          aguardar('abertura', 20000).then(() => {
+            const c = cursor.current
+            c.inicio = performance.now()
+            c.movido = 0
+            c.ocioso = -1
+          })
+        } else {
+          // sem abertura (página aberta no meio, sem WebGL 2...): a entrada de sempre
+          aguardar('abertura', 20000).then(() => gsap.to(material.uniforms.uRevela!, { value: 1, duration: 1.1, ease: 'power3.out', delay: 0.25 }))
+        }
+      }
     }
     const mover = (e: PointerEvent) => {
+      // com a abertura na tela o cursor não pinta tinta por baixo dela
+      if (document.documentElement.dataset.abertura === '1') return
       const el = alvo.current
       if (!el) return
       const r = el.getBoundingClientRect()
@@ -276,10 +289,12 @@ function Plano({ alvo, inteiro, aoPronto, pronto }: { alvo: { current: HTMLDivEl
     // o primeiro quadro do retrato está na tela: libera o resto da página para montar (src/site/fila.ts)
     if (!primeiroQuadro.current) {
       primeiroQuadro.current = true
+      aoPrimeiroQuadro()
       requestAnimationFrame(() => requestAnimationFrame(() => sinalizar('retrato')))
     }
     passo(performance.now(), Math.min(delta, 1 / 30))
-    material.uniforms.uTempo!.value = estado.clock.elapsedTime
+    // o mesmo relógio da tela de abertura (src/site/tempoGlobal.ts): as curvas de nível têm a mesma fase nos dois
+    material.uniforms.uTempo!.value = tempoGlobal()
     material.uniforms.uInteiro!.value = inteiro.current
     // giro amortecido seguindo o mouse (−1 a 1 a partir do centro do painel)
     const k = cursor.current
@@ -307,6 +322,15 @@ export default function RetratoCena({ inteiro }: { inteiro: { current: number } 
   // o canvas só começa a desenhar com os shaders já compilados (ver Plano)
   const [pronto, setPronto] = useState(false)
   const aoPronto = useCallback(() => setPronto(true), [])
+  // Com a tela de abertura por cima (src/site/Abertura.tsx), o retrato desenha só o primeiro quadro e espera: por baixo dela
+  // ninguém o vê, e deixá-lo rodando gastava a placa de vídeo e acumulava tinta do passeio do cursor, que aparecia de uma vez
+  // na troca. Quando a abertura sai, ele retoma com a tinta limpa
+  const [segurar, setSegurar] = useState(false)
+  const aoPrimeiroQuadro = useCallback(() => {
+    if (document.documentElement.dataset.abertura !== '1') return
+    setSegurar(true)
+    aguardar('abertura', 20000).then(() => setSegurar(false))
+  }, [])
   useEffect(() => {
     const el = raiz.current
     if (!el) return
@@ -319,12 +343,12 @@ export default function RetratoCena({ inteiro }: { inteiro: { current: number } 
       <Canvas
         // o painel viaja encolhendo (transform): o tamanho vem do elemento, não da caixa já encolhida
         resize={{ offsetSize: true }}
-        frameloop={visivel && pronto ? 'always' : 'never'}
+        frameloop={visivel && pronto && !segurar ? 'always' : 'never'}
         dpr={[1, 1.75]}
         camera={{ fov: 30, position: [0, 0, 10], near: 1, far: 40 }}
         gl={{ antialias: true, alpha: true, premultipliedAlpha: true }}
       >
-        <Plano alvo={raiz} inteiro={inteiro} aoPronto={aoPronto} pronto={pronto} />
+        <Plano alvo={raiz} inteiro={inteiro} aoPronto={aoPronto} aoPrimeiroQuadro={aoPrimeiroQuadro} pronto={pronto} />
       </Canvas>
     </div>
   )

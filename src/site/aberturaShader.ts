@@ -20,9 +20,23 @@ uniform sampler2D uFoto;
 uniform sampler2D uAura;  // a silhueta do corpo, de onde saem as curvas de nível do retrato
 uniform vec2 uOlhar;    // para onde olha (-1 a 1)
 uniform float uHud, uLiga, uCal, uProg, uPupila, uFlash, uSala, uIris, uPerto;
+uniform float uFase;    // relógio compartilhado com o retrato do topo (fase das curvas de nível)
 out vec4 saida;
 #define PI 3.14159265
 #define TAU 6.2831853
+
+// o relevo do rosto no retrato do topo (cópia do vertex shader de src/cena/Retrato.tsx): cabeça como cúpula, tronco e pescoço.
+// f: coordenadas da foto, y para cima. O herói empurra o plano para a câmera por esse relevo, o que aumenta o rosto em ~5 %
+const float RELEVO = 0.4689;
+float relevoFoto(vec2 f) {
+  vec2 c = (f - vec2(0.5, 0.71)) / vec2(0.25, 0.27);
+  float cabeca = sqrt(max(0.0, 1.0 - dot(c, c)));
+  vec2 t = (f - vec2(0.5, 0.0)) / vec2(0.62, 0.46);
+  float tronco = sqrt(max(0.0, 1.0 - dot(t, t))) * 0.55;
+  vec2 pp = (f - vec2(0.5, 0.47)) / vec2(0.11, 0.12);
+  float pescoco = sqrt(max(0.0, 1.0 - dot(pp, pp))) * 0.7;
+  return max(max(cabeca, tronco), pescoco);
+}
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float ruido(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
@@ -41,10 +55,12 @@ vec4 iris(vec2 q, float px) {
   float rm = length(qm), am = atan(qm.y, qm.x);
   vec3 cor = vec3(0.0);
   float cob = smoothstep(1.0 + px, 1.0 - px, r);
+  float m = px * 3.0 + 0.012; // margem das camadas (as bordas suaves têm o tamanho de um pixel)
   vec3 azul = vec3(0.07, 0.19, 1.0), aco = vec3(0.10, 0.12, 0.17), acoClaro = vec3(0.55, 0.6, 0.72);
   vec2 L = normalize(vec2(-0.55, 0.83)); // luz de cima à esquerda
 
   // 1. moldura de aço (0,86 a 1): gravação de 120 marcas, dois frisos e o brilho da luz na borda
+  if (r > 0.84 - m && r < 1.02 + m) {
   float mold = faixa(r, 0.86, 1.0, px);
   float n = dot(normalize(q), L);
   // aço escovado em círculos (riscos finos ao longo do anel) e um bisel: a borda de fora e a de dentro pegam luz
@@ -61,8 +77,10 @@ vec4 iris(vec2 q, float px) {
   cm += vec3(0.85, 0.9, 1.0) * bisel * (0.25 + 0.75 * max(0.0, n));
   cm *= 1.0 - 0.55 * smoothstep(0.9, 0.862, r); // sombra de contato onde a moldura encosta na íris
   cor = mix(cor, cm, mold);
+  }
 
   // 2. anel de calibração (0,74 a 0,84): 72 células que acendem com o carregamento, girando até alinhar
+  if (r > 0.62 && r < 0.97) {
   float rot = (1.0 - uCal) * 1.6 + uT * 0.015;
   float ac = fract((a + rot) / TAU + 1.0);
   float cel = floor(ac * 72.0), fc = fract(ac * 72.0);
@@ -78,8 +96,10 @@ vec4 iris(vec2 q, float px) {
   float vaza = faixa(r, 0.74, 0.84, px * 8.0) * acesa * uLiga;
   cor += azul * 0.22 * vaza * (1.0 - celula);
   cor = mix(cor, aco * 0.35, faixa(r, 0.84, 0.86, px) + faixa(r, 0.72, 0.745, px));
+  }
 
   // 3. fibras mecânicas (0,36 a 0,72): ranhuras radiais finas com relevo, dois frisos e o azul subindo de dentro
+  if (rm > 0.34 - m && rm < 0.74 + m) {
   float fib = faixa(rm, 0.36, 0.72, px);
   float sulco = 0.5 + 0.5 * cos(am * 180.0 + ruido(vec2(am * 30.0, rm * 8.0)) * 2.5);
   float relevo = 0.5 + 0.5 * cos(am * 36.0 + rm * 22.0);
@@ -95,16 +115,20 @@ vec4 iris(vec2 q, float px) {
   cf += vec3(0.8, 0.88, 1.0) * faisca * (0.5 + 0.5 * sin(uT * 2.0 + hash(floor(gq)) * 20.0 + uOlhar.x * 4.0)) * 0.9;
   cf *= 1.0 - 0.6 * smoothstep(0.72, 0.69, rm) * smoothstep(0.66, 0.72, rm); // oclusão sob o anel de calibração
   cor = mix(cor, cf, fib);
+  }
 
   // 4. núcleo emissivo (0,27 a 0,36): o anel aceso, branco por dentro
+  if (rf < 0.7) {
   float nuc = faixa(rf, 0.26, 0.37, px);
   float tremor = 0.85 + 0.15 * ruido(vec2(af * 5.0, uT * 6.0));
   vec3 cn = mix(azul * 2.2, vec3(0.85, 0.9, 1.0) * 2.4, smoothstep(0.345, 0.285, rf)) * tremor * uLiga;
   cor = mix(cor, cn, nuc);
   // a luz do núcleo se espalha para fora e para dentro (o brilho da lente)
   cor += azul * 0.55 * exp(-abs(rf - 0.31) * 16.0) * uLiga * (1.0 - nuc);
+  }
 
   // 5. diafragma (r < 0,27): oito lâminas em espiral e a pupila poligonal no meio
+  if (rf < 0.29 + m) {
   float ap = uPupila; // raio da abertura
   float N = 8.0, giro = (0.27 - ap) * 6.0;
   float sec = fract((af + giro) / TAU * N);
@@ -126,14 +150,17 @@ vec4 iris(vec2 q, float px) {
   cp += vec3(0.95, 0.4, 0.9) * 0.08 * linha(rp - 0.6, 0.04) * smoothstep(0.0, 1.0, -qf.x) * uLiga; // revestimento da lente
   cp += vec3(0.9, 0.95, 1.0) * 0.5 * smoothstep(0.08, 0.0, length((qf / max(ap, 0.01)) - vec2(-0.32, 0.36))) * uLiga;
   cor = mix(cor, cp, pup * step(rf, 0.27));
+  }
 
   // 6. a córnea: um reflexo de janela no alto à esquerda e um ponto de luz
+  if (r < 1.0 + m) {
   vec2 h = q - vec2(-0.34, 0.4);
   float jan = smoothstep(0.2, 0.0, length(h * vec2(1.0, 1.7))) * 0.16;
   float ponto = smoothstep(0.04, 0.0, length(q - vec2(-0.22, 0.32))) * 0.7;
   // o vidro da córnea: um arco de reflexo acompanhando a curva, no alto à esquerda
   float arco = smoothstep(0.02, 0.0, abs(r - 0.8)) * smoothstep(0.2, 0.9, dot(normalize(q), L)) * 0.12;
   cor += vec3(0.85, 0.9, 1.0) * (jan + ponto + arco) * cob;
+  }
 
   // halo azul fora da moldura (luz do núcleo vazando)
   float halo = exp(-max(0.0, r - 1.0) * 5.0) * (1.0 - cob) * 0.18 * uLiga;
@@ -190,55 +217,75 @@ vec3 poeira(vec2 q, float t) {
 
 void main() {
   vec2 frag = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr; // px css, y para baixo
+  vec2 tam = uRes / uDpr;
   // câmera: recua ancorada no olho. O ponto da tela corresponde a este ponto do enquadramento final:
   vec2 p1 = uE + (frag - uE) / uZ;
-  // a foto do rosto (com transparência), na posição do topo do site
-  vec2 uv = (p1 - uR.xy) / uR.zw;
-  vec4 foto = (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) ? texture(uFoto, uv) : vec4(0.0);
-  vec3 fundo = mix(vec3(0.008, 0.01, 0.03), vec3(0.0, 0.0, 0.5), uSala);
-  // a mesma composição do retrato do topo (src/cena/Retrato.tsx): o corpo se dissolve nas laterais e na borda de baixo
-  // (sem esse degradê, o ombro aparecia cortado em linha reta); depois, o halo azul e as curvas de nível da silhueta
-  vec2 f = vec2(uv.x, 1.0 - uv.y);
-  float dentro = step(0.0, f.x) * step(f.x, 1.0) * step(0.0, f.y) * step(f.y, 1.0);
-  float sy = 1.0 - p1.y / (uRes.y / uDpr);
-  float diss = smoothstep(0.02, 0.22, f.x) * smoothstep(0.98, 0.78, f.x) * smoothstep(0.0, 0.2, sy) * smoothstep(0.0, 0.16, f.y) * dentro;
-  float alfa = foto.a * diss;
-  // a foto aparece com a luz da sala: antes, só um vulto escuro e azulado
-  vec3 cf = foto.rgb * diss * mix(0.12, 1.0, uSala) + vec3(0.0, 0.02, 0.12) * (1.0 - uSala) * alfa;
-  vec3 cor = mix(fundo, cf, alfa * mix(0.55, 1.0, uSala));
-  // (a imagem entra sem inverter o eixo Y, ao contrário do three.js do herói: aqui se amostra com o uv de cima para baixo)
-  float aura = texture(uAura, clamp(uv, 0.0, 1.0)).r * diss;
-  float kk = aura * 9.0 - uT * 0.22;
-  float dk = min(fract(kk), 1.0 - fract(kk));
-  float linhaN = 1.0 - smoothstep(0.0, fwidth(kk) * 1.3, dk);
-  float faixaN = smoothstep(0.012, 0.1, aura) * (1.0 - smoothstep(0.6, 0.9, aura));
-  float fora = 1.0 - alfa;
-  cor = mix(cor, vec3(0.0, 0.0, 0.94), smoothstep(0.3, 0.8, aura) * fora * 0.035 * uSala);
-  cor = mix(cor, vec3(0.647, 0.663, 0.706), linhaN * faixaN * fora * 0.5 * uSala);
 
-  // o olho procedimental: em unidades do olho (raio uEr no enquadramento final)
+  // o olho procedimental: em unidades do olho (raio uEr no enquadramento final). Só os pixels dele e do halo fazem a conta
   vec2 q = (frag - uE) / (uZ * uEr * uIris);
   float px = 1.0 / (uZ * uEr * uIris);
-  vec4 o = iris(q, px * 1.2);
-  // aberração cromática de lente: o vermelho e o azul saem um pouco deslocados nas bordas fortes, mais longe do centro
   float rq = length(q);
-  if (rq > 0.2 && rq < 1.1 && uPerto > 0.01) {
-    float ca = 0.006 * smoothstep(0.2, 1.0, rq);
-    o.r = iris(q * (1.0 + ca), px * 1.2).r;
-    o.b = iris(q * (1.0 - ca), px * 1.2).b;
+  vec4 o = vec4(0.0);
+  if (uPerto > 0.01 && rq < 2.4) {
+    o = iris(q, px * 1.2);
+    // aberração cromática de lente: o vermelho e o azul saem um pouco deslocados, só nas bordas fortes (o anel de fora)
+#ifdef COM_CA
+    if (rq > 0.6 && rq < 1.06) {
+      float ca = 0.006 * smoothstep(0.2, 1.0, rq);
+      o.r = iris(q * (1.0 + ca), px * 1.2).r;
+      o.b = iris(q * (1.0 - ca), px * 1.2).b;
+    }
+#endif
   }
+
+  vec3 fundo = mix(vec3(0.008, 0.01, 0.03), vec3(0.0, 0.0, 0.5), uSala);
+  vec3 cor = fundo;
+  // dentro do disco do olho a foto fica coberta: nem se lê a textura
+  if (!(uPerto > 0.99 && o.a > 0.99)) {
+    // o herói empurra o rosto para a câmera pelo relevo (perspectiva: fov 30, câmera a 10): onde o ponto da tela estava
+    // na foto plana? Três passos do ponto fixo bastam
+    vec2 cen = 0.5 * tam;
+    vec2 g = p1;
+    for (int i = 0; i < 3; i++) {
+      vec2 ug = (g - uR.xy) / uR.zw;
+      float zz = relevoFoto(clamp(vec2(ug.x, 1.0 - ug.y), 0.0, 1.0)) * RELEVO;
+      g = cen + (p1 - cen) * (10.0 - zz) / 10.0;
+    }
+    vec2 uv = (g - uR.xy) / uR.zw;
+    vec4 foto = (uv.x >= 0.0 && uv.x <= 1.0 && uv.y >= 0.0 && uv.y <= 1.0) ? texture(uFoto, uv) : vec4(0.0);
+    // a mesma composição do retrato do topo (src/cena/Retrato.tsx): o corpo se dissolve nas laterais e na borda de baixo
+    // (sem esse degradê, o ombro aparecia cortado em linha reta); depois, o halo azul e as curvas de nível da silhueta
+    vec2 f = vec2(uv.x, 1.0 - uv.y);
+    float dentro = step(0.0, f.x) * step(f.x, 1.0) * step(0.0, f.y) * step(f.y, 1.0);
+    float sy = 1.0 - g.y / tam.y;
+    float diss = smoothstep(0.02, 0.22, f.x) * smoothstep(0.98, 0.78, f.x) * smoothstep(0.0, 0.2, sy) * smoothstep(0.0, 0.16, f.y) * dentro;
+    float alfa = foto.a * diss;
+    // a foto aparece com a luz da sala: antes, só um vulto escuro e azulado
+    vec3 cf = foto.rgb * diss * mix(0.12, 1.0, uSala) + vec3(0.0, 0.02, 0.12) * (1.0 - uSala) * alfa;
+    cor = mix(fundo, cf, alfa * mix(0.55, 1.0, uSala));
+    // (a imagem entra sem inverter o eixo Y, ao contrário do three.js do herói: aqui se amostra com o uv de cima para baixo)
+    float aura = texture(uAura, clamp(uv, 0.0, 1.0)).r * diss;
+    float kk = aura * 9.0 - uFase * 0.22;
+    float dk = min(fract(kk), 1.0 - fract(kk));
+    float linhaN = 1.0 - smoothstep(0.0, fwidth(kk) * 1.3, dk);
+    float faixaN = smoothstep(0.012, 0.1, aura) * (1.0 - smoothstep(0.6, 0.9, aura));
+    float fora = 1.0 - alfa;
+    cor = mix(cor, vec3(0.0, 0.0, 0.94), smoothstep(0.3, 0.8, aura) * fora * 0.035 * uSala);
+    cor = mix(cor, vec3(0.647, 0.663, 0.706), linhaN * faixaN * fora * 0.5 * uSala);
+  }
+
   // de perto ele é a cena; de longe, se funde no olho da foto
   cor = mix(cor, o.rgb, o.a * uPerto);
   cor += o.rgb * (1.0 - o.a) * uPerto; // halo e reflexos fora da moldura
-  cor += hud(q, px * 1.1) * uHud * uPerto;
-  cor += poeira(q, uT) * uLiga * uPerto * (1.0 - uSala);
+  if (uHud * uPerto > 0.01 && rq > 1.0 && rq < 4.5) cor += hud(q, px * 1.1) * uHud * uPerto;
+  if (uLiga * uPerto * (1.0 - uSala) > 0.01 && rq < 3.0) cor += poeira(q, uT) * uLiga * uPerto * (1.0 - uSala);
   // no foco, um risco anamórfico horizontal atravessa a tela
   cor += vec3(0.45, 0.55, 1.0) * uFlash * exp(-abs(q.y) * 60.0) * exp(-abs(q.x) * 0.25) * 0.9;
 
   // câmera: tom, vinheta e grão (somem quando a sala acende)
   // (com a sala acesa o mapeamento de tom sai de cena: a imagem final tem de ser idêntica à do retrato do topo)
   cor = mix(1.0 - exp(-cor * 1.25), cor, uSala);
-  float vin = smoothstep(1.25, 0.3, length((frag / (uRes / uDpr) - 0.5) * vec2(1.4, 1.0)));
+  float vin = smoothstep(1.25, 0.3, length((frag / tam - 0.5) * vec2(1.4, 1.0)));
   cor *= mix(1.0, mix(0.35, 1.0, vin), 1.0 - uSala);
   cor += (hash(gl_FragCoord.xy + fract(uT * 7.0) * 100.0) - 0.5) * 0.045 * (1.0 - uSala * 0.8);
   saida = vec4(cor, 1.0);
