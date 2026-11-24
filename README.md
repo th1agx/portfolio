@@ -117,21 +117,24 @@ O site defende uma ideia: **sistemas que se explicam**. É a mesma regra dos pro
 
 ```
 src/
-├── app/        layout, página, tokens de design, fontes, robots e sitemap
-├── site/       as seções (DOM) e quem rege a página
-│   ├── Heroi · Ideia · Projetos · Trajetoria · Contato     as seções, na ordem do passeio
-│   ├── Abertura + aberturaMotor + abertura.worker           a íris de carregamento, num Worker
-│   ├── Rolagem · Temas · Cabecalho · GuiaRobo                rolagem suave, cor da página, menu, robô guia
-│   └── fila · tempoGlobal · projecao                         montagem das cenas, relógio comum, recorte 3D
-├── cena/       tudo o que é desenhado na placa de vídeo
-│   ├── Retrato + fluido     retrato do topo e a simulação de fluido que revela o robô
-│   ├── lua                  o vale lunar (WebGL 2 puro, raymarch)
-│   ├── Obras                o mundo dos projetos (R3F)
-│   ├── ateAqui · trilhaTela os cartões e a trilha do "Até aqui", e a linha que vem dos projetos
-│   ├── Tunel · portalTunel  o túnel e a boca dele na página
-│   ├── RoboAgente · Guia    o robô (modelado no código) e o guia que voa pela página
-│   └── Precompilar · contexto  shaders e texturas prontos antes da hora, e volta de contexto WebGL perdido
-└── content/    perfil, projetos e endereço do site: o conteúdo, separado de quem o mostra
+├── app/                              layout, página, tokens de design, fontes, robots e sitemap
+├── site/                             as seções (DOM) e quem rege a página
+│   ├── Heroi, Ideia, Projetos,       as seções, na ordem do passeio
+│   │   Trajetoria, Contato
+│   ├── Abertura + aberturaMotor      a íris de carregamento,
+│   │   + abertura.worker             desenhada num Worker
+│   ├── Rolagem, Temas,               rolagem suave, cor da página,
+│   │   Cabecalho, GuiaRobo           menu e robô guia
+│   └── fila, tempoGlobal, projecao   montagem das cenas, relógio comum, recorte 3D
+├── cena/                             tudo o que é desenhado na placa de vídeo
+│   ├── Retrato + fluido              retrato do topo e o fluido que revela o robô
+│   ├── lua                           o vale lunar (WebGL 2 puro, raymarch)
+│   ├── Obras                         o mundo dos projetos (R3F)
+│   ├── ateAqui + trilhaTela          os cartões e a trilha do "Até aqui"
+│   ├── Tunel + portalTunel           o túnel e a boca dele na página
+│   ├── RoboAgente + Guia             o robô (modelado no código) e o guia
+│   └── Precompilar + contexto        shaders prontos antes da hora, contexto WebGL de volta
+└── content/                          perfil, projetos e endereço: o conteúdo, separado de quem o mostra
 ```
 
 ```mermaid
