@@ -216,6 +216,11 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
       alvoX += (roboBoca.x - alvoX) * colado
       alvoY += (roboBoca.y + (ALTURA * roboBoca.escala) / 2 - alvoY) * colado
     }
+    // nunca colado na borda de baixo: os pés e a chama cortavam, e em janelas com a parte de baixo escondida (barras, Dock) ele sumia
+    if (!folga && !r.fase && colado === 0) {
+      const limite = vh - Math.max(84, vh * 0.11)
+      if (alvoY > limite) alvoY = limite
+    }
     const sp = naBoca ? 1 - Math.exp(-45 * dt) : s
     pos.current.x += (alvoX - pos.current.x) * sp
     pos.current.y += (alvoY - pos.current.y) * sp

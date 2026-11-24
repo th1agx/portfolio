@@ -24,7 +24,7 @@ import {
   type Group,
 } from 'three'
 import { projetos, imagensDaParede } from '@/content/projetos'
-import { trilhaTela } from './trilhaTela'
+import { trilhaTela, fovObras } from './trilhaTela'
 import { Precompilar } from './Precompilar'
 
 // Os projetos como um mundo em profundidade:
@@ -387,7 +387,7 @@ function Grade({ chegada }: { chegada: Ref }) {
     mat.current.uniforms.uTempo!.value = st.clock.elapsedTime
     // pontos em pixels do aparelho: a escala e os limites levam a densidade da tela (no Mac, 2x)
     mat.current.uniforms.uDpr!.value = st.gl.getPixelRatio()
-    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan((50 * Math.PI) / 360))
+    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan(((st.camera as PerspectiveCamera).fov * Math.PI) / 360))
   })
   return (
     <points geometry={geo} frustumCulled={false} renderOrder={0}>
@@ -476,7 +476,7 @@ function Matriz({ chegada }: { chegada: Ref }) {
     mat.current.uniforms.uTempo!.value = st.clock.elapsedTime
     // pontos em pixels do aparelho: a escala e os limites levam a densidade da tela (no Mac, 2x)
     mat.current.uniforms.uDpr!.value = st.gl.getPixelRatio()
-    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan((50 * Math.PI) / 360))
+    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan(((st.camera as PerspectiveCamera).fov * Math.PI) / 360))
   })
   return (
     <points geometry={geo} frustumCulled={false} renderOrder={0}>
@@ -548,7 +548,7 @@ function Poeira({ chegada }: { chegada: Ref }) {
     mat.current.uniforms.uTempo!.value = st.clock.elapsedTime
     // pontos em pixels do aparelho: a escala e os limites levam a densidade da tela (no Mac, 2x)
     mat.current.uniforms.uDpr!.value = st.gl.getPixelRatio()
-    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan((50 * Math.PI) / 360))
+    mat.current.uniforms.uEscala!.value = (size.height * st.gl.getPixelRatio()) / (2 * Math.tan(((st.camera as PerspectiveCamera).fov * Math.PI) / 360))
   })
   return (
     <points geometry={geo} frustumCulled={false} renderOrder={0}>
@@ -779,7 +779,8 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
     const fim = new Vector3()
     caminho.getPointAt(1, fim)
     fim.set(fim.x, fim.y + 8 + 102, fim.z + 45)
-    const cam = new PerspectiveCamera(50, size.width / size.height, 0.1, 1000)
+    const fovAqui = fovObras(size.width, size.height)
+    const cam = new PerspectiveCamera(fovAqui, size.width / size.height, 0.1, 1000)
     cam.position.copy(fim)
     cam.up.set(0, 0, 1)
     cam.lookAt(fim.x, fim.y - 40, fim.z)
@@ -794,7 +795,7 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
     }
     if (pts.length >= 2) {
       trilhaTela.pontos = pts
-      trilhaTela.meia = (0.55 * size.height) / (2 * 110 * Math.tan((50 * Math.PI) / 360))
+      trilhaTela.meia = (0.55 * size.height) / (2 * 110 * Math.tan((fovAqui * Math.PI) / 360))
       trilhaTela.versao++
     }
   }, [caminho, size.width, size.height])
@@ -835,6 +836,11 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05)
+    const fovAlvo = fovObras(size.width, size.height)
+    if (Math.abs((camera as PerspectiveCamera).fov - fovAlvo) > 0.01) {
+      ;(camera as PerspectiveCamera).fov = fovAlvo
+      camera.updateProjectionMatrix()
+    }
     resta = 1 - suave(prende((junta.current - 0.55) / 0.35))
     caminho.getPointAt(prende(progresso.current), alvo)
     // a chegada: enquanto a câmera do vale ergue os olhos, este mundo desce do alto para o quadro
@@ -874,7 +880,7 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
       }
       trilhaTela.pontos = pts
       // o tubo largo (raio 0,55) visto de cima, a ~110 de altura: metade da largura dele na tela, em px
-      trilhaTela.meia = (0.55 * size.height) / (2 * 110 * Math.tan((50 * Math.PI) / 360))
+      trilhaTela.meia = (0.55 * size.height) / (2 * 110 * Math.tan(((camera as PerspectiveCamera).fov * Math.PI) / 360))
       trilhaTela.versao++
     }
     // quais capas aparecem: as duas à frente (entram em 2 s, saem em 1 s) e somem ao serem atravessadas

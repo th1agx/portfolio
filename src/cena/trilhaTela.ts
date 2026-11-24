@@ -25,3 +25,12 @@ export const roboBoca = { ativo: false, x: 0, y: 0, escala: 1, t: 0 }
 /** raio, em px, que a boca do túnel (anéis de raio 4,6) tem na tela para um furo de raio R: igual ao do furo enquanto a câmera
  *  consegue se aproximar, menor depois (a câmera para a 6 unidades) */
 export const raioDaBocaNaTela = (R: number, H: number) => (4.6 * H) / (2 * 0.5543 * distanciaEntrada(R, H))
+
+/** campo de visão vertical da câmera dos projetos: 50° em telas largas; em telas mais estreitas que 16:10 ele cresce para a câmera
+ *  continuar vendo a mesma largura, senão as capas (paisagem) saíam cortadas nas laterais */
+export const fovObras = (largura: number, altura: number) => {
+  const a = largura / Math.max(1, altura)
+  if (a >= 1.6) return 50
+  const h = Math.tan((25 * Math.PI) / 180) * 1.6
+  return Math.min(100, (2 * Math.atan(h / a) * 180) / Math.PI)
+}

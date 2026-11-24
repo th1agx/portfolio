@@ -38,7 +38,7 @@
 .carga {
   position: absolute;
   left: var(--margem);
-  bottom: max(18px, 3vh);
+  bottom: max(28px, 8.5vh);
   display: grid;
   gap: 6px;
   opacity: 0;
@@ -99,7 +99,7 @@
 .pular {
   position: absolute;
   right: var(--margem);
-  bottom: max(18px, 3vh);
+  bottom: max(28px, 8.5vh);
   padding: 8px 0;
   border: 0;
   background: none;

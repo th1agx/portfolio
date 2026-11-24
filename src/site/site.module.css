@@ -1103,7 +1103,8 @@
   font-family: var(--font-display);
   font-weight: var(--peso-display);
   letter-spacing: var(--track-display);
-  font-size: max(34px, 6.4vw);
+  /* cabe numa linha em qualquer largura: o e-mail tem ~13,2 vezes o tamanho da fonte */
+  font-size: min(6.4vw, calc((100vw - 2 * var(--margem)) / 13.6));
   line-height: 1;
   text-decoration: none;
   overflow-wrap: anywhere;
