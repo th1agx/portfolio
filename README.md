@@ -1,12 +1,6 @@
 <div align="center">
 
-<a href="https://th1agx.github.io/portifolio/"><img src="docs/readme/banner.svg" alt="Thiago Antunes, engenheiro de software. O retrato meio humano, meio robô, com a trilha de luz e as curvas de nível do topo do site." width="100%"></a>
-
-<br>
-
-[![Ver o site](https://img.shields.io/badge/ver_o_site-th1agx.github.io%2Fportifolio-0000F0?style=for-the-badge&labelColor=000080)](https://th1agx.github.io/portifolio/)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Thiago_Filipe-0000F0?style=for-the-badge&labelColor=000080&logo=linkedin&logoColor=E8EDF5)](https://www.linkedin.com/in/thiagofilipeantunes)
-[![Publicação](https://img.shields.io/github/actions/workflow/status/th1agx/portifolio/pages.yml?style=for-the-badge&label=pages&labelColor=000080&color=0000F0)](https://github.com/th1agx/portifolio/actions/workflows/pages.yml)
+<a href="https://th1agx.github.io/portifolio/"><img src="docs/readme/banner.svg" alt="Thiago Antunes, engenheiro de software. O retrato meio humano, meio robô, sobre o relevo de curvas de nível do topo do site." width="100%"></a>
 
 </div>
 
@@ -108,18 +102,7 @@ src/
 └── content/                          perfil, projetos e endereço: o conteúdo, separado de quem o mostra
 ```
 
-```mermaid
-%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#000080", "primaryTextColor": "#E8EDF5", "primaryBorderColor": "#0000F0", "lineColor": "#8FB0FF", "secondaryColor": "#02031A", "tertiaryColor": "#050505", "fontFamily": "Inter, sans-serif"}}}%%
-flowchart LR
-    R["Rolagem<br/>Lenis + ScrollTrigger"] --> S["Seções<br/>Heroi · Ideia · Projetos · Trajetoria"]
-    S --> T["Temas<br/>cor do html"]
-    F["fila<br/>monta uma cena por vez,<br/>quando o visitante para"] --> C["Cenas WebGL<br/>Retrato · lua · Obras · ateAqui · Tunel"]
-    C --> P["Precompilar<br/>shaders e texturas<br/>antes de aparecer"]
-    P -- "pronta" --> F
-    C -. "contexto perdido" .-> X["contexto<br/>refaz a cena"]
-    O["Obras<br/>vista de cima"] -- "trilhaTela<br/>onde a linha está" --> A["ateAqui<br/>a linha continua"]
-    W["Worker<br/>íris da abertura"] -- "tempoGlobal" --> RT["Retrato<br/>mesma fase"]
-```
+<p align="center"><img src="docs/readme/arquitetura.svg" width="100%" alt="Arquitetura: a página (rolagem, seções e temas), as cenas na placa de vídeo (a fila monta uma por vez, o Precompilar deixa shaders e texturas prontos, e a cena se refaz se o contexto for perdido) e as cenas que conversam sem acoplamento: trilhaTela, tempoGlobal, bocaTela e roboBoca."></p>
 
 **Decisões que seguram o desempenho:**
 
@@ -162,7 +145,7 @@ npm start
 
 **Publicação.** Cada push na `main` roda o workflow [`pages.yml`](.github/workflows/pages.yml): `npm ci`, `next build` com `output: 'export'` e o envio da pasta `out` para o GitHub Pages. O caminho base vem do nome do repositório (`/${{ github.event.repository.name }}`), então o site continua funcionando se o repositório for renomeado.
 
-O banner animado deste README sai de [`tools/readme-svg.py`](tools/readme-svg.py), com o retrato e a fonte do site embutidos.
+O banner animado e o diagrama da arquitetura deste README saem de [`tools/readme-svg.mjs`](tools/readme-svg.mjs) (`node tools/readme-svg.mjs`), com o retrato e a fonte do site embutidos.
 
 <br>
 
