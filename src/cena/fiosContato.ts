@@ -106,7 +106,8 @@ function montarLinhas() {
       pts.push(o(n * n * a + 2 * n * t * lift + t * t * lift, s, t * t * f + 0.03))
     }
     // e explode: um tentáculo do jobhunt sai do núcleo para o alto e para fora, guiado por ruído e por um giro em volta de um eixo
-    const th = 1.25 * Math.pow(rnd(), 0.85) + 0.02
+    // do quase vertical ao quase horizontal, com mais peso nos ângulos abertos: a copa se abre para os lados
+    const th = 0.04 + 1.48 * Math.pow(rnd(), 0.6)
     const dir = norm([Math.sin(s) * Math.sin(th), Math.cos(th), Math.cos(s) * Math.sin(th)])
     const comp = faixa(8, 23)
     const sv = lerp(0.55, 1.25, rnd())
@@ -204,7 +205,7 @@ function montarLinhas() {
   const tentaculos = (n: number) => {
     const lista: Linha[] = []
     for (let i = 0; i < n; i++) {
-      const dir = norm([rnd() * 2 - 1, rnd() * 0.9 + 0.05, rnd() * 2 - 1])
+      const dir = norm([rnd() * 2 - 1, rnd() * 0.55 + 0.02, rnd() * 2 - 1])
       const comp = lerp(6, 11.5, Math.pow(rnd(), 0.8))
       const sv = lerp(0.55, 1.25, rnd())
       const cg = lerp(0.18, 0.5, rnd())
@@ -250,7 +251,7 @@ function montarLinhas() {
     }
     return lista
   }
-  return [...anel(P.perto, P.pertoMin, P.pertoMax, 1), ...anel(P.longe, P.longeMin, P.longeMax, 0.6), ...tentaculos(40)]
+  return [...anel(P.perto, P.pertoMin, P.pertoMax, 1), ...anel(P.longe, P.longeMin, P.longeMax, 0.6), ...tentaculos(70)]
 }
 
 /* ---------- shaders ---------- */
@@ -639,10 +640,11 @@ export function criarFios(canvas: HTMLCanvasElement, op: OpcoesFios) {
     reiniciar() {},
     /** a chegada (0 a 1, da rolagem): o núcleo aparece à frente; o céu cobre o túnel; os fios brotam do núcleo; a câmera se aproxima */
     chegada(c: number) {
-      nucleo = suave(0, 0.3, c)
-      ceuA = suave(0.3, 0.56, c)
-      entrada = suave(0.4, 0.95, c)
-      viagem = suave(0.28, 1, c)
+      // o robô some até 0,38; só o núcleo pulsa no céu até 0,55 (uma pausa antes dos raios); aí os fios brotam
+      nucleo = suave(0, 0.25, c)
+      ceuA = suave(0.28, 0.5, c)
+      entrada = suave(0.55, 0.92, c)
+      viagem = suave(0.4, 1, c)
     },
     camera() {
       return cam
@@ -670,14 +672,15 @@ export function criarFios(canvas: HTMLCanvasElement, op: OpcoesFios) {
       const asp = W / H
       const tanH = Math.tan(fov / 2)
       // em tela estreita, recua até caber o vidro (≈ 10,5 unidades de largura na altura do cartão)
-      const perto = Math.max(21, 5.4 / (tanH * asp))
+      const perto = Math.max(26, 7 / (tanH * asp))
       const longe = perto + 90
       const ease = 1 - Math.pow(1 - viagem, 3)
       const dist = lerp(longe, perto, ease)
       const nx = clamp(px / W, 0, 1) * 2 - 1
       yaw += (-nx * 0.3 * pres - yaw) * (1 - Math.exp(-3 * dt))
-      const alvo: V3 = [0, lerp(1.1, 5.4, ease), lerp(0, 7, ease)]
-      const olho: V3 = [Math.sin(yaw) * dist, lerp(1.1, 4, ease), alvo[2] + Math.cos(yaw) * dist]
+      // no fim, a câmera mira um pouco acima do núcleo, quase na altura dele: a explosão fica no meio da tela
+      const alvo: V3 = [0, lerp(1.1, 3.6, ease), 0]
+      const olho: V3 = [Math.sin(yaw) * dist, lerp(1.1, 2.4, ease), Math.cos(yaw) * dist]
       const { V, direita, cima, frente } = olharPara(olho, alvo)
       const Pm = perspectiva(fov, asp, 0.3, 200)
       const VP = mult(Pm, V)

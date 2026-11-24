@@ -45,7 +45,7 @@ const ESTRADA = 7.7
 // telas de rolagem reservadas, no fim da estrada, para o furo abrir (eram 1,25: rolando rápido, a abertura mal aparecia)
 const RESERVA_FURO = 2.75
 const TUNEL = 14
-const CONTATO = 1.2
+const CONTATO = 3.6
 const TOTAL = ESTRADA + TUNEL + CONTATO
 
 // O buraco por onde o robô entra no túnel: um círculo recortado da camada da estrada (subcaminho para o evenodd). O buraco
@@ -316,7 +316,7 @@ export function Trajetoria() {
       const ch = Math.min(1, Math.max(0, (P - (ESTRADA + TUNEL - 2.2) / TOTAL) / ((2.2 + CONTATO * 0.9) / TOTAL)))
       chegadaContato.p = ch
       contato.current!.dataset.on = ch > 0.001 ? '1' : '0'
-      tunel.current!.style.opacity = (1 - passo(0.46, 0.64, ch)).toFixed(3)
+      tunel.current!.style.opacity = (1 - passo(0.4, 0.56, ch)).toFixed(3)
       if (ch > 0.55) raiz.dataset.final = '1'
       else delete raiz.dataset.final
     }

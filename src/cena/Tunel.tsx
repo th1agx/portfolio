@@ -357,7 +357,7 @@ function Corredor({ progresso, bloom }: { progresso: { current: number }; bloom:
       // só um robô por vez: este só aparece quando o robô guia da página some (data-tunel)
       // (só o corpo some: as luzes dele ficam acesas, porque mudar a contagem de luzes recompila a cena toda)
       // na chegada ao contato ele voa até o núcleo de luz à frente e some dentro dele (preso à rolagem: subindo, ele sai de lá)
-      sumir.current = MathUtils.smoothstep(chegadaContato.p, 0.2, 0.5)
+      sumir.current = MathUtils.smoothstep(chegadaContato.p, 0.16, 0.38)
       if (corpo.current) {
         corpo.current.visible = document.documentElement.dataset.tunel === '1' && sumir.current < 0.98
         corpo.current.scale.setScalar(Math.max(0.001, 1 - sumir.current))

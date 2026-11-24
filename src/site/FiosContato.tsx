@@ -55,7 +55,7 @@ export function FiosContato() {
       cena.ponteiro(px - r.left, py - r.top, dentro)
       cena.desenhar(dt, r.width, r.height)
       // o contato entra no fim da chegada; as letras recomeçam cada vez que ele aparece
-      const v = Math.min(1, Math.max(0, (ch - 0.84) / 0.14))
+      const v = Math.min(1, Math.max(0, (ch - 0.88) / 0.1))
       hu.style.opacity = v.toFixed(3)
       hu.style.visibility = v > 0.01 ? 'visible' : 'hidden'
       if (v > 0.3 && secao.dataset.vivo !== '1') secao.dataset.vivo = '1'
