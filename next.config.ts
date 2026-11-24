@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
-// No GitHub Pages o site fica em /<nome do repositório>: o workflow passa PAGES_BASE_PATH na hora do build.
+// O site é publicado na Vercel, na raiz de thiagoantunes.com. PAGES_BASE_PATH só serve se ele voltar a ser publicado numa
+// subpasta (como no GitHub Pages, em /<nome do repositório>); sem ela, o caminho base é vazio.
 const base = process.env.PAGES_BASE_PATH ?? ''
 
 const config: NextConfig = {

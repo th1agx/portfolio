@@ -40,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR" className={inter.variable}>
       <head>
-        {/* o GitHub Pages não deixa configurar headers: a CSP e a política de referrer vão por <meta>. Os scripts e estilos
+        {/* o site é estático e não configura headers: a CSP e a política de referrer vão por <meta>. Os scripts e estilos
             em linha são os que o próprio Next injeta; o resto só carrega do próprio site */}
         <meta
           httpEquiv="Content-Security-Policy"

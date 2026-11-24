@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://th1agx.github.io/portifolio/"><img src="docs/readme/banner.svg" alt="Thiago Antunes, engenheiro de software. O retrato meio humano, meio robô, sobre o relevo de curvas de nível do topo do site." width="100%"></a>
+<a href="https://thiagoantunes.com/"><img src="docs/readme/banner.svg" alt="Thiago Antunes, engenheiro de software. O retrato meio humano, meio robô, sobre o relevo de curvas de nível do topo do site." width="100%"></a>
 
 </div>
 
@@ -61,14 +61,14 @@ O site defende uma ideia: **sistemas que se explicam**. É a mesma regra dos pro
 
 | Camada | O quê | Para quê |
 |---|---|---|
-| Base | **Next.js 16** (exportação estática), **React 19**, **TypeScript** | páginas estáticas no GitHub Pages, sem servidor |
+| Base | **Next.js 16** (exportação estática), **React 19**, **TypeScript** | páginas estáticas servidas pela Vercel, sem servidor próprio |
 | 3D | **three.js 0.186**, **React Three Fiber 9**, **drei**, **postprocessing** | o mundo dos projetos, o túnel, o robô e o retrato |
 | Shaders | **GLSL** escrito à mão e **WebGL 2 puro** | o vale em raymarch, os cartões do "Até aqui", a íris da abertura, o fluido do retrato |
 | Movimento | **GSAP 3** com **ScrollTrigger**, **Lenis** | a rolagem suave e tudo o que anda preso a ela |
 | Fora da thread principal | **Web Worker** + **OffscreenCanvas** | a abertura continua a 60 quadros enquanto a página monta |
 | Tipografia | **Cabinet Grotesk** (400, 500, 800) | a mesma fonte no site e no banner deste README |
 | Ferramentas | **ESLint**, **Playwright** | lint e a conferência visual de cada mudança, rolando o site de verdade |
-| Publicação | **GitHub Actions** → **GitHub Pages** | cada push na `main` vira o site no ar |
+| Publicação | **Vercel** (repositório conectado) | cada push na `main` vira o site no ar em thiagoantunes.com |
 
 | Cor | Hex | Uso |
 |---|---|---|
@@ -143,7 +143,7 @@ npm run build
 npm start
 ```
 
-**Publicação.** Cada push na `main` roda o workflow [`pages.yml`](.github/workflows/pages.yml): `npm ci`, `next build` com `output: 'export'` e o envio da pasta `out` para o GitHub Pages. O caminho base vem do nome do repositório (`/${{ github.event.repository.name }}`), então o site continua funcionando se o repositório for renomeado.
+**Publicação.** O repositório está conectado à Vercel: cada push na `main` roda `next build` (`output: 'export'`, configurado em [`vercel.json`](vercel.json) e [`next.config.ts`](next.config.ts)) e o resultado vai ao ar em [thiagoantunes.com](https://thiagoantunes.com/), na raiz do domínio.
 
 O banner animado e o diagrama da arquitetura deste README saem de [`tools/readme-svg.mjs`](tools/readme-svg.mjs) (`node tools/readme-svg.mjs`), com o retrato e a fonte do site embutidos.
 
