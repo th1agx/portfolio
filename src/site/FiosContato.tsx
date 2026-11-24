@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { perfil } from '@/content/perfil'
 import { chegadaContato } from '@/cena/trilhaTela'
+import { useTextos } from '@/content/idioma'
 import { IconeEmail, IconeGitHub, IconeLinkedIn } from './icones'
 
 // O fim do site: a cena (src/cena/fiosContato.ts) e, no pé da tela, a legenda do contato, na mesma linguagem da legenda dos projetos
@@ -10,15 +11,14 @@ import { IconeEmail, IconeGitHub, IconeLinkedIn } from './icones'
 // (presa à rolagem) e gira um pouco com o mouse, junto com a cena.
 // O módulo da cena só é baixado e o contexto WebGL só é criado quando o contato aparece (data-on da camada).
 
-const CHAMADA = 'Se quiser conversar sobre um sistema, escreva.'
-
 const LINKS = [
-  { nome: 'E-mail', href: `mailto:${perfil.email}`, Icone: IconeEmail },
-  { nome: 'GitHub', href: perfil.github, Icone: IconeGitHub },
-  { nome: 'LinkedIn', href: perfil.linkedin, Icone: IconeLinkedIn },
+  { nome: 'E-mail', chave: 'email', href: `mailto:${perfil.email}`, Icone: IconeEmail },
+  { nome: 'GitHub', chave: 'github', href: perfil.github, Icone: IconeGitHub },
+  { nome: 'LinkedIn', chave: 'linkedin', href: perfil.linkedin, Icone: IconeLinkedIn },
 ]
 
 export function FiosContato() {
+  const t = useTextos()
   const tela = useRef<HTMLCanvasElement>(null)
   const hud = useRef<HTMLDivElement>(null)
 
@@ -187,7 +187,7 @@ export function FiosContato() {
         <span className="legenda-vinheta" aria-hidden />
         <div className="legenda-painel">
           <p className="legenda-linha">
-            <span>{CHAMADA}</span>
+            <span>{t.contato.chamada}</span>
           </p>
           <p className="legenda-links">
             {LINKS.map(({ nome, href, Icone }) => (
@@ -197,7 +197,7 @@ export function FiosContato() {
                 href={href}
                 target={href.startsWith('mailto:') ? undefined : '_blank'}
                 rel="noopener noreferrer"
-                aria-label={nome === 'E-mail' ? `E-mail: ${perfil.email}` : nome}
+                aria-label={nome === 'E-mail' ? `${t.menu.email}: ${perfil.email}` : nome}
               >
                 <span className="legenda-icone" aria-hidden>
                   <Icone />

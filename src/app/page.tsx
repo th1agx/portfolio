@@ -4,6 +4,7 @@ import { Cabecalho } from '@/site/Cabecalho'
 import { Heroi } from '@/site/Heroi'
 import { GuiaRobo } from '@/site/GuiaRobo'
 import { Ideia } from '@/site/Ideia'
+import { PularLink } from '@/site/PularLink'
 import { Projetos } from '@/site/Projetos'
 import { Rolagem } from '@/site/Rolagem'
 import { Temas } from '@/site/Temas'
@@ -34,9 +35,7 @@ export default function Page() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c') }} />
-      <a className="pular" href="#ideia">
-        Pular para o conteúdo
-      </a>
+      <PularLink />
       <Rolagem />
       <Temas />
       <Cabecalho />

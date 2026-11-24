@@ -8,6 +8,7 @@ import { Environment, Lightformer } from '@react-three/drei'
 import { BufferGeometry, DoubleSide, Group, HalfFloatType, Mesh, MeshBasicMaterial, OrthographicCamera, PerspectiveCamera, PlaneGeometry, PMREMGenerator, Scene, WebGLCubeRenderTarget, type Material, type WebGLRenderTarget } from 'three'
 import { RoboAgente, type AcaoRobo } from './RoboAgente'
 import { sinalizar } from '@/site/fila'
+import { useTextos } from '@/content/idioma'
 
 // O robô guia: pequeno, numa camada transparente por cima da página. Ele voa de um ponto marcado no
 // conteúdo (elementos com data-robo) para o próximo conforme a rolagem e, ao chegar, faz a ação daquele
@@ -386,6 +387,7 @@ function CameraTela() {
 }
 
 export default function Guia() {
+  const textos = useTextos()
   const ancoras = useRef<Ancora[]>([])
   const inter = useRef<Interacao>({
     hover: false,
@@ -478,7 +480,7 @@ export default function Guia() {
       <button
         type="button"
         className="robo-alvo"
-        aria-label="Robô guia. Clique para ele reagir."
+        aria-label={textos.guia}
         ref={(el) => void (dom.current.alvo = el)}
         onPointerEnter={() => (inter.current.hover = true)}
         onPointerLeave={() => (inter.current.hover = false)}

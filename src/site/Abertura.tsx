@@ -5,6 +5,9 @@ import { aguardar, sinalFeito, sinalizar } from './fila'
 import { arquivo } from '@/content/caminho'
 import { Motor, type Progresso, type Saida } from './aberturaMotor'
 import { epoca } from './tempoGlobal'
+import { idiomaGuardado, useIdioma, useTextos } from '@/content/idioma'
+import { TEXTOS } from '@/content/textos'
+import EscolhaOlhos from './EscolhaOlhos'
 import s from './abertura.module.css'
 
 // Tela de abertura: um close extremo do olho robótico do retrato (o olho direito, azul, do rosto meio humano). A íris
@@ -17,6 +20,9 @@ import s from './abertura.module.css'
 // O desenho roda num Worker com OffscreenCanvas (src/site/aberturaMotor.ts): a animação continua a 60 quadros mesmo quando
 // a thread principal está presa na hidratação e na montagem das cenas. Onde isso não existe, o mesmo motor roda na thread
 // principal. Aqui só ficam o DOM (porcentagem, botão), o travamento da página e a escuta das cenas.
+//
+// Antes de tudo, a tela pergunta o idioma (português ou inglês), numa tela própria: a íris só começa depois da resposta; as cenas já
+// carregam por trás. A pergunta aparece em toda visita.
 //
 // Sem WebGL 2, com movimento reduzido ou com a página aberta no meio, a abertura não aparece.
 
@@ -36,6 +42,26 @@ type Ponte = {
 }
 
 export function Abertura() {
+  const idioma = useIdioma((s) => s.idioma)
+  const definir = useIdioma((s) => s.definir)
+  const t = useTextos()
+  // o lado sobre o qual o mouse (ou o foco) está: o outro esmaece
+  const [lado, setLado] = useState<'pt' | 'en' | ''>('')
+  // escolhido o idioma, a pergunta some num fade e só então a íris começa
+  const [escolhido, setEscolhido] = useState<'pt' | 'en' | null>(null)
+  useEffect(() => {
+    if (!escolhido) return
+    const id = window.setTimeout(() => definir(escolhido), 700)
+    return () => window.clearTimeout(id)
+  }, [escolhido, definir])
+  // o idioma lido dentro do efeito do motor (que não reinicia quando ele muda), a saída que esperou a resposta e a ponte para a íris reagir ao hover
+  const idiomaAtual = useRef(idioma)
+  idiomaAtual.current = idioma
+  const sairPendente = useRef<(() => void) | null>(null)
+  const ponteAtual = useRef<Ponte | null>(null)
+  const ladoAtual = useRef<'pt' | 'en' | ''>('')
+  ladoAtual.current = lado
+  const reenviarProgresso = useRef<(() => void) | null>(null)
   const raiz = useRef<HTMLDivElement>(null)
   const tela = useRef<HTMLCanvasElement>(null)
   const numero = useRef<HTMLSpanElement>(null)
@@ -50,7 +76,42 @@ export function Abertura() {
   // desmontado e montado logo em seguida, e esse aviso adiantado liberava as cenas (e o glitch da foto) no começo da visita
   const avisoPendente = useRef(0)
 
+  // toda visita pergunta; só a recarga pedida pela troca de idioma no menu já vem com a resposta. Nada vem marcado
   useEffect(() => {
+    const g = idiomaGuardado()
+    if (g) definir(g)
+  }, [definir])
+
+  // a pergunta: a página atrás não rola nem recebe foco, e a fila de cenas já trata isto como a abertura (data-abertura)
+  useEffect(() => {
+    if (idioma) return
+    const html = document.documentElement
+    html.dataset.abertura = '1'
+    window.dispatchEvent(new Event('rolagem:parar'))
+    html.style.overflow = 'hidden'
+    const irmaos = [...document.body.children].filter((c) => c !== raiz.current && !['SCRIPT', 'NOSCRIPT', 'LINK', 'STYLE'].includes(c.tagName))
+    irmaos.forEach((c) => c.setAttribute('inert', ''))
+    if (raiz.current) raiz.current.dataset.vivo = '1'
+    return () => {
+      irmaos.forEach((c) => c.removeAttribute('inert'))
+      html.style.overflow = ''
+      window.dispatchEvent(new Event('rolagem:seguir'))
+    }
+  }, [idioma])
+
+  // respondida a pergunta, a saída que estava esperando (a íris já tinha terminado de carregar) segue
+  useEffect(() => {
+    if (!idioma) return
+    // a íris estava segura no close do olho: agora o progresso real segue e ela termina o carregamento
+    reenviarProgresso.current?.()
+    if (!sairPendente.current) return
+    const f = sairPendente.current
+    sairPendente.current = null
+    f()
+  }, [idioma])
+
+  useEffect(() => {
+    if (!idioma) return
     window.clearTimeout(avisoPendente.current)
     const el = raiz.current
     const cv = tela.current
@@ -63,7 +124,16 @@ export function Abertura() {
       if (vivo) setAtiva(false)
     }
     // página recarregada no meio (o topo nem está na tela) ou movimento reduzido: sem abertura
-    if (scrollY > 40 || matchMedia('(prefers-reduced-motion: reduce)').matches) return encerrar()
+    if (scrollY > 40 || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      delete html.dataset.abertura
+      // sem a íris, a pergunta do idioma continua na tela (sobre o fundo escuro) até ser respondida
+      if (!idiomaAtual.current) {
+        el.dataset.vivo = '1'
+        sairPendente.current = encerrar
+        return
+      }
+      return encerrar()
+    }
 
     html.dataset.abertura = '1'
     html.dataset.aberturaVista = '1'
@@ -171,15 +241,21 @@ export function Abertura() {
         el.dataset.carga = m.carga ? '1' : '0'
         el.dataset.pular = m.pular ? '1' : '0'
       } else if (m.tipo === 'sair') {
-        // a câmera chegou ao enquadramento do topo e a sala acendeu: o retrato de verdade já está por baixo
-        soltar()
-        // o retrato entra sem a onda (src/cena/Retrato.tsx): a abertura já mostrou o rosto inteiro
-        sinalizar('abertura')
-        el.dataset.estado = 'saindo'
-        window.setTimeout(() => {
-          ponte?.parar()
-          if (vivo) setAtiva(false)
-        }, 750)
+        const sair = () => {
+          if (!vivo) return
+          // a câmera chegou ao enquadramento do topo e a sala acendeu: o retrato de verdade já está por baixo
+          soltar()
+          // o retrato entra sem a onda (src/cena/Retrato.tsx): a abertura já mostrou o rosto inteiro
+          sinalizar('abertura')
+          el.dataset.estado = 'saindo'
+          window.setTimeout(() => {
+            ponte?.parar()
+            if (vivo) setAtiva(false)
+          }, 750)
+        }
+        // a íris terminou antes de o visitante responder o idioma: a saída espera a resposta
+        if (idiomaAtual.current) sair()
+        else sairPendente.current = sair
       } else if (m.tipo === 'erro') {
         console.warn('abertura:', m.motivo)
         ponte?.parar()
@@ -243,6 +319,8 @@ export function Abertura() {
       }
     }
 
+    ponteAtual.current = ponte
+
     const aoRedimensionar = () => {
       W = innerWidth
       H = innerHeight
@@ -261,13 +339,17 @@ export function Abertura() {
     let ultimaConclusao = epoca()
     const enviarProgresso = () => {
       const feitas = ETAPAS.filter((e) => sinalFeito(e.sinal))
+      // sem o idioma escolhido, a íris não termina: se terminasse, recuaria até o retrato (a surpresa do topo) com a pergunta na frente
+      const respondida = !!idiomaAtual.current
+      const peso = feitas.reduce((a, e) => a + e.peso, 0)
       ponte?.progresso({
-        pesoFeito: feitas.reduce((a, e) => a + e.peso, 0),
-        pendente: ETAPAS.find((e) => !sinalFeito(e.sinal))?.peso ?? 0,
-        todas: feitas.length === ETAPAS.length,
+        pesoFeito: respondida ? peso : Math.min(peso, 0.85),
+        pendente: respondida ? (ETAPAS.find((e) => !sinalFeito(e.sinal))?.peso ?? 0) : 0.15,
+        todas: respondida && feitas.length === ETAPAS.length,
         ultimaConclusao,
       })
     }
+    reenviarProgresso.current = enviarProgresso
     enviarProgresso()
     ETAPAS.forEach((e) =>
       aguardar(e.sinal, 20000).then(() => {
@@ -279,6 +361,8 @@ export function Abertura() {
 
     return () => {
       vivo = false
+      ponteAtual.current = null
+      reenviarProgresso.current = null
       pararGlitch()
       ponte?.parar()
       soltar()
@@ -290,20 +374,20 @@ export function Abertura() {
       if (reiniciando.current) reiniciando.current = false
       else avisoPendente.current = window.setTimeout(() => sinalizar('abertura'), 80)
     }
-  }, [modo, chave])
+  }, [modo, chave, idioma])
 
   if (!ativa) return null
 
   return (
     // "Carregando 00 %" já vem no HTML: aparece no primeiro desenho, antes de o JavaScript e o shader ficarem prontos
-    <div ref={raiz} className={s.raiz} data-abertura-raiz data-estado="carregando" data-carga="1" data-pular="0">
+    <div ref={raiz} className={s.raiz} data-abertura-raiz data-estado="carregando" data-carga="1" data-pular="0" data-escolha={idioma ? '0' : '1'}>
       <canvas key={chave} ref={tela} className={s.tela} aria-hidden />
       <p className="visually-hidden" role="status">
-        Carregando o portfólio de Thiago Antunes
+        {t.abertura.carregando}
       </p>
       <div className={s.carga} aria-hidden>
         <div className={s.cargaTopo}>
-          <span>Calibrando a íris</span>
+          <span>{t.abertura.calibrando}</span>
         </div>
         <div className={s.cargaLinha}>
           <span ref={numero} className={s.cargaNumero} data-texto="00" data-glitch="0">
@@ -318,8 +402,43 @@ export function Abertura() {
         </div>
       </div>
       <button type="button" className={s.pular} data-pular>
-        Pular abertura
+        {t.abertura.pular}
       </button>
+      {/* a pergunta do idioma, antes da íris: os dois olhos do robô no centro, olhando o mouse, e as duas opções embaixo. Ao responder,
+          a pergunta sai e a íris começa no mesmo lugar */}
+      {!idioma && (
+        <div className={s.escolha} data-lado={escolhido ?? lado} data-saindo={escolhido ? '1' : '0'} role="dialog" aria-modal="true" aria-label={`${TEXTOS.pt.escolha.pergunta} / ${TEXTOS.en.escolha.pergunta}`}>
+          <div className={s.escolhaOlhos} aria-hidden>
+            <EscolhaOlhos lado={ladoAtual} />
+          </div>
+          {(['pt', 'en'] as const).map((i, k) => (
+            <button
+              key={i}
+              type="button"
+              lang={i}
+              className={s.escolhaOpcao}
+              data-lado={i}
+              style={{ '--k': k } as React.CSSProperties}
+              onClick={() => setEscolhido((e) => e ?? i)}
+              onPointerEnter={() => setLado(i)}
+              onPointerLeave={() => setLado('')}
+              onFocus={(e) => e.currentTarget.matches(':focus-visible') && setLado(i)}
+              onBlur={() => setLado('')}
+            >
+              <small>{TEXTOS[i].escolha.nota[i]}</small>
+              <span className={s.escolhaLinha}>
+                <span className={s.escolhaMascara}>
+                  <span className={s.escolhaPalavra}>{TEXTOS[i].escolha.opcoes[i]}</span>
+                </span>
+              </span>
+            </button>
+          ))}
+          <p className={s.escolhaPergunta}>
+            <span lang="pt">{TEXTOS.pt.escolha.pergunta}</span>
+            <span lang="en">{TEXTOS.en.escolha.pergunta}</span>
+          </p>
+        </div>
+      )}
     </div>
   )
 }

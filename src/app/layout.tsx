@@ -5,6 +5,7 @@ import { arquivo } from '@/content/caminho'
 import { SITE } from '@/content/site'
 import { Abertura } from '@/site/Abertura'
 import { Mira } from '@/site/Mira'
+import { IdiomaDoc } from '@/site/IdiomaDoc'
 
 // a fonte do Ingrassia (a mais próxima da SF do Apple com licença para a web): textos e títulos do site todo;
 // só o topo continua na Cabinet Grotesk
@@ -38,7 +39,7 @@ export const viewport: Viewport = { themeColor: '#f5f5f2' }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={inter.variable}>
+    <html lang="pt-BR" className={inter.variable} suppressHydrationWarning>
       <head>
         {/* o site é estático e não configura headers: a CSP e a política de referrer vão por <meta>. Os scripts e estilos
             em linha são os que o próprio Next injeta; o resto só carrega do próprio site */}
@@ -47,6 +48,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob:; worker-src 'self' blob:; media-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
         />
         <meta name="referrer" content="strict-origin-when-cross-origin" />
+        {/* a recarga pedida pela troca de idioma no menu não pergunta de novo: o atributo no <html> esconde a pergunta antes do primeiro desenho */}
+        <script dangerouslySetInnerHTML={{ __html: "try{var i=sessionStorage.getItem('idioma');if(i==='pt'||i==='en')document.documentElement.dataset.idioma=i}catch(e){}" }} />
         {/* as três imagens do retrato começam a baixar junto com o HTML, sem esperar o JavaScript montar a cena
             (o three.js as pede com crossorigin anônimo, por isso o preload também) */}
         <link rel="preload" as="image" href={arquivo('/retrato/humano.webp')} type="image/webp" crossOrigin="anonymous" />
@@ -57,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* tela de abertura: vem no HTML (aparece no primeiro desenho) e sai quando o retrato está pronto */}
         <Abertura />
         <Mira />
+        <IdiomaDoc />
         <noscript>
           <style>{'[data-abertura-raiz]{display:none!important}'}</style>
         </noscript>

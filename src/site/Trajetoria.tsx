@@ -11,6 +11,8 @@ import { iniciarPortal } from '@/cena/portalTunel'
 import { bocaTela, chegadaContato, escalaDoRoboNaBoca, raioDaBocaNaTela } from '@/cena/trilhaTela'
 import s from './site.module.css'
 import { agendar, aguardar, sinalFeito } from './fila'
+import { TEXTOS } from '@/content/textos'
+import { useIdioma, useTextos } from '@/content/idioma'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -28,12 +30,7 @@ gsap.registerPlugin(ScrollTrigger)
 const Tunel = dynamic(() => import('@/cena/Tunel'), { ssr: false })
 
 // datas e textos do README do perfil; o "lugar" de cada uma é o que o próprio texto diz
-const ETAPAS = [
-  { onde: 'Estácio, 2022–2024', casa: 'Estácio', ano: '22–24', titulo: 'Análise e Desenvolvimento de Sistemas', texto: 'Formação tecnóloga na Estácio.' },
-  { onde: 'Graduação, 2025', casa: 'Estácio', ano: '25', titulo: 'Engenharia de Software', texto: 'Graduação em andamento, junto com o trabalho.' },
-  { onde: '3D Lab, março de 2026', casa: '3D Lab', ano: '03.26', titulo: 'Estagiário na 3D Lab', texto: 'Entrei por um desafio técnico: um cadastro de produtos em JavaScript puro.' },
-  { onde: '3D Lab, junho de 2026', casa: '3D Lab', ano: '06.26', titulo: 'Engenheiro de software júnior', texto: 'ERP, integrações via API e IA aplicada no dia a dia.' },
-]
+// (os textos de cada etapa, nos dois idiomas, ficam em src/content/textos.ts)
 
 // o furo abre no centro da tela
 const CENTRO = { x: 0.5, y: 0.52 }
@@ -98,6 +95,7 @@ export function desenharRelevo(c: HTMLCanvasElement, cor = 'rgba(5,5,5,0.09)') {
 }
 
 export function Trajetoria() {
+  const t = useTextos()
   const secao = useRef<HTMLElement>(null)
   const camada = useRef<HTMLDivElement>(null)
   const aro = useRef<HTMLCanvasElement>(null)
@@ -153,8 +151,10 @@ export function Trajetoria() {
         const fonte = "'Cabinet Grotesk', sans-serif"
         // um cartão por vez, com uma pausa entre eles (pintar os quatro de uma vez prendia a thread por centenas de ms)
         const cartoes: { el: HTMLElement; imagem: HTMLCanvasElement }[] = []
+        // os cartões são pintados uma vez, no idioma escolhido na abertura
+        const etapas = TEXTOS[useIdioma.getState().idioma ?? 'pt'].trajetoria.etapas
         for (let i = 0; i < molduras.length; i++) {
-          const e = ETAPAS[i]!
+          const e = etapas[i]!
           const largo = i % 2 === 0
           cartoes.push({ el: molduras[i]!, imagem: pintarCartao(largo ? 1600 : 1200, largo ? 1000 : 900, e.ano, e.casa, e.titulo, fonte) })
           await new Promise<void>((ok) => setTimeout(ok, 0))
@@ -362,9 +362,9 @@ export function Trajetoria() {
   }, [])
 
   return (
-    <section ref={secao} className={s.trajetoria} aria-labelledby="trajetoria-titulo" data-tema="escuro" style={{ height: `${(TOTAL + 1) * 100}svh` }}>
+    <section ref={secao} id="trajetoria" className={s.trajetoria} aria-labelledby="trajetoria-titulo" data-tema="escuro" style={{ height: `${(TOTAL + 1) * 100}svh` }}>
       <div className={s.trajetoriaFixo} data-robo-cena>
-        <div ref={tunel} className={s.tunelFundo} aria-label="Animação: o robô voa por um túnel até o contato">
+        <div ref={tunel} className={s.tunelFundo} aria-label={t.trajetoria.tunel}>
           {montarTunel && <Tunel progresso={progressoTunel} ativo={tunelAtivo} />}
         </div>
         <div ref={camada} className={s.estradaCamada} style={{ transformOrigin: `${CENTRO.x * 100}% ${CENTRO.y * 100}%`, ['--cx' as string]: `${CENTRO.x * 100}%`, ['--cy' as string]: `${CENTRO.y * 100}%` }}>
@@ -373,18 +373,19 @@ export function Trajetoria() {
             <header className={s.ateTopo}>
               <h2 id="trajetoria-titulo" className={s.expTitulo}>
                 <span data-revela className={s.revela}>
-                  Até aqui
+                  {t.trajetoria.titulo}
                 </span>
               </h2>
               <p className={s.ateIntro}>
                 <span data-revela className={s.revela}>
-                  Da primeira formação ao ERP e à IA na 3D Lab, sempre estudando junto com o trabalho.
+                  {t.trajetoria.intro}
                 </span>
               </p>
             </header>
+            {/* a chave dos itens é o índice: o texto muda com o idioma e o React recriaria os elementos que a cena WebGL já pegou */}
             <ol className={s.ateLista}>
-              {ETAPAS.map((e, i) => (
-                <li key={e.onde} className={s.ateItem} data-i={i}>
+              {t.trajetoria.etapas.map((e, i) => (
+                <li key={i} className={s.ateItem} data-i={i}>
                   <div data-cartao className={s.ateCartao} role="img" aria-label={`${e.ano}: ${e.titulo}`}>
                     {/* o robô senta no canto de cada cartão, cada vez com um gesto */}
                     <span className={s.ateRobo} data-robo={['sentar', 'joinha', 'acenar', 'dancar'][i]} data-robo-preso aria-hidden />

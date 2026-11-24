@@ -136,109 +136,208 @@
   transform: translateY(-100%);
 }
 
-/* menu: uma pílula escura que se estica para a esquerda e mostra os links dentro dela */
+/* menu: uma pílula que se estica do botão para a esquerda, com os links dentro */
 .menu {
+  --botao: max(42px, 3vw);
   justify-self: end;
+  position: relative;
   display: flex;
   align-items: center;
-  height: max(40px, 3vw);
   padding: 4px;
   border-radius: 999px;
-  /* a pílula tem a cor do texto da seção; o botão dentro dela, a cor do fundo */
-  background: var(--tinta);
-  color: var(--fundo);
-  transition: background-color 500ms, color 500ms;
+  color: #e8edf5;
+  background: rgba(6, 9, 29, 0);
+  transition: background-color 500ms var(--ease);
+}
+.menu[data-aberto='1'] {
+  background: #06091d;
 }
 
-.menuLinks {
+/* a gaveta: a largura vai de zero ao tamanho dos links (a pílula se estica) */
+.menuGaveta {
   display: grid;
   grid-template-columns: 0fr;
-  transition: grid-template-columns 700ms var(--ease);
+  min-width: 0;
+  transition: grid-template-columns 750ms var(--ease);
 }
-
-.menu[data-aberto='1'] .menuLinks {
+.menu[data-aberto='1'] .menuGaveta {
   grid-template-columns: 1fr;
 }
 
-.menuLinks > div {
+.menuLinks {
   display: flex;
-  gap: 2px;
-  overflow: hidden;
+  align-items: center;
+  gap: clamp(16px, 1.8vw, 28px);
   min-width: 0;
+  margin: 0;
+  padding: 0 clamp(16px, 1.6vw, 24px) 0 clamp(26px, 2.2vw, 34px);
+  overflow: hidden;
+  list-style: none;
+  pointer-events: none;
+}
+.menu[data-aberto='1'] .menuLinks {
+  pointer-events: auto;
 }
 
-.menuLinks a {
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: var(--t-rotulo);
+/* cada link sobe de dentro de uma máscara, o mais perto do botão primeiro; fecha descendo, todos juntos */
+.menuMascara {
+  display: block;
+  overflow: hidden;
+  padding: 0.3em 0.1em 0.3em;
+}
+.menuItem {
+  position: relative;
+  display: block;
+  font-size: max(14px, 1.02vw);
   font-weight: 500;
+  letter-spacing: -0.01em;
   white-space: nowrap;
-  text-decoration: none;
-  opacity: 0;
-  transform: translateX(14px);
-  transition: opacity 300ms var(--ease), transform 600ms var(--ease), background-color 200ms, color 200ms;
+  transform: translateY(115%);
+  transition: transform 450ms var(--ease);
 }
-
-.menu[data-aberto='1'] .menuLinks a {
-  opacity: 1;
+.menu[data-aberto='1'] .menuItem {
   transform: none;
-  transition-delay: calc(var(--i) * 45ms + 120ms);
+  transition: transform 800ms var(--ease) calc(var(--i) * 55ms + 60ms);
+}
+.menuItem a,
+.menuIdioma button {
+  color: inherit;
+  text-decoration: none;
 }
 
-.menuLinks a:hover,
-.menuLinks a:focus-visible {
-  background: var(--azul-vivo);
-  color: var(--sobre-grafite);
+/* o item sob o mouse sobe um pouco */
+.menuItem a,
+.menuIdioma button {
+  display: inline-block;
+  transition:
+    translate 400ms var(--ease),
+    opacity 250ms;
+}
+.menuItem a:hover,
+.menuItem a:focus-visible,
+.menuIdioma button:hover,
+.menuIdioma button:focus-visible {
+  translate: 0 -3px;
+}
+.menuItem a:focus-visible,
+.menuIdioma button:focus-visible {
+  outline: none;
 }
 
+/* PT · EN: o idioma atual cheio, o outro esmaecido */
+.menuIdioma {
+  display: inline-flex;
+  gap: 10px;
+}
+.menuIdioma button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  opacity: 0.45;
+  transition:
+    opacity 250ms,
+    translate 400ms var(--ease);
+}
+.menuIdioma button[aria-pressed='true'],
+.menuIdioma button:hover,
+.menuIdioma button:focus-visible {
+  opacity: 1;
+}
+
+/* o botão: o círculo inteiro é clicável (antes só o miolo era, e o clique no anel não abria) */
 .menuBotao {
   flex: none;
-  width: calc(max(40px, 3vw) - 8px);
-  height: calc(max(40px, 3vw) - 8px);
+  position: relative;
+  width: var(--botao);
+  height: var(--botao);
+  padding: 0;
   border: 0;
   border-radius: 50%;
-  background: var(--fundo);
-  transition: background-color 500ms;
+  background: var(--tinta);
   cursor: pointer;
   display: grid;
   place-items: center;
+  transition:
+    background-color 500ms,
+    scale 400ms var(--ease);
+}
+.menuBotao:hover {
+  scale: 1.06;
+}
+.menuBotao:focus-visible {
+  outline: 2px solid var(--tinta);
+  outline-offset: 3px;
 }
 
-/* ícone: dois traços que viram um x */
+/* o ícone: os dois olhos de LED do robô, inclinados para o centro; aberto, giram e formam um × */
 .menuIcone {
   position: relative;
-  width: 14px;
-  height: 8px;
+  width: 22px;
+  height: 10px;
 }
-
 .menuIcone::before,
 .menuIcone::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
+  top: 4px;
+  width: 9px;
+  height: 2.5px;
   border-radius: 2px;
-  background: var(--tinta);
-  transition: transform 500ms var(--ease), top 500ms var(--ease);
+  background: var(--fundo);
+  transition:
+    transform 550ms var(--ease),
+    left 550ms var(--ease),
+    width 550ms var(--ease),
+    background-color 500ms;
 }
-
 .menuIcone::before {
-  top: 0;
+  left: 0;
+  transform: rotate(14deg);
 }
-
 .menuIcone::after {
-  top: 6px;
+  left: 13px;
+  transform: rotate(-14deg);
 }
-
+.menu[data-aberto='1'] .menuIcone::before,
+.menu[data-aberto='1'] .menuIcone::after {
+  left: 3px;
+  width: 16px;
+}
 .menu[data-aberto='1'] .menuIcone::before {
-  top: 3px;
   transform: rotate(45deg);
 }
-
 .menu[data-aberto='1'] .menuIcone::after {
-  top: 3px;
   transform: rotate(-45deg);
+}
+
+/* no celular a pílula vai até a margem; os itens que não cabem deslizam dentro dela, de lado */
+@media (max-width: 860px) {
+  .menuGaveta {
+    max-width: calc(100vw - var(--margem) * 2 - var(--botao) - 8px);
+  }
+  .menuLinks {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .menuLinks::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menuItem,
+  .menu[data-aberto='1'] .menuItem {
+    transition: opacity 200ms;
+    transform: none;
+    opacity: 0;
+  }
+  .menu[data-aberto='1'] .menuItem {
+    opacity: 1;
+  }
 }
 
 /* herói */

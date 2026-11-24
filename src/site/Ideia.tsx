@@ -8,6 +8,7 @@ import { iniciarLua } from '@/cena/lua'
 import { vigiarContexto } from '@/cena/contexto'
 import { arquivo } from '@/content/caminho'
 import { agendar, sinalizar } from './fila'
+import { useTextos } from '@/content/idioma'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -19,16 +20,18 @@ gsap.registerPlugin(ScrollTrigger)
 
 // como eu construo, camada por camada (README do perfil e dos repositórios): a stack de cada uma e a regra de
 // arquitetura que vale nela. Cada camada vira um farol no vale, que a câmera passa ao rolar.
+// (os textos de cada farol, nos dois idiomas, ficam em src/content/textos.ts; aqui só o lugar dele no vale)
 const FAROIS = [
-  { x: -1.6, z: -11, nome: 'ERP na 3D Lab', valor: 'JavaScript, PHP, Laravel e Python', lei: 'features fullstack e integrações via API' },
-  { x: 1.7, z: -13.4, nome: 'Back-end', valor: 'Python, Node, NestJS e TypeScript', lei: 'regras como dados, cada decisão com rastro' },
-  { x: -1.5, z: -15.8, nome: 'Dados', valor: 'Postgres, pgvector, Drizzle e Parquet', lei: 'versionado e sem olhar o futuro' },
-  { x: 1.6, z: -18.2, nome: 'IA e agentes', valor: 'Python, LLMs, RAG, LangGraph e Ollama', lei: 'a IA propõe, o código determinístico decide' },
-  { x: -1.7, z: -20.6, nome: 'Front-end', valor: 'Next.js, React 19, three.js e GSAP', lei: 'MVC e SOLID, views só apresentam' },
-  { x: 1.5, z: -23, nome: 'Entrega', valor: 'Claude Code, Codex e DevGuard', lei: 'testes e evidência antes de dizer pronto' },
+  { x: -1.6, z: -11 },
+  { x: 1.7, z: -13.4 },
+  { x: -1.5, z: -15.8 },
+  { x: 1.6, z: -18.2 },
+  { x: -1.7, z: -20.6 },
+  { x: 1.5, z: -23 },
 ]
 
 export function Ideia() {
+  const t = useTextos()
   const secao = useRef<HTMLElement>(null)
   const lua = useRef<HTMLCanvasElement>(null)
   const rotulos = useRef<(HTMLDivElement | null)[]>([])
@@ -88,10 +91,10 @@ export function Ideia() {
         <div className={s.luaPreso}>
           <canvas ref={lua} className={s.luaCanvas} />
           {FAROIS.map((f, i) => (
-            <div key={f.nome} ref={(el) => void (rotulos.current[i] = el)} className={s.farol} style={{ opacity: 0 }}>
-              <span className={s.farolNome}>{f.nome}</span>
-              <span className={s.farolValor}>{f.valor}</span>
-              <span className={s.farolLei}>{f.lei}</span>
+            <div key={i} ref={(el) => void (rotulos.current[i] = el)} className={s.farol} style={{ opacity: 0 }}>
+              <span className={s.farolNome}>{t.ideia.farois[i]!.nome}</span>
+              <span className={s.farolValor}>{t.ideia.farois[i]!.valor}</span>
+              <span className={s.farolLei}>{t.ideia.farois[i]!.lei}</span>
             </div>
           ))}
         </div>
@@ -100,22 +103,20 @@ export function Ideia() {
       <h2 className={s.titulo}>
         <span className={s.tituloMascara}>
           <span className={`${s.tituloLinha} ${s.tituloLinha1}`}>
-            Sistemas que
+            {t.ideia.linha1}
             <span className={s.ancoraTitulo} data-robo="sentar" aria-hidden />
           </span>
         </span>
         <span className={s.tituloMascara}>
-          <span className={`${s.tituloLinha} ${s.tituloLinha2}`}>se explicam</span>
+          <span className={`${s.tituloLinha} ${s.tituloLinha2}`}>{t.ideia.linha2}</span>
         </span>
       </h2>
       <div className={s.colunaTexto}>
         <p className={s.paragrafo}>
-          Engenheiro de software na 3D Lab: ERP, integrações via API e agentes de IA em produção. Fora dela, o mesmo princípio — o
-          Tributax devolve cada cálculo com a regra aplicada, as descartadas e o fundamento legal; o DevGuard só deixa agente de IA
-          entregar com prova.
+          {t.ideia.p1}
         </p>
         <p className={s.paragrafo}>
-          Pelo vale, as camadas de como eu construo: a stack de cada uma e a regra de arquitetura que eu não quebro.
+          {t.ideia.p2}
         </p>
         <span className={s.ancoraBotao} data-robo="joinha" aria-hidden />
       </div>

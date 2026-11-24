@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom'
 import dynamic from 'next/dynamic'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { projetos } from '@/content/projetos'
+import { projetosDe } from '@/content/projetos'
+import { useIdiomaAtual, useTextos } from '@/content/idioma'
 import s from './site.module.css'
 import { agendar, aguardar } from './fila'
 import { trilhaTela } from '@/cena/trilhaTela'
@@ -25,6 +26,8 @@ const seta = (
 )
 
 export function Projetos() {
+  const t = useTextos()
+  const projetos = projetosDe(useIdiomaAtual())
   const raiz = useRef<HTMLElement>(null)
   const progresso = useRef(0)
   const entrada = useRef(0)
@@ -140,7 +143,7 @@ export function Projetos() {
   return (
     <section ref={raiz} id="trabalho" className={s.obras} aria-labelledby="obras-titulo" data-tema="lima" data-sem-robo style={{ height: `${projetos.length * 120 + 160}svh` }}>
       <h2 id="obras-titulo" className="visually-hidden">
-        Projetos
+        {t.projetos.titulo}
       </h2>
       <div className={s.obrasPreso}>
         {/* tudo o que está preso à tela aparece e some junto: nenhuma borda da caixa fica à vista */}
@@ -182,7 +185,7 @@ export function Projetos() {
             data-lenis-prevent
           >
             <button ref={fechar} type="button" className={s.obraFechar} onClick={fecharAgora}>
-              <span>Fechar</span>
+              <span>{t.projetos.fechar}</span>
               <svg viewBox="0 0 12 12" aria-hidden>
                 <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.6" />
               </svg>
@@ -215,13 +218,13 @@ export function Projetos() {
                 <p key={t.slice(0, 24)}>{t}</p>
               ))}
             </div>
-            <ul className={s.obraAbertaPilha} aria-label={`Feito com ${q.pilha.join(', ')}`}>
+            <ul className={s.obraAbertaPilha} aria-label={`${t.projetos.feitoCom} ${q.pilha.join(', ')}`}>
               {q.pilha.map((t) => (
                 <li key={t}>{t}</li>
               ))}
             </ul>
             <button type="button" className={s.obraProxima} onClick={() => abrir((aberto + 1) % projetos.length)}>
-              <span>Próximo projeto</span>
+              <span>{t.projetos.proximo}</span>
               <b>{projetos[(aberto + 1) % projetos.length]!.nome}</b>
             </button>
           </div>,

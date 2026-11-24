@@ -185,3 +185,191 @@
 .pular:focus-visible::before {
   width: 36px;
 }
+
+/* a pergunta do idioma, por cima da íris: sem fundo próprio (a íris é o fundo), as duas palavras embaixo, uma de cada lado, e a pergunta
+   como legenda no pé. Enquanto ela está na tela, a porcentagem e o "Pular abertura" ficam escondidos */
+.raiz[data-escolha='1'] .carga,
+.raiz[data-escolha='1'] .pular {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+html[data-idioma] .raiz[data-escolha='1'] .carga {
+  opacity: 1 !important;
+}
+
+
+.escolha {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  color: #e8edf5;
+  pointer-events: none;
+  /* o fundo da pergunta: quase preto, com o azul acendendo no meio, atrás dos olhos; ele sai junto no fade */
+  background:
+    radial-gradient(60% 55% at 50% 46%, rgba(0, 0, 128, 0.55), transparent 70%),
+    #020308;
+  transition: opacity 0.7s ease;
+}
+/* respondida a pergunta, o carregamento entra num fade: a íris e a porcentagem aparecem devagar sobre o escuro */
+.raiz[data-escolha='0'] .tela,
+.raiz[data-escolha='0'] .carga {
+  animation: escolhaEntraCarga 1.2s ease both;
+}
+@keyframes escolhaEntraCarga {
+  from {
+    opacity: 0;
+  }
+}
+
+/* escolhido o idioma, tudo apaga num fade (o escuro da íris fica por baixo) e a íris liga em seguida */
+.escolha[data-saindo='1'] {
+  opacity: 0;
+}
+.escolha[data-saindo='1'] .escolhaOpcao {
+  pointer-events: none;
+}
+html[data-idioma] .escolha {
+  display: none;
+}
+
+/* os olhos do robô do topo: duas fendas de LED azul, inclinadas para o centro como no visor dele */
+.escolhaOlhos {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  animation: escolhaLiga 1.4s steps(1) 0.2s forwards;
+}
+/* o visor liga como um LED: dois lampejos e acende */
+@keyframes escolhaLiga {
+  0% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.7;
+  }
+  20% {
+    opacity: 0.1;
+  }
+  30% {
+    opacity: 1;
+  }
+  38% {
+    opacity: 0.25;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.olhosTela {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.escolhaOpcao {
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  gap: 6px;
+  /* o botão é só a palavra (com uma folga): fora dela os olhos voltam a seguir o mouse */
+  align-self: end;
+  justify-self: center;
+  margin-bottom: clamp(70px, 14vh, 140px);
+  padding: 10px 22px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.escolhaOpcao:focus {
+  outline: none;
+}
+
+.escolhaMascara {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  /* folga em cima (acento do ê) e embaixo (o g): a máscara é quem corta a palavra na subida */
+  padding: 0.18em 0.08em 0.3em;
+}
+.escolhaPalavra {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display);
+  font-size: clamp(22px, 2.8vw, 42px);
+  line-height: 1.1;
+  letter-spacing: var(--track-display);
+  transform: translateY(115%);
+  color: rgba(232, 237, 245, 0.82);
+  animation: escolhaSobe 1.05s var(--ease) calc(0.4s + var(--k) * 0.14s) forwards;
+  transition:
+    opacity 600ms 150ms,
+    translate 450ms var(--ease);
+}
+/* sobre a palavra, ela sobe um pouco */
+.escolhaLinha {
+  display: block;
+}
+.escolhaOpcao:hover .escolhaPalavra,
+.escolhaOpcao:focus-visible .escolhaPalavra {
+  translate: 0 -0.14em;
+}
+.escolhaOpcao small {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  animation: escolhaFade 0.8s ease calc(0.9s + var(--k) * 0.1s) forwards;
+  transition: opacity 400ms;
+}
+/* o outro lado esmaece */
+.escolha[data-lado='pt'] [data-lado='en'] .escolhaPalavra,
+.escolha[data-lado='en'] [data-lado='pt'] .escolhaPalavra,
+.escolha[data-lado='pt'] [data-lado='en'] small,
+.escolha[data-lado='en'] [data-lado='pt'] small {
+  opacity: 0.35;
+}
+
+.escolhaPergunta {
+  position: absolute;
+  right: 0;
+  bottom: max(18px, 3.4vh);
+  left: 0;
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(232, 237, 245, 0.7);
+}
+
+@keyframes escolhaSobe {
+  to {
+    transform: none;
+  }
+}
+@keyframes escolhaFade {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .escolhaPalavra,
+  .escolhaOpcao small {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

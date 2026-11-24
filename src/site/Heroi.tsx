@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import s from './site.module.css'
+import { useTextos } from '@/content/idioma'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -14,6 +15,7 @@ gsap.registerPlugin(ScrollTrigger)
 const Retrato = dynamic(() => import('@/cena/Retrato'), { ssr: false })
 
 export function Heroi() {
+  const t = useTextos()
   const painel = useRef<HTMLDivElement>(null)
   const secao = useRef<HTMLElement>(null)
   const inteiro = useRef(0)
@@ -106,14 +108,14 @@ export function Heroi() {
 
   return (
     <section id="topo" ref={secao} className={s.heroi} data-tema="lima">
-      <h1 className="visually-hidden">Thiago Antunes, engenheiro de software</h1>
+      <h1 className="visually-hidden">{t.heroi.titulo}</h1>
       {/* só o personagem, sem texto: o cursor revela o robô; o clique (ou toque) mostra o robô inteiro */}
       <div
         ref={painel}
         className={s.painel}
         data-retrato
         role="img"
-        aria-label="Retrato de Thiago Antunes, metade humano e metade robô. O cursor revela a versão robô."
+        aria-label={t.heroi.retrato}
         onClick={() => gsap.to(inteiro, { current: inteiro.current > 0.5 ? 0 : 1, duration: 1.5, ease: 'expo.inOut', overwrite: true })}
       >
         <Retrato inteiro={inteiro} />
