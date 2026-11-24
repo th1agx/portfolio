@@ -4,6 +4,7 @@ import './globals.css'
 import { arquivo } from '@/content/caminho'
 import { SITE } from '@/content/site'
 import { Abertura } from '@/site/Abertura'
+import { Mira } from '@/site/Mira'
 
 // a fonte do Ingrassia (a mais próxima da SF do Apple com licença para a web): textos e títulos do site todo;
 // só o topo continua na Cabinet Grotesk
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         {/* tela de abertura: vem no HTML (aparece no primeiro desenho) e sai quando o retrato está pronto */}
         <Abertura />
+        <Mira />
         <noscript>
           <style>{'[data-abertura-raiz]{display:none!important}'}</style>
         </noscript>

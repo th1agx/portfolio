@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import s from './site.module.css'
-import { desenharRelevo } from './Trajetoria'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -18,7 +17,6 @@ export function Heroi() {
   const painel = useRef<HTMLDivElement>(null)
   const secao = useRef<HTMLElement>(null)
   const inteiro = useRef(0)
-  const relevo = useRef<HTMLCanvasElement>(null)
   useEffect(() => {
     const el = painel.current
     const assinatura = el?.querySelector<HTMLElement>('[data-assinatura]')
@@ -97,15 +95,10 @@ export function Heroi() {
       assinatura.style.clipPath = `inset(0 ${(100 - escreve * 100).toFixed(2)}% 0 0)`
       assinatura.style.opacity = `${1 - Math.min(1, Math.max(0, (viagem - 0.82) / 0.18))}`
     }
-    // curvas de nível: mantidas no código, mas no fundo azul ficam invisíveis (reprovadas visíveis)
-    const fundo = () => relevo.current && desenharRelevo(relevo.current)
-    fundo()
-    addEventListener('resize', fundo)
     medir()
     aplicar()
     const st = ScrollTrigger.create({ start: 0, end: 'max', onUpdate: aplicar, onRefresh: () => (medir(), aplicar()) })
     return () => {
-      removeEventListener('resize', fundo)
       st.kill()
       el.style.transform = ''
     }
@@ -114,7 +107,6 @@ export function Heroi() {
   return (
     <section id="topo" ref={secao} className={s.heroi} data-tema="lima">
       <h1 className="visually-hidden">Thiago Antunes, engenheiro de software</h1>
-      <canvas ref={relevo} className={s.heroiRelevo} aria-hidden />
       {/* só o personagem, sem texto: o cursor revela o robô; o clique (ou toque) mostra o robô inteiro */}
       <div
         ref={painel}

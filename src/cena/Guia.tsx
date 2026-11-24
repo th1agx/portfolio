@@ -490,8 +490,28 @@ export default function Guia() {
         <span />
       </div>
       <div className="robo-cursor" data-on="0" ref={(el) => void (dom.current.cursor = el)} aria-hidden>
-        <svg viewBox="0 0 24 24" width="26" height="26">
-          <path d="M4 2 L4 20 L9 15 L12.5 22 L15.5 20.6 L12 13.6 L19 13.6 Z" fill="#050505" stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+        <svg viewBox="-24 -24 48 48" width="44" height="44">
+          {/* o ser de luz do site, pequeno: núcleo, três filamentos e uma luzinha, com sombra escura para ler em qualquer fundo */}
+          <defs>
+            <radialGradient id="ser-brilho">
+              <stop offset="0" stopColor="#e6f0ff" stopOpacity="0.95" />
+              <stop offset="0.45" stopColor="#4e86ff" stopOpacity="0.5" />
+              <stop offset="1" stopColor="#2f5fff" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+          <g fill="none" strokeLinecap="round">
+            <path d="M0 0 C2 7 -3 13 1 20" stroke="#050505" strokeWidth="3.6" opacity="0.45" />
+            <path d="M0 0 C-5 6 -1 12 -6 18" stroke="#050505" strokeWidth="3.2" opacity="0.45" />
+            <path d="M0 0 C6 5 5 10 10 14" stroke="#050505" strokeWidth="3" opacity="0.45" />
+            <path d="M0 0 C2 7 -3 13 1 20" stroke="#cfe0ff" strokeWidth="1.5" />
+            <path d="M0 0 C-5 6 -1 12 -6 18" stroke="#9db9ff" strokeWidth="1.2" />
+            <path d="M0 0 C6 5 5 10 10 14" stroke="#9db9ff" strokeWidth="1" />
+          </g>
+          <circle r="11" fill="url(#ser-brilho)" />
+          <circle r="3.6" fill="#050505" opacity="0.5" />
+          <circle r="2.6" fill="#fff" />
+          <circle cx="-11" cy="-5" r="2.2" fill="#050505" opacity="0.5" />
+          <circle cx="-11" cy="-5" r="1.4" fill="#e6f0ff" />
         </svg>
       </div>
     </>
