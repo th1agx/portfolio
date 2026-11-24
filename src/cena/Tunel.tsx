@@ -12,7 +12,7 @@ import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js'
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js'
 import { RoboAgente, type AcaoRobo } from './RoboAgente'
 import { arquivo } from '@/content/caminho'
-import { bocaTela, distanciaEntrada, roboBoca } from './trilhaTela'
+import { bocaTela, chegadaContato, distanciaEntrada, roboBoca } from './trilhaTela'
 
 // O túnel: uma animação só, sem texto. O robô agente, agora grande, voa por cinco trechos e a câmera o
 // segue, mudando de distância e de ângulo em cada um:
@@ -24,7 +24,7 @@ import { bocaTela, distanciaEntrada, roboBoca } from './trilhaTela'
 //      olha para trás e acena
 //   2  portais lima que giram; o robô dá um giro completo ao atravessar cada um
 //   3  velocidade: câmera mais baixa e mais perto, lente mais aberta, riscos de luz nas paredes
-// No fim, a saída é luz branca e o robô se vira e acena. Poeira no ar o caminho todo.
+// No fim, a saída é o escuro onde cai a coluna de fios de luz do contato, e o robô se vira e acena. Poeira no ar o caminho todo.
 // `progresso` (0 a 1) vem da rolagem.
 
 export const TRECHO = 60
@@ -297,7 +297,8 @@ function Saida() {
   return (
     <mesh position={[0, 0, -COMPRIMENTO + 2]}>
       <circleGeometry args={[RAIO + 1, 64]} />
-      <meshBasicMaterial color={new Color('#f5f5f2').multiplyScalar(1.6)} toneMapped={false} />
+      {/* a saída é escura: a luz do fim é a coluna de fios do contato, que aparece logo depois */}
+      <meshBasicMaterial color="#020206" toneMapped={false} />
     </mesh>
   )
 }
@@ -320,6 +321,7 @@ function Corredor({ progresso, bloom }: { progresso: { current: number }; bloom:
   const proj1 = useMemo(() => new Vector3(), [])
   const proj2 = useMemo(() => new Vector3(), [])
   const corpo = useRef<Group>(null)
+  const sumir = useRef(0)
   useEffect(() => {
     if (luzFrente.current && grupo.current) luzFrente.current.target = grupo.current
   }, [])
@@ -354,7 +356,12 @@ function Corredor({ progresso, bloom }: { progresso: { current: number }; bloom:
     if (grupo.current) {
       // só um robô por vez: este só aparece quando o robô guia da página some (data-tunel)
       // (só o corpo some: as luzes dele ficam acesas, porque mudar a contagem de luzes recompila a cena toda)
-      if (corpo.current) corpo.current.visible = document.documentElement.dataset.tunel === '1'
+      // na chegada ao contato ele voa até o núcleo de luz à frente e some dentro dele (preso à rolagem: subindo, ele sai de lá)
+      sumir.current = MathUtils.smoothstep(chegadaContato.p, 0.2, 0.5)
+      if (corpo.current) {
+        corpo.current.visible = document.documentElement.dataset.tunel === '1' && sumir.current < 0.98
+        corpo.current.scale.setScalar(Math.max(0.001, 1 - sumir.current))
+      }
       grupo.current.position.set(x, y, z)
       // inclina de leve para o lado da curva, como quem faz a curva voando; nada de giros bruscos
       const inclina = -Math.cos(z * 0.12) * 0.28
@@ -395,7 +402,7 @@ function Corredor({ progresso, bloom }: { progresso: { current: number }; bloom:
       roboBoca.t = performance.now()
     }
 
-    // a cor do ar muda a cada trecho e clareia na saída
+    // a cor do ar muda a cada trecho e escurece até o preto na saída (onde cai a coluna de fios do contato)
     let k = 0
     while (k < AR.length - 1 && z < AR[k + 1]!.z) k++
     const de = AR[k]!
@@ -403,7 +410,7 @@ function Corredor({ progresso, bloom }: { progresso: { current: number }; bloom:
     const mistura = para === de ? 0 : MathUtils.clamp((de.z - z) / (de.z - para.z), 0, 1)
     fundo.copy(a.set(de.cor)).lerp(b.set(para.cor), MathUtils.smoothstep(mistura, 0.6, 1))
     const saida = MathUtils.clamp((-z - (COMPRIMENTO - 26)) / 14, 0, 1)
-    fundo.lerp(a.set('#f5f5f2'), saida * saida)
+    fundo.lerp(a.set('#020206'), saida * saida)
     state.scene.background = fundo
     const fog = state.scene.fog as Fog | null
     if (fog) {

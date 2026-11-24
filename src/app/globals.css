@@ -213,3 +213,213 @@ html.cursor-roubado * {
 }
 
 /* título sob cada capa do mundo dos projetos (desenhado pelo drei Html, fora do módulo de CSS) */
+
+/* o fim do site (src/site/Contato.tsx, FiosContato.tsx): a cena de fios e, no pé da tela, a legenda do contato na mesma linguagem da
+   legenda dos projetos (.obrasLegenda): uma linha centrada como a de um filme, o nome em negrito e o texto mais claro, que entra se
+   revelando de baixo para cima, sobre uma vinheta suave. Embaixo, os três links com o sublinhado azul vivo do site */
+.contato-fim {
+  position: relative;
+  height: 100%;
+  min-height: 100svh;
+  overflow: hidden;
+  /* sem fundo: a cena pinta o céu e cobre o túnel aos poucos, na chegada (o robô voando até o núcleo aparece por baixo) */
+}
+
+.fios-tela {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.legenda {
+  --giro: 0deg;
+  --desloca: 0px;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.legenda-vinheta {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 75% at 50% 50%, transparent 65%, rgba(0, 0, 40, 0.4) 100%),
+    linear-gradient(to top, rgba(5, 5, 8, 0.92), rgba(5, 5, 8, 0.6) 16%, rgba(5, 5, 8, 0) 38%);
+}
+
+.legenda-painel {
+  position: absolute;
+  left: 50%;
+  bottom: max(34px, 5svh);
+  width: min(820px, calc(100% - 2 * var(--margem)));
+  translate: -50% 0;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: #e8edf5;
+  text-align: center;
+  transform: perspective(1100px) translateX(var(--desloca)) rotateY(var(--giro));
+}
+
+.legenda-linha {
+  margin: 0;
+  padding: 10px 6px 0;
+  font-size: clamp(16px, 1.35vw, 21px);
+  line-height: 1.45;
+  text-wrap: balance;
+  opacity: 0;
+}
+
+.legenda-linha b {
+  font-weight: 600;
+  margin-right: 0.5em;
+}
+
+.legenda-linha span {
+  color: rgba(232, 237, 245, 0.8);
+}
+
+.legenda-links {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 26px;
+  font-size: clamp(13px, 1vw, 15px);
+  opacity: 0;
+}
+
+/* o hover: os cantos de calibração do carregamento travam em volta do link (como a mira focando), o texto se decodifica num
+   glitch (FiosContato) e o ícone acende em azul vivo */
+.legenda-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px;
+  color: rgba(232, 237, 245, 0.78);
+  text-decoration: none;
+  pointer-events: auto;
+  transition: color 250ms ease;
+}
+
+.legenda-link::before,
+.legenda-link::after {
+  content: '';
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 0 solid #e8edf5;
+  opacity: 0;
+  transition:
+    opacity 200ms ease,
+    translate 450ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.legenda-link::before {
+  top: 0;
+  left: -6px;
+  border-top-width: 1.5px;
+  border-left-width: 1.5px;
+  translate: -7px -6px;
+}
+
+.legenda-link::after {
+  right: -6px;
+  bottom: 0;
+  border-right-width: 1.5px;
+  border-bottom-width: 1.5px;
+  translate: 7px 6px;
+}
+
+.legenda-link:hover,
+.legenda-link:focus-visible {
+  color: #ffffff;
+  outline: none;
+}
+
+.legenda-link:hover::before,
+.legenda-link:hover::after,
+.legenda-link:focus-visible::before,
+.legenda-link:focus-visible::after {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.legenda-texto {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.legenda-icone {
+  transition:
+    color 250ms ease,
+    filter 300ms ease;
+}
+
+.legenda-link:hover .legenda-icone,
+.legenda-link:focus-visible .legenda-icone {
+  color: #ffffff;
+  filter: drop-shadow(0 0 2px #5566ff) drop-shadow(0 0 7px #0000f0);
+}
+
+.legenda-icone {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+
+.legenda-icone svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* a entrada, a mesma da legenda dos projetos */
+.contato-fim[data-vivo='1'] .legenda-linha {
+  animation: legenda-entra 900ms cubic-bezier(0.19, 1, 0.22, 1) both;
+}
+
+.contato-fim[data-vivo='1'] .legenda-links {
+  animation: legenda-entra 900ms cubic-bezier(0.19, 1, 0.22, 1) 0.14s both;
+}
+
+@keyframes legenda-entra {
+  from {
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    clip-path: inset(0 0 -20% 0);
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contato-fim[data-vivo='1'] .legenda-linha,
+  .contato-fim[data-vivo='1'] .legenda-links {
+    animation: legenda-entra 1ms both;
+  }
+}
+
+/* telas baixas (celular deitado): desce para o pé da tela e fica menor, como a dos projetos */
+@media (max-height: 520px) {
+  .legenda-painel {
+    bottom: 10px;
+    gap: 2px;
+  }
+  .legenda-linha {
+    font-size: 12.5px;
+    line-height: 1.3;
+    padding-top: 4px;
+  }
+  .legenda-links {
+    font-size: 12px;
+  }
+}

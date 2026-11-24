@@ -8,7 +8,7 @@ import { Contato } from './Contato'
 import { iniciarAteAqui, pintarCartao } from '@/cena/ateAqui'
 import { vigiarContexto } from '@/cena/contexto'
 import { iniciarPortal } from '@/cena/portalTunel'
-import { bocaTela, escalaDoRoboNaBoca, raioDaBocaNaTela } from '@/cena/trilhaTela'
+import { bocaTela, chegadaContato, escalaDoRoboNaBoca, raioDaBocaNaTela } from '@/cena/trilhaTela'
 import s from './site.module.css'
 import { agendar, aguardar, sinalFeito } from './fila'
 
@@ -23,7 +23,7 @@ gsap.registerPlugin(ScrollTrigger)
 //      (a câmera mergulha). O robô guia para no centro do furo.
 //   3. o túnel (Tunel.tsx), que já estava por baixo o tempo todo: o robô do túnel começa pequeno no centro
 //      da boca, exatamente onde o guia entrou, e a câmera vai atrás dele.
-//   4. a saída do túnel é luz branca; o contato aparece sobre ela, com o robô ainda acenando.
+//   4. a saída do túnel é o escuro; o contato (a coluna de fios de luz e o vidro) aparece nele, com o robô ainda acenando.
 
 const Tunel = dynamic(() => import('@/cena/Tunel'), { ssr: false })
 
@@ -311,10 +311,13 @@ export function Trajetoria() {
       progressoTunel.current = ab.pt2
       aplicarAbre(ab.atual)
 
-      // 4. o contato sobre a luz branca
-      const pc = Math.max(0, (P - (ESTRADA + TUNEL) / TOTAL) / (CONTATO / TOTAL))
-      contato.current!.dataset.on = pc > 0.15 ? '1' : '0'
-      if (pc > 0.15) raiz.dataset.final = '1'
+      // 4. a chegada ao contato, presa à rolagem (subir desfaz exatamente o que descer fez): começa 1,6 tela antes do fim do túnel,
+      // quando o núcleo aparece à frente e o robô voa até ele; o túnel some enquanto a cena brota do núcleo; o vidro entra no fim
+      const ch = Math.min(1, Math.max(0, (P - (ESTRADA + TUNEL - 2.2) / TOTAL) / ((2.2 + CONTATO * 0.9) / TOTAL)))
+      chegadaContato.p = ch
+      contato.current!.dataset.on = ch > 0.001 ? '1' : '0'
+      tunel.current!.style.opacity = (1 - passo(0.46, 0.64, ch)).toFixed(3)
+      if (ch > 0.55) raiz.dataset.final = '1'
       else delete raiz.dataset.final
     }
     aplicar(0, true)

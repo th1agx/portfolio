@@ -34,3 +34,7 @@ export const fovObras = (largura: number, altura: number) => {
   const h = Math.tan((25 * Math.PI) / 180) * 1.6
   return Math.min(100, (2 * Math.atan(h / a) * 180) / Math.PI)
 }
+
+/** a chegada ao contato, de 0 a 1, presa à rolagem nos dois sentidos (Trajetoria.tsx escreve): começa no fim escuro do túnel, quando o
+ *  núcleo aparece à frente e o robô voa até ele e some (túnel e cena leem), segue pela cena que brota do núcleo e termina com o vidro */
+export const chegadaContato = { p: 0 }
