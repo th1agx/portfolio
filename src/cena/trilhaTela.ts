@@ -2,7 +2,9 @@
 // baixo). A cena dos projetos (Obras.tsx) escreve; o "Até aqui" (ateAqui.ts) lê e continua a linha dali,
 // no mesmo lugar e com a mesma espessura (meia: metade da largura do núcleo, em px), para ela seguir pelos
 // cartões sem troca.
-export const trilhaTela = { pontos: [] as { x: number; y: number }[], versao: 0, meia: 3 }
+export const trilhaTela = { pontos: [] as { x: number; y: number }[], versao: 0, meia: 3, junta: 0 }
+// `junta` (0 a 1): quanto da saída dos projetos a rolagem já percorreu. A câmera só está na vista de cima, onde as duas linhas
+// coincidem, perto de 1; antes disso a linha dos projetos tem outra forma, e a do "Até aqui" apareceria em dobro ao lado dela.
 
 // A entrada do túnel: a borda do furo da página (Trajetoria.tsx) tem de ser a própria boca do túnel (Tunel.tsx), senão aparece
 // um segundo círculo dentro do primeiro e o robô muda de tamanho na troca. A página escreve o raio do furo na tela; o túnel

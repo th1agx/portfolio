@@ -280,7 +280,9 @@ export function Trajetoria() {
       const H = innerHeight
       const telas = pe * ESTRADA
       // o fundo e a trilha aparecem por cima do fim dos projetos (a linha deles está no mesmo lugar)
-      estado.alfa = passo(0, 0.3, telas)
+      // o fundo cobre as Obras logo (0,14 telas): enquanto ele é parcial, a linha das Obras aparece por baixo da trilha nova, em outro
+      // lugar, e a linha saía em dobro
+      estado.alfa = passo(0, 0.14, telas)
       // a trilha que vem das Obras é puxada para cima e some, em vez de descer entre os cartões
       estado.recolhe = passo(0.1, 1.2, telas)
       camada.current!.style.backgroundColor = `rgba(2, 3, 26, ${estado.alfa.toFixed(3)})`

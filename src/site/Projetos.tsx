@@ -8,6 +8,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { projetos } from '@/content/projetos'
 import s from './site.module.css'
 import { agendar, aguardar } from './fila'
+import { trilhaTela } from '@/cena/trilhaTela'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -74,8 +75,10 @@ export function Projetos() {
       trigger: el,
       start: 'bottom 280%',
       end: 'bottom 100%',
+      onRefresh: (self) => (trilhaTela.junta = self.progress),
       onUpdate: (self) => {
         junta.current = self.progress
+        trilhaTela.junta = self.progress
         if (legenda) legenda.style.opacity = p0(self.progress)
       },
     })

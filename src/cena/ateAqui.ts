@@ -415,7 +415,10 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
       gl.uniform1f(u(pTrilha, 'uMeia'), Math.min(8, Math.max(1.5, trilhaTela.meia)))
       gl.uniform1f(u(pTrilha, 'uDpr'), dpr)
       gl.uniform1f(u(pTrilha, 'uCabeca'), cabeca)
-      gl.uniform1f(u(pTrilha, 'uAlfa'), estado.alfa)
+      // a trilha só aparece quando a linha dos projetos já está na vista de cima (aí as duas coincidem); antes, as duas formas
+      // diferem e a linha aparecia em dobro ao voltar rolando
+      const casa = Math.min(1, Math.max(0, (trilhaTela.junta - 0.86) / 0.11))
+      gl.uniform1f(u(pTrilha, 'uAlfa'), estado.alfa * casa * casa * (3 - 2 * casa))
       gl.uniform1f(u(pTrilha, 'uTempo'), tempo)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, vis.length / 4)
     }
