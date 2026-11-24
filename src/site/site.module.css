@@ -1956,3 +1956,43 @@
     left: 17%;
   }
 }
+
+/* celular deitado (telas baixas): os cartões do "Até aqui" cabem na altura da tela com a legenda embaixo, e o contato fica na metade
+   esquerda, compacto, para o robô que acena no centro não ficar por cima do texto */
+@media (max-height: 520px) and (orientation: landscape) {
+  .ateItem {
+    width: min(54vw, calc((100svh - 150px) * 1.6));
+  }
+  .ateItem:nth-child(even) {
+    width: min(34vw, calc((100svh - 150px) * 1.33));
+    margin-top: -3svh;
+  }
+  .ateLista {
+    gap: 10svh;
+  }
+  .ateLegenda {
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .ateTexto {
+    margin-top: 4px;
+    font-size: 13px;
+  }
+  .contato {
+    padding: 12vh var(--margem) 7vh;
+    gap: 10px;
+  }
+  .contatoMarca {
+    width: 84px;
+  }
+  .contatoChamada {
+    max-width: 38vw;
+    font-size: 14px;
+  }
+  .contatoEmail {
+    font-size: min(6.4vw, calc(38vw / 13.4));
+  }
+  .contatoLinks {
+    font-size: 13px;
+  }
+}
