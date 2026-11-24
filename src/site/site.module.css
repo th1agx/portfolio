@@ -1939,3 +1939,20 @@
     transform: scaleX(0);
   }
 }
+
+/* telas baixas (celular deitado): a legenda dos projetos desce para o pé da tela e fica menor, e o robô do topo se afasta do rosto */
+@media (max-height: 520px) {
+  .obrasPainel {
+    bottom: 10px;
+  }
+  .obrasLegenda {
+    font-size: 12.5px;
+    line-height: 1.3;
+    padding: 4px 6px;
+  }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .ancoraRobo {
+    left: 17%;
+  }
+}

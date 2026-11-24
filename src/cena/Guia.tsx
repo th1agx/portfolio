@@ -128,7 +128,8 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
 
     // 2. o roubo do cursor sobrepõe tudo
     const r = it.roubo
-    const tam = (ALTURA * escala.current) / 2
+    const fatorAltura = Math.min(1, Math.max(0.62, vh / 760))
+    const tam = (ALTURA * escala.current * fatorAltura) / 2
     if (r.fase === 1) {
       alvoX = it.ponteiro.x - tam * 0.9
       alvoY = it.ponteiro.y + tam * 1.1
@@ -218,7 +219,7 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     }
     // nunca colado na borda de baixo: os pés e a chama cortavam, e em janelas com a parte de baixo escondida (barras, Dock) ele sumia
     if (!folga && !r.fase && colado === 0) {
-      const limite = vh - Math.max(84, vh * 0.11)
+      const limite = vh - Math.max(1.15 * ALTURA * escala.current * fatorAltura, vh * 0.11)
       if (alvoY > limite) alvoY = limite
     }
     const sp = naBoca ? 1 - Math.exp(-45 * dt) : s
@@ -237,7 +238,8 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     olhar.current.x = Math.max(-1, Math.min(1, (it.ponteiro.x - centroX) / 360))
     olhar.current.y = Math.max(-1, Math.min(1, (it.ponteiro.y - centroY) / 360))
 
-    const tamanho = (ALTURA * escala.current) / 2
+    // em telas baixas o robô encolhe (até 62%); com o furo aberto ele volta ao tamanho exato do robô do túnel
+    const tamanho = (ALTURA * escala.current * (fatorAltura + (1 - fatorAltura) * colado)) / 2
     g.scale.setScalar(tamanho)
     g.position.set(pos.current.x, -(pos.current.y - tamanho), 0)
     g.rotation.set(0, 0.25, inclina.current)

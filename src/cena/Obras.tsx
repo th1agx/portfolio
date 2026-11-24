@@ -852,6 +852,9 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
     // continua como a trilha da seção seguinte. Tudo entra como alvo do mesmo amortecimento da rolagem
     // (sem salto entre o passeio e a virada)
     olhar.set(alvo.x, alvo.y + falta * 4, alvo.z - 40)
+    // telas baixas (celular deitado): a câmera olha um pouco mais para baixo, e as capas sobem 8% da altura, para a legenda caber
+    // embaixo delas em vez de por cima (some quando a câmera sobe para ver o caminho)
+    if (size.height < 520) olhar.y -= 0.08 * 2 * 40 * Math.tan((fovAlvo * Math.PI) / 360) * (1 - suave(prende(junta.current / 0.2)))
     cima.set(0, 1, 0)
     const j = junta.current
     if (j > 0.001) {
