@@ -11,7 +11,7 @@ const OLHO = { u: 643.1 / 1086, v: 429.9 / 1448, r: 22 / 1448 }
 // roteiro, em segundos: a mira aparece, o olho liga, o anel calibra; carregado (e passado o mínimo), foca, recua e a sala
 // acende. Nunca prende o visitante por mais que o teto
 const ROT = { hud: 0.25, liga: 1.0, cal: 1.25, minimo: 3.4, teto: 7, recuo: 0.5, sala: 1.45 }
-const UNIFORMS = ['uRes', 'uDpr', 'uT', 'uZ', 'uE', 'uEr', 'uR', 'uFoto', 'uAura', 'uOlhar', 'uHud', 'uLiga', 'uCal', 'uProg', 'uPupila', 'uFlash', 'uSala', 'uIris', 'uPerto', 'uFase'] as const
+const UNIFORMS = ['uRes', 'uDpr', 'uT', 'uZ', 'uE', 'uEr', 'uR', 'uFoto', 'uAura', 'uOlhar', 'uHud', 'uLiga', 'uCal', 'uProg', 'uPupila', 'uFlash', 'uSala', 'uIris', 'uPerto', 'uFase', 'uGlitch', 'uSemente'] as const
 type Locais = Record<(typeof UNIFORMS)[number], WebGLUniformLocation | null>
 
 const cl = (x: number) => Math.min(1, Math.max(0, x))
@@ -205,6 +205,10 @@ export class Motor {
   }
 
   // ---------- o laço ----------
+  // as rajadas de glitch do olho (em segundos do relógio da abertura)
+  private proxGlitch = 1.1
+  private fimGlitch = 0
+
   private aplicar(n: (typeof UNIFORMS)[number], ...v: number[]) {
     const l = this.U?.[n]
     const gl = this.gl
@@ -315,6 +319,13 @@ export class Motor {
     this.aplicar('uSala', sala)
     this.aplicar('uIris', 1)
     this.aplicar('uPerto', perto)
+    // o olho falha de vez em quando: rajadas curtas de glitch, sorteadas; nunca quando a sala acende (a imagem final tem de ser a do retrato)
+    if (sec > this.proxGlitch) {
+      this.fimGlitch = sec + 0.08 + Math.random() * 0.16
+      this.proxGlitch = sec + 0.9 + Math.random() * 1.9
+    }
+    this.aplicar('uGlitch', sec < this.fimGlitch && sala < 0.01 ? 0.55 + Math.random() * 0.45 : 0)
+    this.aplicar('uSemente', Math.random() * 1000)
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, this.tex)
     gl.activeTexture(gl.TEXTURE1)

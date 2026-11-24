@@ -21,6 +21,8 @@ uniform sampler2D uAura;  // a silhueta do corpo, de onde saem as curvas de nív
 uniform vec2 uOlhar;    // para onde olha (-1 a 1)
 uniform float uHud, uLiga, uCal, uProg, uPupila, uFlash, uSala, uIris, uPerto;
 uniform float uFase;    // relógio compartilhado com o retrato do topo (fase das curvas de nível)
+uniform float uGlitch;  // 0 a 1: rajada de glitch (fatias deslocadas, faixas azuis, linhas)
+uniform float uSemente; // sorteio do glitch, novo a cada quadro da rajada
 out vec4 saida;
 #define PI 3.14159265
 #define TAU 6.2831853
@@ -218,6 +220,18 @@ vec3 poeira(vec2 q, float t) {
 void main() {
   vec2 frag = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr; // px css, y para baixo
   vec2 tam = uRes / uDpr;
+  // glitch: só no olho e no anel em volta dele (zona), algumas fatias horizontais saltam para o lado e ele treme
+  float banda = 0.0;
+  float yOrig = frag.y;
+  float zona = 0.0;
+  if (uGlitch > 0.001) {
+    zona = 1.0 - smoothstep(1.7, 2.7, length((frag - uE) / (uZ * uEr * uIris)));
+    float alturaFatia = 5.0 + 38.0 * hash(vec2(uSemente, 3.1));
+    float fy = floor(frag.y / alturaFatia);
+    banda = step(0.7, hash(vec2(fy, uSemente))) * zona;
+    frag.x += banda * (hash(vec2(fy * 1.7, uSemente + 1.0)) - 0.5) * 90.0 * uGlitch;
+    frag += (vec2(hash(vec2(uSemente, 7.0)), hash(vec2(uSemente, 9.0))) - 0.5) * 7.0 * uGlitch * zona;
+  }
   // câmera: recua ancorada no olho. O ponto da tela corresponde a este ponto do enquadramento final:
   vec2 p1 = uE + (frag - uE) / uZ;
 
@@ -288,6 +302,12 @@ void main() {
   float vin = smoothstep(1.25, 0.3, length((frag / tam - 0.5) * vec2(1.4, 1.0)));
   cor *= mix(1.0, mix(0.35, 1.0, vin), 1.0 - uSala);
   cor += (hash(gl_FragCoord.xy + fract(uT * 7.0) * 100.0) - 0.5) * 0.045 * (1.0 - uSala * 0.8);
+  // o resto do glitch: as fatias que saltaram ficam azuladas, rasgos claros de uma linha e linhas de varredura
+  if (uGlitch > 0.001) {
+    cor = mix(cor, vec3(cor.b * 0.35, cor.g * 0.6, max(cor.r, cor.b) * 1.5 + 0.05), banda * 0.5 * uGlitch);
+    cor += vec3(0.35, 0.5, 1.0) * step(0.965, hash(vec2(floor(yOrig / 2.0), uSemente + 5.0))) * 0.55 * uGlitch * zona;
+    cor *= 1.0 - 0.2 * uGlitch * zona * step(0.5, fract(yOrig * 0.5));
+  }
   saida = vec4(cor, 1.0);
 }
 `

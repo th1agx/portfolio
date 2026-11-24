@@ -61,6 +61,8 @@ const fragmento = /* glsl */ `
   uniform vec3 uMancha;
   uniform vec3 uAzul;
   uniform vec3 uLinha;
+  uniform float uGlitch;  // 0 a 1: o glitch da entrada (só uma vez)
+  uniform float uSemente;
   varying vec2 vPainel;
   varying vec2 vFoto;
 
@@ -69,9 +71,19 @@ const fragmento = /* glsl */ `
          + sin(p.x * 29.0 - p.y * 23.0 + uTempo * 2.1) * 0.25;
   }
 
+  float hashG(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
   void main() {
     // entrada: o recorte sobe de baixo para cima com uma borda que ondula
     vec2 f = vFoto;
+    // glitch da entrada: algumas fatias horizontais saltam para o lado
+    float bandaG = 0.0;
+    if (uGlitch > 0.001) {
+      float alturaFatia = 0.01 + 0.06 * hashG(vec2(uSemente, 3.1));
+      float fy = floor(vPainel.y / alturaFatia);
+      bandaG = step(0.5, hashG(vec2(fy, uSemente)));
+      f.x += bandaG * (hashG(vec2(fy * 1.7, uSemente + 1.0)) - 0.5) * 0.2 * uGlitch;
+    }
     f.y -= (1.0 - uRevela) * 0.12;
     float frente = uRevela * 1.25 - 0.1 + sin(vPainel.x * 3.14159) * 0.06;
     float aparece = smoothstep(frente, frente - 0.04, vPainel.y);
@@ -91,6 +103,17 @@ const fragmento = /* glsl */ `
     float mascara = max(mancha, step(1.0 - onda, uInteiro));
 
     vec4 cor = mix(humano, robo, mascara);
+    // no glitch, o vermelho e o azul saem deslocados, as fatias que saltaram ficam azuladas e passam linhas de varredura
+    if (uGlitch > 0.001) {
+      float dx = 0.022 * uGlitch;
+      vec4 cR = mix(texture2D(tHumano, f + vec2(dx, 0.0)), texture2D(tRobo, f + vec2(dx, 0.0)), mascara) * dissolve;
+      vec4 cB = mix(texture2D(tHumano, f - vec2(dx, 0.0)), texture2D(tRobo, f - vec2(dx, 0.0)), mascara) * dissolve;
+      cor.r = cR.r;
+      cor.b = cB.b;
+      cor.a = max(cor.a, max(cR.a, cB.a));
+      cor.rgb = mix(cor.rgb, vec3(cor.b * 0.4, cor.g * 0.7, max(cor.r, cor.b) * 1.4 + 0.04), bandaG * 0.45 * uGlitch);
+      cor.rgb *= 1.0 - 0.18 * uGlitch * step(0.5, fract(gl_FragCoord.y * 0.5));
+    }
     // costura elétrica onde a tinta acaba, só sobre o corpo: um fio azul e um brilho logo para dentro
     float fio = (1.0 - smoothstep(0.0, fwidth(d) * 1.6, abs(d - 0.16))) * cor.a * (1.0 - step(0.5, uInteiro));
     float brilho = mancha * (1.0 - smoothstep(0.16, 0.23, d)) * cor.a;
@@ -148,6 +171,8 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
           uFoto: { value: [0.5, 1, 0] },
           uRelevo: { value: 0 },
           uRevela: { value: 0 },
+          uGlitch: { value: 0 },
+          uSemente: { value: 0 },
           uInteiro: { value: 0 },
           uTempo: { value: 0 },
           uMancha: { value: new Color('#e4e6ec') },
@@ -178,6 +203,9 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
   }, [gl, scene, camera, fluido, material, aoPronto])
 
   const reveladoUmaVez = useRef(false)
+  // o glitch de entrada da foto, uma vez só: armado quando a abertura sai, corre pelo relógio dos quadros desenhados (o canvas fica
+  // pausado por baixo da abertura, e um relógio à parte podia acabar antes de ele voltar a desenhar)
+  const glitch = useRef({ armado: false, inicio: -1, feito: false, quadros: 0 })
   useEffect(() => {
     const reduzir = matchMedia('(prefers-reduced-motion: reduce)').matches
     if (!reveladoUmaVez.current) material.uniforms.uRevela!.value = reduzir ? 1 : 0
@@ -192,6 +220,8 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
           // mesmo relevo e o mesmo relógio das curvas de nível. O passeio do cursor invisível só começa quando ela sai
           material.uniforms.uRevela!.value = 1
           aguardar('abertura', 20000).then(() => {
+            // o glitch da foto começa no primeiro quadro desenhado depois deste sinal (ver o useFrame)
+            glitch.current.armado = !reduzir
             const c = cursor.current
             c.inicio = performance.now()
             c.movido = 0
@@ -199,7 +229,10 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
           })
         } else {
           // sem abertura (página aberta no meio, sem WebGL 2...): a entrada de sempre
-          aguardar('abertura', 20000).then(() => gsap.to(material.uniforms.uRevela!, { value: 1, duration: 1.1, ease: 'power3.out', delay: 0.25 }))
+          aguardar('abertura', 20000).then(() => {
+            gsap.to(material.uniforms.uRevela!, { value: 1, duration: 1.1, ease: 'power3.out', delay: 0.25 })
+            glitch.current.armado = !reduzir
+          })
         }
       }
     }
@@ -244,7 +277,9 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
     let x = k.x
     let y = k.y
     let forca = 0
-    if (parado || !k.dentro) {
+    // saindo da abertura, nem o mouse fora da foto liga o passeio na hora: a foto aparece uma vez, assenta, e só então a tinta passeia
+    const esperou = agora - k.inicio > 3500
+    if ((parado || !k.dentro) && esperou) {
       // o passeio começa do zero cada vez que o mouse para; no fim do ciclo, para de vez
       if (k.ocioso < 0) k.ocioso = agora
       const t = Math.min(9.5, (agora - k.ocioso) / 1000)
@@ -294,6 +329,22 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
       requestAnimationFrame(() => requestAnimationFrame(() => sinalizar('retrato')))
     }
     passo(performance.now(), Math.min(delta, 1 / 30))
+    const g = glitch.current
+    if (g.armado && !g.feito) {
+      const agora = performance.now()
+      if (g.inicio < 0) g.inicio = agora
+      // 0,35 s de espera (a abertura ainda se dissolve por cima) e uma rajada curta e leve, de 0,2 s
+      const t = (agora - g.inicio) / 1000 - 0.35
+      // uma rajada só: 0,2 s, e no mínimo 2 quadros desenhados (num computador lento um quadro dura mais que isso)
+      const ligado = t > 0 && (t < 0.2 || g.quadros < 2)
+      if (ligado) g.quadros++
+      material.uniforms.uGlitch!.value = ligado ? 0.28 + Math.random() * 0.14 : 0
+      material.uniforms.uSemente!.value = Math.random() * 1000
+      if (t > 0.2 && g.quadros >= 2) {
+        material.uniforms.uGlitch!.value = 0
+        g.feito = true
+      }
+    }
     // o mesmo relógio da tela de abertura (src/site/tempoGlobal.ts): as curvas de nível têm a mesma fase nos dois
     material.uniforms.uTempo!.value = tempoGlobal()
     material.uniforms.uInteiro!.value = inteiro.current

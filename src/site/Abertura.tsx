@@ -38,15 +38,20 @@ type Ponte = {
 export function Abertura() {
   const raiz = useRef<HTMLDivElement>(null)
   const tela = useRef<HTMLCanvasElement>(null)
-  const numero = useRef<HTMLDivElement>(null)
+  const numero = useRef<HTMLSpanElement>(null)
+  const regua = useRef<HTMLDivElement>(null)
   const [ativa, setAtiva] = useState(true)
   // 'worker' tenta o Worker; se ele não conseguir (sem OffscreenCanvas, sem WebGL 2 no Worker), 'principal' refaz com um
   // canvas novo (o antigo já foi entregue ao Worker) e roda o motor aqui. A chave troca o elemento do canvas
   const [modo, setModo] = useState<'worker' | 'principal'>('worker')
   const [chave, setChave] = useState(0)
   const reiniciando = useRef(false)
+  // o aviso "abertura terminou" de uma desmontagem de verdade sai com uma folga; no modo estrito do React (desenvolvimento) o efeito é
+  // desmontado e montado logo em seguida, e esse aviso adiantado liberava as cenas (e o glitch da foto) no começo da visita
+  const avisoPendente = useRef(0)
 
   useEffect(() => {
+    window.clearTimeout(avisoPendente.current)
     const el = raiz.current
     const cv = tela.current
     if (!el || !cv) return
@@ -83,14 +88,77 @@ export function Abertura() {
       delete html.dataset.abertura
     }
 
-    // ---- a porcentagem: três colunas de dígitos que rolam ----
-    const colunas = [...(numero.current?.querySelectorAll<HTMLElement>('[data-digito]') ?? [])]
+    // ---- a porcentagem: o número na fonte dos títulos e a régua de tiques que acende, como o anel de calibração da íris ----
+    const tiques = [...(regua.current?.children ?? [])] as HTMLElement[]
+    // o número dá glitch: a cada mudança ele embaralha os dígitos por um instante, com fatias deslocadas e a cor separada, e assenta
+    // no valor real; parado, ainda falha de vez em quando. Com movimento reduzido, só troca o número
+    const semGlitch = matchMedia('(prefers-reduced-motion: reduce)').matches
+    let texto = '00'
+    let glitchAte = 0
+    let ultimoGlitch = 0
+    let quadroGlitch = 0
+    let soluco = 0
+    const sorteia = () => String(Math.floor(Math.random() * 10))
+    const pintar = (t: string) => {
+      const n = numero.current
+      if (!n) return
+      n.textContent = t
+      n.dataset.texto = t
+    }
+    const falhar = () => {
+      const n = numero.current
+      if (!n) return
+      const agora = performance.now()
+      if (agora >= glitchAte) {
+        n.dataset.glitch = '0'
+        pintar(texto)
+        quadroGlitch = 0
+        return
+      }
+      n.dataset.glitch = '1'
+      // dígitos trocados por sorteio (cada um com chance de trocar), fatias e deslocamentos novos a cada quadro
+      const alvoDigito = Math.floor(Math.random() * texto.length)
+      pintar([...texto].map((c, i) => (i === alvoDigito && Math.random() < 0.7 ? sorteia() : c)).join(''))
+      const a = Math.random() * 70
+      const b = Math.random() * 70
+      n.style.setProperty('--c1', `${a.toFixed(0)}%`)
+      n.style.setProperty('--c2', `${(100 - a - 8 - Math.random() * 20).toFixed(0)}%`)
+      n.style.setProperty('--c3', `${b.toFixed(0)}%`)
+      n.style.setProperty('--c4', `${(100 - b - 6 - Math.random() * 25).toFixed(0)}%`)
+      n.style.setProperty('--dx', `${((Math.random() - 0.5) * 6).toFixed(1)}px`)
+      n.style.setProperty('--sk', `${((Math.random() - 0.5) * 8).toFixed(1)}deg`)
+      quadroGlitch = requestAnimationFrame(falhar)
+    }
+    const glitch = (ms: number) => {
+      if (semGlitch) return pintar(texto)
+      glitchAte = Math.max(glitchAte, performance.now() + ms)
+      if (!quadroGlitch) quadroGlitch = requestAnimationFrame(falhar)
+    }
+    // os soluços de quando o número está parado
+    const solucar = () => {
+      glitch(70 + Math.random() * 70)
+      soluco = window.setTimeout(solucar, 1600 + Math.random() * 2200)
+    }
+    soluco = window.setTimeout(solucar, 1400)
+    const pararGlitch = () => {
+      window.clearTimeout(soluco)
+      cancelAnimationFrame(quadroGlitch)
+    }
     const mostrar = (v: number) => {
-      const t = String(v).padStart(3, '0')
-      colunas.forEach((c, k) => {
-        const tira = c.firstElementChild as HTMLElement | null
-        if (tira) tira.style.translate = `0 ${-Number(t[k]) * 1.2}em`
-        c.hidden = k === 0 && v < 100
+      const novo = String(v).padStart(2, '0')
+      if (novo !== texto) {
+        texto = novo
+        const agora = performance.now()
+        // o número muda quase a cada quadro: só falha ao cruzar um múltiplo de 10 e com 1 s de folga; nos outros quadros troca limpo
+        if (v % 10 === 0 && agora - ultimoGlitch > 1000) {
+          ultimoGlitch = agora
+          glitch(130)
+        } else if (glitchAte <= agora) pintar(texto)
+      }
+      const acesos = Math.round((v / 100) * tiques.length)
+      tiques.forEach((t, k) => {
+        t.dataset.on = k < acesos ? '1' : '0'
+        t.dataset.ponta = k === acesos - 1 && v < 100 ? '1' : '0'
       })
     }
 
@@ -211,6 +279,7 @@ export function Abertura() {
 
     return () => {
       vivo = false
+      pararGlitch()
       ponte?.parar()
       soltar()
       removeEventListener('resize', aoRedimensionar)
@@ -219,7 +288,7 @@ export function Abertura() {
       botao?.removeEventListener('click', aoPular)
       // trocar de modo (Worker -> thread principal) não é terminar: só sinaliza que a abertura acabou quando acabou de verdade
       if (reiniciando.current) reiniciando.current = false
-      else sinalizar('abertura')
+      else avisoPendente.current = window.setTimeout(() => sinalizar('abertura'), 80)
     }
   }, [modo, chave])
 
@@ -233,18 +302,19 @@ export function Abertura() {
         Carregando o portfólio de Thiago Antunes
       </p>
       <div className={s.carga} aria-hidden>
-        <span>Carregando</span>
-        <div ref={numero} className={s.numero}>
-          {[0, 1, 2].map((k) => (
-            <div key={k} className={s.digito} data-digito hidden={k === 0}>
-              <i>
-                {Array.from({ length: 10 }, (_, n) => (
-                  <b key={n}>{n}</b>
-                ))}
-              </i>
-            </div>
+        <div className={s.cargaTopo}>
+          <span>Calibrando a íris</span>
+        </div>
+        <div className={s.cargaLinha}>
+          <span ref={numero} className={s.cargaNumero} data-texto="00" data-glitch="0">
+            00
+          </span>
+          <span className={s.cargaPct}>%</span>
+        </div>
+        <div ref={regua} className={s.cargaRegua}>
+          {Array.from({ length: 36 }, (_, k) => (
+            <i key={k} data-on="0" />
           ))}
-          <small>%</small>
         </div>
       </div>
       <button type="button" className={s.pular} data-pular>

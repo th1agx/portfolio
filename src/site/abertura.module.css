@@ -34,13 +34,13 @@
   display: block;
 }
 
-/* a porcentagem real, com dígitos que rolam */
+/* a porcentagem real, como um mostrador do site: rótulo técnico, o número na fonte dos títulos (com glitch) e a régua de tiques que acende conforme as cenas ficam prontas */
 .carga {
   position: absolute;
   left: var(--margem);
   bottom: max(28px, 8.5vh);
   display: grid;
-  gap: 6px;
+  gap: 10px;
   opacity: 0;
   transition: opacity 0.6s ease;
   pointer-events: none;
@@ -48,52 +48,96 @@
 .raiz[data-carga='1'] .carga {
   opacity: 1;
 }
-.carga span {
-  font-size: 12px;
+.cargaTopo {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(232, 237, 245, 0.5);
+  color: rgba(232, 237, 245, 0.55);
 }
-.numero {
+.cargaLinha {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  font-weight: 600;
-  font-size: clamp(30px, 3vw, 44px);
-  line-height: 1;
-  letter-spacing: -0.02em;
+  width: max-content;
+  line-height: 0.86;
+}
+.cargaNumero {
+  font-family: var(--font-display);
+  font-weight: var(--peso-display, 800);
+  font-size: clamp(46px, 5.2vw, 76px);
+  letter-spacing: -0.045em;
   font-variant-numeric: tabular-nums;
+  color: #e8edf5;
 }
-.digito {
-  height: 1.2em;
-  width: 0.62em;
-  overflow: hidden;
-  text-align: center;
+.cargaPct {
+  margin: 0.25em 0 0 0.18em;
+  font-family: var(--font-display);
+  font-weight: var(--peso-display, 800);
+  font-size: clamp(16px, 1.5vw, 22px);
+  color: #2a6bff;
 }
-.digito[hidden] {
-  display: none;
+/* o glitch da contagem: duas cópias do número (azul e gelo) em fatias deslocadas, e o número treme e inclina */
+.cargaNumero {
+  position: relative;
+  display: inline-block;
 }
-.digito i {
+.cargaNumero::before,
+.cargaNumero::after {
+  content: attr(data-texto);
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.cargaNumero[data-glitch='1'] {
+  transform: translateX(var(--dx, 0)) skewX(var(--sk, 0));
+  text-shadow:
+    -2px 0 rgba(42, 107, 255, 0.85),
+    2px 0 rgba(190, 215, 255, 0.55);
+}
+.cargaNumero[data-glitch='1']::before {
+  opacity: 0.9;
+  color: #2a6bff;
+  transform: translateX(-5px);
+  clip-path: inset(var(--c1, 20%) 0 var(--c2, 50%) 0);
+}
+.cargaNumero[data-glitch='1']::after {
+  opacity: 0.85;
+  color: #dfe8ff;
+  transform: translateX(4px);
+  clip-path: inset(var(--c3, 55%) 0 var(--c4, 15%) 0);
+}
+.cargaRegua {
   display: flex;
-  flex-direction: column;
-  font-style: normal;
-  transition: translate 0.5s cubic-bezier(0.35, 0, 0, 1);
+  gap: 3px;
+  align-items: flex-end;
+  height: 16px;
 }
-/* as unidades mudam rápido: rolam curto, para o número estar sempre alinhado */
-.digito:nth-of-type(3) i {
-  transition-duration: 0.12s;
+.cargaRegua i {
+  width: 3px;
+  height: 10px;
+  background: rgba(143, 176, 255, 0.18);
+  transition:
+    background 0.25s ease,
+    height 0.25s ease,
+    box-shadow 0.25s ease;
 }
-.digito b {
-  display: block;
-  height: 1.2em;
-  line-height: 1.2em;
-  font-weight: 600;
+/* a cada seis, um tique mais alto, como uma régua */
+.cargaRegua i:nth-child(6n + 1) {
+  height: 14px;
 }
-.numero small {
-  font-size: 0.42em;
-  font-weight: 500;
-  margin: 0.12em 0 0 0.18em;
-  color: rgba(232, 237, 245, 0.55);
+.cargaRegua i[data-on='1'] {
+  background: #2a6bff;
+  box-shadow: 0 0 6px rgba(42, 107, 255, 0.75);
+}
+.cargaRegua i[data-ponta='1'] {
+  height: 16px;
+  background: #e8edf5;
+  box-shadow: 0 0 8px rgba(190, 210, 255, 0.9);
 }
 
 .pular {
@@ -103,7 +147,12 @@
   padding: 8px 0;
   border: 0;
   background: none;
-  font: 500 13px var(--font-display);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 500 11px var(--font-display);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: rgba(232, 237, 245, 0.5);
   cursor: pointer;
   opacity: 0;
@@ -123,4 +172,16 @@
 .pular:focus-visible {
   outline: 2px solid var(--sobre-grafite);
   outline-offset: 4px;
+}
+
+.pular::before {
+  content: '';
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.3s ease;
+}
+.pular:hover::before,
+.pular:focus-visible::before {
+  width: 36px;
 }
