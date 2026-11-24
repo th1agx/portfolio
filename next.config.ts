@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next'
 
-// No GitHub Pages o site fica em /portfolio: o workflow passa PAGES_BASE_PATH na hora do build.
+// No GitHub Pages o site fica em /<nome do repositório>: o workflow passa PAGES_BASE_PATH na hora do build.
 const base = process.env.PAGES_BASE_PATH ?? ''
 
 const config: NextConfig = {

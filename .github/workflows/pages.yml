@@ -27,7 +27,8 @@ jobs:
       - run: npm ci
       - run: npx next build
         env:
-          PAGES_BASE_PATH: /portfolio
+          # o site fica em /<nome do repositório>: acompanha o nome, para um renome não quebrar os arquivos
+          PAGES_BASE_PATH: /${{ github.event.repository.name }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: out
