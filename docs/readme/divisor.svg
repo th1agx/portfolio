@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="48" viewBox="0 0 1280 48">
-<defs><filter id="b" x="-20%" y="-200%" width="140%" height="500%"><feGaussianBlur stdDeviation="4"/></filter>
-<linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#e8edf5" stop-opacity="0"/><stop offset=".15" stop-color="#e8edf5" stop-opacity=".75"/><stop offset=".85" stop-color="#e8edf5" stop-opacity=".75"/><stop offset="1" stop-color="#e8edf5" stop-opacity="0"/></linearGradient></defs>
-<path d="M0,24.0 C320.0,7.199999999999999 448.0,40.8 640.0,24.0 S1024.0,7.199999999999999 1280,24.0" fill="none" stroke="#3d6dff" stroke-width="8" opacity=".35" filter="url(#b)"/>
-<path id="d" d="M0,24.0 C320.0,7.199999999999999 448.0,40.8 640.0,24.0 S1024.0,7.199999999999999 1280,24.0" fill="none" stroke="url(#g)" stroke-width="1.6"/>
-<circle r="3.5" fill="#fff"><animateMotion dur="4.5s" repeatCount="indefinite"><mpath href="#d"/></animateMotion></circle>
-<circle r="12" fill="#8fb0ff" opacity=".5" filter="url(#b)"><animateMotion dur="4.5s" repeatCount="indefinite"><mpath href="#d"/></animateMotion></circle>
-</svg>

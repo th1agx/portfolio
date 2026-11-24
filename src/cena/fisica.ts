@@ -1,6 +1,6 @@
 import { Quaternion, Ray, Vector3 } from 'three'
 
-// Física do aglomerado, no modelo do herói do Lusion (lido no bundle deles, reescrito aqui):
+// Física do aglomerado:
 // gravidade para o centro em vez de para baixo, colisão entre esferas equivalentes, o raio do ponteiro
 // empurrando as peças, um giro leve em torno de (1,1,1) que mantém tudo vivo, e um impulso no clique.
 

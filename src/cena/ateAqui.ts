@@ -1,6 +1,6 @@
 // "Até aqui": a trilha de luz e os cartões da trajetória, num canvas WebGL fixo por trás do texto.
 //
-// Os cartões seguem a galeria de trabalhos do orchestrated.nl (CasesGallery, lida no código deles): cada
+// Os cartões: cada
 // imagem é desenhada no lugar da sua moldura na página e o vértice a deforma com a rolagem —
 //   - esticar: a borda que vai na frente fica presa e a de trás atrasa, mais no meio que nos cantos
 //     (força 0,09, arco 0,45, aperto 0,16, velocidade cheia 3200 px/s, ataque 0,06 s e soltura 0,3 s);
@@ -333,7 +333,7 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
       montar()
     }
     if (estado.alfa > 0.7) congelada = true
-    // velocidade da faixa (px/s) com o ataque e a soltura do orchestrated
+    // velocidade da faixa (px/s) com ataque e soltura
     const v = (yAntes - topo) / dt
     yAntes = topo
     const alvo = Math.max(-1, Math.min(1, v / 3200))

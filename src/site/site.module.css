@@ -1,5 +1,5 @@
 /* Diagramação do protótipo. A base de grade (margem 5vw, segunda coluna em 51vw) veio da medição do
-   Lusion; composição, tipografia pesada, régua, faixas e a vista explodida são do Thiago. */
+   composição, tipografia pesada, régua, faixas e a vista explodida são do Thiago. */
 
 /* cabeçalho */
 
@@ -451,7 +451,7 @@
   padding-bottom: 0.04em;
 }
 
-/* high-line-reveal (Lando): a linha abre da esquerda para a direita em 0,6 s e um bloco lima por cima
+/* entrada dos títulos: a linha abre da esquerda para a direita em 0,6 s e um bloco lima por cima
    dela encolhe para a direita começando na metade; 0,15 s entre uma linha e a próxima */
 .tituloLinha {
   position: relative;
@@ -677,7 +677,7 @@
   height: 1px;
 }
 
-/* trajetória: a faixa horizontal do Lando */
+/* trajetória */
 
 .trajetoria {
   position: relative;
@@ -727,7 +727,7 @@
   list-style: none;
 }
 
-/* como a galeria do orchestrated: um cartão grande à esquerda, o seguinte menor e mais baixo à direita */
+/* um cartão grande à esquerda, o seguinte menor e mais baixo à direita */
 .ateItem {
   width: 54vw;
 }
@@ -809,7 +809,7 @@
   }
 }
 
-/* linhas de relevo (as do fundo do Lando): aparecem conforme o fundo clareia */
+/* linhas de relevo: aparecem conforme o fundo clareia */
 .relevo {
   position: absolute;
   top: 0;
@@ -857,7 +857,7 @@
   list-style: none;
 }
 
-/* as colunas em alturas diferentes, como as fotos espalhadas da faixa do Lando */
+/* as colunas em alturas diferentes */
 .expItem {
   --w: 20vw;
   align-self: flex-start;
@@ -887,7 +887,7 @@
 }
 
 /* o cartão no lugar da foto: o ano grande, em lima, anda 4 rem dentro da moldura. Entra como as imagens do
-   Lando (img-highlight): a moldura abre em elipse de cima para baixo (0,8 s, power2.out) e uma elipse lima por
+   a moldura abre em elipse de cima para baixo (0,8 s, power2.out) e uma elipse lima por
    cima se recolhe para baixo (0,6 s), começando 0,4 s depois */
 .expCartao {
   position: relative;
@@ -956,7 +956,7 @@
   opacity: 0.75;
 }
 
-/* high-line-reveal do Lando: a linha abre para a direita em 0,6 s (power2.out) e o bloco lima por cima encolhe
+/* entrada dos títulos: a linha abre para a direita em 0,6 s (power2.out) e o bloco lima por cima encolhe
    (scaleX 1 → 0, origem à direita) começando na metade */
 .revela {
   position: relative;
@@ -1153,7 +1153,7 @@
   }
 }
 
-/* projetos: a apresentação do wodniack.dev (Projetos.tsx) */
+/* projetos: a apresentação antiga (Projetos.tsx) */
 
 .codigo {
   --altura: 420lvh;
@@ -1262,7 +1262,7 @@
 .codigoTitulo,
 .codigoCena {
   margin: 0;
-  /* a Cabinet Grotesk pesada do topo: letras largas e cheias, como a fonte do wodniack */
+  /* a Cabinet Grotesk pesada do topo: letras largas e cheias */
   font: 800 min(12.5rem, 13.6lvh) / 1 var(--font-marca);
   letter-spacing: -0.02em;
   text-align: center;
@@ -1311,7 +1311,7 @@
   top: 0;
   left: 0;
   z-index: -1;
-  /* a sombra do wodniack, aqui uma extrusão verde-escura: dá volume às letras sobre o fundo escuro */
+  /* uma extrusão verde-escura: dá volume às letras sobre o fundo escuro */
   color: #000080;
   -webkit-text-stroke: 0;
   opacity: min(calc(var(--estado) * 2), 1);
@@ -1519,7 +1519,7 @@
 }
 
 
-/* ---------- Trabalho: o mundo em profundidade (sztanki.com/work) ---------- */
+/* ---------- Trabalho: o mundo em profundidade ---------- */
 .obras {
   position: relative;
   z-index: 2;
@@ -1539,7 +1539,7 @@
   opacity: 0;
 }
 
-/* vinheta e um leve tom azul nas bordas, como a lente da cena do sztanki */
+/* vinheta e um leve tom azul nas bordas */
 .obrasVinheta {
   position: absolute;
   inset: 0;

@@ -11,7 +11,7 @@ import { agendar, aguardar } from './fila'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Trabalho: o mundo em profundidade do sztanki.com/work (src/cena/Obras.tsx). A seção é alta e a cena fica
+// Trabalho: o mundo em profundidade (src/cena/Obras.tsx). A seção é alta e a cena fica
 // presa à tela; a rolagem vira a posição da câmera no caminho entre as capas. No pé da tela, uma legenda de
 // filme diz o projeto da vez em uma linha; clicar nela (ou na capa) abre o projeto com a explicação e os links.
 

@@ -12,7 +12,7 @@ gsap.registerPlugin(ScrollTrigger)
 // A saída é a entrada dos projetos, presa à rolagem:
 //   1. a faixa lima é arrancada pela lateral, girando
 //   2. as palavras da faixa escura se recolhem, cada uma encolhendo e sumindo, do centro para as pontas
-//   3. a faixa escura vira um quadro em 3D (o mesmo recorte projetado do Zentry): ele se inclina em direção à
+//   3. a faixa escura vira um quadro em 3D (o recorte projetado de src/site/projecao.ts): ele se inclina em direção à
 //      câmera, ganha cantos arredondados e cresce até passar das bordas da tela. Nenhuma borda reta varre a tela.
 //   4. no escuro, um anel lima pulsa no centro e se abre: é ali que o primeiro projeto começa
 // O fundo da página troca para escuro por baixo do quadro, então nada aparece cinza no meio.

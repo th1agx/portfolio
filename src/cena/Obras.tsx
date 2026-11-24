@@ -27,8 +27,8 @@ import { projetos, imagensDaParede } from '@/content/projetos'
 import { trilhaTela } from './trilhaTela'
 import { Precompilar } from './Precompilar'
 
-// Os projetos como um mundo em profundidade, no modelo da página de trabalhos do sztanki.com (ver
-// docs/ENGENHARIA_REVERSA.md): cada projeto é uma capa com o brilho da própria imagem, posta numa grade de
+// Os projetos como um mundo em profundidade:
+// cada projeto é uma capa com o brilho da própria imagem, posta numa grade de
 // 3 × 2 células (18 × 13,5) num passeio sorteado, e 30 unidades mais funda que a anterior. A câmera segue um
 // caminho que para 16 unidades na frente de cada capa e então atravessa para a próxima; a rolagem só diz onde
 // ela está no caminho. Atrás, uma parede de imagens desfocadas e azuladas espalhadas até 400 de fundura,
@@ -55,7 +55,7 @@ let resta = 1
 const particulas = (c: number) => suave(prende((c - 0.35) / 0.35)) * resta
 const imagens = (c: number) => suave(prende((c - 0.7) / 0.3)) * resta * resta
 
-// lugar de cada capa: passeio pela grade sem voltar para a célula anterior (o código do sztanki)
+// lugar de cada capa: passeio pela grade sem voltar para a célula anterior
 function lugares(n: number) {
   const celulas = [{ c: 0, r: 0 }]
   for (let t = 1; t <= n; t++) {
@@ -92,7 +92,7 @@ const vertPadrao = /* glsl */ `
   void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
 `
 
-// capa: a imagem como um painel de pontos (a matriz do sztanki): cada célula vira um ponto do tamanho do seu
+// capa: a imagem como um painel de pontos: cada célula vira um ponto do tamanho do seu
 // brilho, com colunas de luz descendo como chuva e linhas de varredura. Com o mouse em cima a matriz se desfaz
 // e a imagem aparece limpa.
 const fragImagem = /* glsl */ `
@@ -335,7 +335,7 @@ function Parede({ texturas, chegada }: { texturas: Texture[]; chegada: Ref }) {
   return <mesh geometry={geo} material={mat} frustumCulled={false} renderOrder={0} />
 }
 
-// partículas correndo pelas linhas de uma grade (as "linhas pontilhadas" do sztanki), vindo do fundo
+// partículas correndo pelas linhas de uma grade, vindo do fundo
 function Grade({ chegada }: { chegada: Ref }) {
   const { size } = useThree()
   const mat = useRef<ShaderMaterial>(null)
@@ -437,7 +437,7 @@ const surgir = /* glsl */ `
   }
 `
 
-// matriz de fundo: planos de pontos em grade espalhados em profundidade, como o fundo pontilhado do sztanki;
+// matriz de fundo: planos de pontos em grade espalhados em profundidade;
 // em cada coluna uma cabeça de luz desce devagar e acende os pontos por onde passa (a chuva da Matrix)
 function Matriz({ chegada }: { chegada: Ref }) {
   const { size } = useThree()
@@ -520,7 +520,7 @@ function Matriz({ chegada }: { chegada: Ref }) {
 }
 
 // poeira de estrelas: pontos parados no espaço inteiro, de tamanhos e brilhos variados, que piscam devagar
-// (o céu cheio de pontinhos do sztanki, e o campo de estrelas de Interstellar)
+// (um céu cheio de pontinhos, como um campo de estrelas)
 function Poeira({ chegada }: { chegada: Ref }) {
   const { size } = useThree()
   const mat = useRef<ShaderMaterial>(null)
@@ -586,7 +586,7 @@ function Poeira({ chegada }: { chegada: Ref }) {
 }
 
 // riscos de velocidade: traços finos que vêm do fundo em direção à câmera, abertos em volta do caminho
-// (as linhas que cortam a tela do sztanki), mais longos quanto mais perto
+// (linhas que cortam a tela), mais longos quanto mais perto
 function Riscos({ chegada, junta }: { chegada: Ref; junta: Ref }) {
   const obj = useMemo(() => {
     const n = 420
@@ -857,7 +857,7 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
       olhar.set(Math.sin(giro) * Math.cos(desce) * 40, -Math.sin(desce) * 40, -Math.cos(giro) * Math.cos(desce) * 40).add(alvo)
       cima.set(0, Math.cos(desce), Math.sin(desce))
     }
-    // amortecido como o controle do sztanki (damping 0,2)
+    // amortecido (damping 0,2)
     const k = 1 - Math.exp(-dt / 0.2)
     camera.position.lerp(alvo, k)
     olharAtual.current.lerp(olhar, k)

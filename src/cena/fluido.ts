@@ -13,7 +13,7 @@ import {
   type WebGLRenderer,
 } from 'three'
 
-// Fluido na placa de vídeo, como o do topo do landonorris.com (lá: advecção, força do mouse, viscosidade e
+// Fluido na placa de vídeo (advecção, força do mouse, viscosidade e
 // pressão numa grade de 10 % da tela). Aqui a versão enxuta do mesmo modelo de "stable fluids": a velocidade
 // é transportada por ela mesma, o mouse empurra (força) e pinta (tinta), a pressão tira a divergência para o
 // fluido girar em vez de só se espalhar, e tudo perde força a cada passo. A tinta é o que revela o robô.
@@ -145,7 +145,7 @@ function alvo(w: number, h: number) {
 }
 
 export type OpcoesFluido = {
-  resolucao: number // fração da tela (o Lando usa 0,1)
+  resolucao: number // fração da tela (0,1 basta)
   perdaVelocidade: number // por passo a 60 quadros por segundo
   perdaTinta: number
   raio: number // do pingo, em uv² com a proporção corrigida

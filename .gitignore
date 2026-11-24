@@ -13,7 +13,7 @@ playwright-report
 # código de outros sites, só para estudo local: nunca importar, nunca publicar
 reference/
 
-# configuração local do Claude Code e notas de engenharia reversa de outro site: não publicar
+# configuração local do Claude Code e notas de estudo: não publicar
 .claude/
-docs/LUSION_REA.md
+docs/estudos/
 .playwright-mcp/

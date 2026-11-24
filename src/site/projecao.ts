@@ -1,7 +1,7 @@
 import { Euler, Vector3 } from 'three'
 
 // Um retângulo 3D projetado na tela, devolvido como path de clip-path com cantos arredondados.
-// É o mesmo princípio do quadro do Zentry (lido no componente Frame deles): quatro cantos com escala e
+// Quatro cantos com escala e
 // rotação, projetados com distância focal, e curvas quadráticas em cada canto. Implementação própria.
 
 const FOCAL = 900

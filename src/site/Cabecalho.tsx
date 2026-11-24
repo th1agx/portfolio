@@ -7,7 +7,7 @@ import s from './site.module.css'
 // Cabeçalho: assinatura TA à esquerda e um único botão de menu.
 // O menu não abre um painel: a própria pílula se estica para a esquerda e os links aparecem dentro dela,
 // um de cada vez. Esc ou clique fora fecham.
-// Como no site do Lando Norris (data-nav-theme): as cores seguem as da seção que está embaixo (texto e botão
+// As cores seguem as da seção que está embaixo (texto e botão
 // trocam juntos com o fundo). Só aparece na primeira tela e no contato (o <html> recebe data-final); no meio
 // do site sobe e some, para não passar por cima de nada.
 

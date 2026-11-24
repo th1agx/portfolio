@@ -16,7 +16,7 @@ gsap.registerPlugin(ScrollTrigger)
 
 // O final do site é uma cena só, presa na tela do começo ao fim, para não haver borda de seção nenhuma:
 //   1. "Até aqui": a trilha de luz em que os riscos dos projetos se juntaram desce pelo meio e passa entre os
-//      cartões da trajetória, que se curvam com a rolagem como a galeria do orchestrated (src/cena/ateAqui.ts).
+//      cartões da trajetória, que se curvam com a rolagem (src/cena/ateAqui.ts).
 //      A seção começa por cima do fim dos projetos (margem negativa), transparente: o fundo e a trilha
 //      aparecem sobre a linha que já está lá, e a faixa sobe com 0,6 s de atraso (a velocidade curva os cartões).
 //   2. o furo: a trilha termina no centro da tela; ali abre-se um buraco com aro azul e a camada cresce em direção a ele
@@ -57,7 +57,7 @@ const passo = (a: number, b: number, x: number) => {
   return k * k * (3 - 2 * k)
 }
 
-// linhas de relevo (as do fundo do Lando): curvas de nível de um ruído suave, desenhadas uma vez num canvas.
+// linhas de relevo: curvas de nível de um ruído suave, desenhadas uma vez num canvas.
 // A cor vem de quem chama: escura sobre fundo claro, clara sobre o fundo azul do topo
 export function desenharRelevo(c: HTMLCanvasElement, cor = 'rgba(5,5,5,0.09)') {
   const w = (c.width = c.offsetWidth)

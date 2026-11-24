@@ -1,4 +1,4 @@
-/* Tokens. A base de medidas veio da home do Lusion (docs/LUSION_REA.md); cores, tipografia e motivos são do Thiago.
+/* Tokens: medidas, cores, tipografia e motivos do site.
    Medidas tiradas em 1440px de largura viram vw para escalar do mesmo jeito. */
 
 
@@ -34,7 +34,7 @@
   --t-mini: max(11px, 0.9vw); /* 13px */
   --t-sobre: max(44px, 7.5vw); /* 108px */
 
-  --ease: cubic-bezier(0.35, 0, 0, 1); /* ease.lusion */
+  --ease: cubic-bezier(0.35, 0, 0, 1); /* a curva de movimento padrão do site */
 
   /* Inter Tight (a do Ingrassia) no site todo, títulos em 600 com o espaço fechado como no Apple; a Cabinet
      Grotesk (escolhida pelo Thiago entre Cabinet, Panchang e Tanker) fica só no topo, em .heroi */

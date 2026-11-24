@@ -13,7 +13,7 @@ gsap.registerPlugin(ScrollTrigger)
 
 // Duas colunas: à esquerda o título e o parágrafo; à direita a vaga reservada para o painel que veio do
 // topo pelo caminho curvo (ele pousa ali e fica parado enquanto o texto passa ao lado, sem cobrir nada).
-// As linhas do título entram como no site do Lando (high-line-reveal): cada linha abre da esquerda para a
+// As linhas do título entram assim: cada linha abre da esquerda para a
 // direita enquanto um bloco azul por cima dela encolhe no sentido contrário. Embaixo, as camadas de como
 // ele constrói (stack e arquitetura) acendem no vale lunar como faróis, que a câmera passa ao rolar.
 
@@ -33,7 +33,7 @@ export function Ideia() {
   const lua = useRef<HTMLCanvasElement>(null)
   const rotulos = useRef<(HTMLDivElement | null)[]>([])
 
-  // o fundo lunar (chão de pedra do orchestrated), no lugar do fundo branco, com os faróis das camadas
+  // o fundo lunar (chão de pedra em raymarch), no lugar do fundo branco, com os faróis das camadas
   useEffect(() => {
     const canvas = lua.current
     const el = secao.current

@@ -99,7 +99,7 @@ export const projetos: Projeto[] = [
     frase: 'Este site: Next.js, three.js e GSAP, com o retrato que vira robô e as cenas presas à rolagem.',
     sobre: [
       'Este site. O topo é o retrato que vira robô onde o cursor passa, com um fluido simulado na GPU; depois vêm o vale lunar em raymarch, este mundo de projetos e a estrada da trajetória, tudo preso à rolagem.',
-      'Cada cena foi estudada em sites de referência e refeita do zero: o retrato do Lando Norris, o vale do Orchestrated e esta página de trabalhos do Sztanki.',
+      'Cada cena é desenhada ao vivo, sem vídeo pronto: o retrato e o fluido que revela o robô, o vale em raymarch, este mundo de projetos e a trilha que guia até o túnel.',
     ],
     pilha: ['Next.js', 'React 19', 'three.js e React Three Fiber', 'GLSL', 'GSAP', 'Lenis'],
     imagem: { src: arquivo('/projetos/portfolio.jpg'), alt: 'O topo deste portfólio, com o retrato de Thiago revelando a versão robô.' },

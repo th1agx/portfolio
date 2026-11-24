@@ -7,7 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Rolagem com inércia, como a do Lusion, mas sobre a rolagem nativa do navegador (Lenis), para não
+// Rolagem com inércia sobre a rolagem nativa do navegador (Lenis), para não
 // quebrar teclado, âncoras e leitores de tela. O ScrollTrigger é atualizado pelo mesmo relógio do GSAP.
 // Com movimento reduzido, a rolagem fica nativa e sem suavização.
 

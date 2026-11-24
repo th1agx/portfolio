@@ -10,9 +10,9 @@ import { arquivo } from '@/content/caminho'
 import { aguardar, sinalizar } from '@/site/fila'
 import { tempoGlobal } from '@/site/tempoGlobal'
 
-// O topo como o do landonorris.com (docs/ENGENHARIA_REVERSA.md): o Thiago recortado, sem fundo, sobre a página
+// O topo: o Thiago recortado, sem fundo, sobre a página
 // clara, num plano com relevo que gira de leve com o mouse. O cursor deixa uma mancha que revela, por baixo, a
-// versão robô (também recortada, e maior que a cabeça, como o capacete do Lando). A mancha some sozinha; com o
+// versão robô (também recortada, e maior que a cabeça). A mancha some sozinha; com o
 // mouse parado, um cursor invisível passeia pelo rosto. Números tirados do código deles:
 // giro 0,075 rad com o mouse amortecido, rastro com perda de 4 % por quadro a 60 quadros por segundo, pincel de
 // 18 células numa grade de 10 % da tela, borda dura em 0,1, entrada de baixo para cima em 1,1 s.
@@ -86,7 +86,7 @@ const fragmento = /* glsl */ `
     float d = texture2D(tRastro, vPainel + vec2(ruido(vPainel * 2.0), ruido(vPainel.yx * 2.3)) * 0.004).r;
     float mancha = step(0.16, d);
 
-    // o robô inteiro, subindo em onda (o capacete do Lando ao passar no selo)
+    // o robô inteiro, subindo em onda
     float onda = f.y + sin(f.x * 3.14159) * sin(uInteiro * 3.14159) * 0.2;
     float mascara = max(mancha, step(1.0 - onda, uInteiro));
 
@@ -107,7 +107,7 @@ const fragmento = /* glsl */ `
     float aLinha = linha * faixa * fora * 0.5;
     // halo azul bem leve colado ao corpo
     float halo = smoothstep(0.3, 0.8, a) * fora * 0.035;
-    // fora do corpo, a tinta aparece de leve no fundo (as manchas claras do Lando em volta da cabeça)
+    // fora do corpo, a tinta aparece de leve no fundo (manchas claras em volta da cabeça)
     float aFundo = 0.55 * mancha * fora;
 
     vec3 rgb = cor.rgb * cor.a;
@@ -130,7 +130,7 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
     t.generateMipmaps = false
   }
 
-  // o fluido que revela o robô: números do Lando (grade de 10 % da tela, perda de 4 % por passo)
+  // o fluido que revela o robô (grade de 10 % da tela, perda de 4 % por passo)
   const fluido = useMemo(() => new Fluido(gl, { resolucao: 0.12, perdaVelocidade: 0.96, perdaTinta: 0.965, raio: 0.0016, iteracoes: 6 }), [gl])
   useEffect(() => () => fluido.dispose(), [fluido])
 
@@ -220,11 +220,11 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
     return () => window.removeEventListener('pointermove', mover)
   }, [alvo, material, pronto])
 
-  // tamanho: o plano cobre a vista com folga para o giro; a foto fica no meio, como o rosto do Lando
+  // tamanho: o plano cobre a vista com folga para o giro; a foto fica no meio
   useEffect(() => {
     const aspecto = size.width / size.height
     // a cabeça (do cabelo ao queixo, 41 % da foto) ocupa 48 % da altura da tela e o cabelo começa a 11 % do
-    // topo; o peito é cortado pela borda de baixo (o Lando usa 58 %, aqui um pouco menor, a pedido)
+    // topo; o peito é cortado pela borda de baixo (um pouco menos que 58 %, a pedido)
     // em tela estreita, a cabeça (orelha a orelha, 46,5 % da largura da foto) não passa de 72 % da largura
     const alturaFoto = Math.min(0.48 / 0.41, (0.72 * aspecto) / (0.465 * FOTO))
     // a foto nunca termina acima da borda de baixo da tela
@@ -238,7 +238,7 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
 
   const passo = (agora: number, dt: number) => {
     const k = cursor.current
-    // parado há 3 s (3,5 s ao abrir): o cursor invisível do Lando faz o passeio UMA vez — ida em 2,5 s,
+    // parado há 3 s (3,5 s ao abrir): um cursor invisível faz o passeio UMA vez — ida em 2,5 s,
     // pausa, volta — e descansa até o mouse se mexer de novo (antes repetia em loop e cansava)
     const parado = agora - (k.movido || k.inicio) > (k.movido ? 3000 : 3500)
     let x = k.x
@@ -269,7 +269,7 @@ function Plano({ alvo, inteiro, aoPronto, aoPrimeiroQuadro, pronto }: { alvo: { 
       }
       k.ocioso = -1
       const v = Math.hypot(k.x - k.px, k.y - k.py)
-      // qualquer movimento revela com força (como a força do fluido do Lando); parado, só o que já foi pintado
+      // qualquer movimento revela com força; parado, só o que já foi pintado
       forca = v > 0.0004 ? Math.min(1, 0.6 + v * 40) : 0
     }
     // o cursor empurra e pinta o fluido ao longo do trecho percorrido (em passos curtos, sem buracos)

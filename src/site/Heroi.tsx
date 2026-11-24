@@ -9,7 +9,7 @@ import { desenharRelevo } from './Trajetoria'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Topo: o retrato em tela cheia (humano por cima, robô revelado pelo cursor), sem texto, como no Lando. Ao sair, o painel
+// Topo: o retrato em tela cheia (humano por cima, robô revelado pelo cursor), sem texto. Ao sair, o painel
 // viaja pelo caminho curvo até a vaga na seção seguinte (ver o efeito abaixo). O robô guia começa aqui, pequeno.
 
 const Retrato = dynamic(() => import('@/cena/Retrato'), { ssr: false })
@@ -26,7 +26,7 @@ export function Heroi() {
     const ideia = document.getElementById('ideia')
     if (!el || !assinatura || !pouso || !ideia) return
     type P = { x: number; y: number; w: number }
-    // geometria medida sem transformação. Pontos da viagem, como pos1, pos2 e pos3 do site do Lando: o painel
+    // geometria medida sem transformação. Pontos da viagem: o painel
     // no topo, o centro da tela e a vaga reservada na seção seguinte. Depois de pousar, sobe junto com o título
     // e o texto da seção, como se fizesse parte dela.
     let g = { x0: 0, y0: 0, w0: 1, h0: 1, pouso: 1, saida: 2, pontos: [] as P[] }
@@ -62,7 +62,7 @@ export function Heroi() {
       const v = 1 - u
       return v * v * v * p0 + 3 * v * v * u * p1 + 3 * v * u * u * p2 + u * u * u * p3
     }
-    // o caminho em duas curvas, com os pontos de controle calculados como no código do Lando
+    // o caminho em duas curvas, com os pontos de controle calculados a partir dos três pontos
     const caminho = (t: number): P => {
       const [A, B, C] = g.pontos as [P, P, P]
       if (t <= 0.5) {
@@ -87,7 +87,7 @@ export function Heroi() {
       const escala = p.w / g.w0
       // o painel é preso à página; para ele estar no ponto p da tela, compensa a rolagem
       el.style.transform = `translate3d(${p.x - g.x0}px, ${p.y + y - g.y0}px, 0) scale(${escala})`
-      // como no Lando: no topo ocupa a tela, sem canto; vira cartão de canto redondo ao encolher
+      // no topo ocupa a tela, sem canto; vira cartão de canto redondo ao encolher
       el.style.borderRadius = `${(18 * Math.min(1, viagem * 5)) / escala}px`
       // sem fundo no topo (só o recorte sobre a página); ao encolher ganha o Deep Blue do topo, como cartão
       el.style.backgroundColor = `rgba(0, 0, 128, ${Math.min(1, viagem * 4).toFixed(3)})`
@@ -97,7 +97,7 @@ export function Heroi() {
       assinatura.style.clipPath = `inset(0 ${(100 - escreve * 100).toFixed(2)}% 0 0)`
       assinatura.style.opacity = `${1 - Math.min(1, Math.max(0, (viagem - 0.82) / 0.18))}`
     }
-    // curvas de nível do Lando: mantidas no código, mas no fundo azul ficam invisíveis (reprovadas visíveis)
+    // curvas de nível: mantidas no código, mas no fundo azul ficam invisíveis (reprovadas visíveis)
     const fundo = () => relevo.current && desenharRelevo(relevo.current)
     fundo()
     addEventListener('resize', fundo)

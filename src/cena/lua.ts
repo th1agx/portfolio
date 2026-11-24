@@ -1,4 +1,4 @@
-// Fundo lunar da seção "Sistemas que se explicam", como o topo do orchestrated.nl (docs/ENGENHARIA_REVERSA.md):
+// Fundo lunar da seção "Sistemas que se explicam":
 // um vale de pedras em perspectiva, a lua no alto à esquerda iluminando de cima, névoa azul no fundo, o céu
 // estrelado (com uma estrela cadente de vez em quando) e o cursor como uma lanterna rente ao chão. O terreno é percorrido
 // por raio (raymarch) sobre um campo de altura: a forma do vale, as pedras grandes e o relevo fino vêm da
