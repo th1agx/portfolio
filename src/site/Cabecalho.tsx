@@ -51,7 +51,6 @@ export function Cabecalho() {
     <header className={s.cabecalho} data-oculto={oculto && !aberto ? '1' : '0'}>
       <a className={s.assinatura} href="#topo" aria-label="Thiago Antunes, início">
         <span className={s.marcaTA} aria-hidden />
-        <span>Thiago Antunes</span>
       </a>
       <nav ref={raiz} className={s.menu} data-aberto={aberto ? '1' : '0'} aria-label="Principal">
         <div className={s.menuLinks} id="menu-links" inert={!aberto}>

@@ -340,9 +340,11 @@ function Corredor({ progresso, bloom }: { progresso: { current: number }; bloom:
     if (bloom.current) bloom.current.intensity = 0.1 + 1.0 * MathUtils.smoothstep(INICIO - z, 0, 22)
     // na boca do túnel ele ainda está de frente para a câmera, como o robô guia que entrou no furo;
     // quando começa a avançar, se vira e mergulha
-    const deFrente = z > INICIO - 2.5
+    // o giro de frente para de costas é preso à posição dele (à rolagem): vai se virando enquanto mergulha, em vez de girar
+    // parado no lugar por tempo; subindo, desvira do mesmo jeito
+    const deFrente = MathUtils.smoothstep(z, INICIO - 3.5, INICIO - 0.2)
     acao.current = chegou || naSala > 0.6 ? 'acenar' : 'voar'
-    olharTras.current += ((chegou || naSala > 0.6 || deFrente ? 1 : 0) - olharTras.current) * (1 - Math.exp(-dt * 3))
+    olharTras.current += ((chegou || naSala > 0.6 ? 1 : deFrente) - olharTras.current) * (1 - Math.exp(-dt * 8))
     // a mesma luz de frente que o robô guia tem, forte na entrada e sumindo dentro do túnel
     if (luzFrente.current) {
       luzFrente.current.intensity = 1.3 * MathUtils.smoothstep(z, -10, INICIO)
@@ -376,7 +378,12 @@ function Corredor({ progresso, bloom }: { progresso: { current: number }; bloom:
     // começa a avançar, passa para o caminho de sempre
     const camForma = z + 6.5 + entrada * 9 + naSala * 11 - veloz * 2
     const camBoca = 1 + distanciaEntrada(bocaTela.R, state.size.height)
-    const camZ = MathUtils.lerp(camForma, camBoca, MathUtils.smoothstep(z, INICIO - 8, INICIO))
+    // na boca a câmera está colada (camBoca, o furo da página é a boca). Quando o robô começa a mergulhar, ela o acompanha à mesma
+    // distância (o robô não encolhe de uma vez, os anéis é que passam por ele) e só aos poucos, ao longo de 12 unidades de viagem,
+    // volta ao caminho de sempre. Antes ela ia de uma vez para o caminho (recuava 11 unidades) ou ficava parada vendo o robô disparar
+    const acompanha = z + (camBoca - INICIO)
+    const volta = 1 - MathUtils.smoothstep(z, INICIO - 13, INICIO - 1)
+    const camZ = MathUtils.lerp(acompanha, camForma, volta)
     const camX = Math.sin(z * 0.12) * 1.1 * (1 - naSala) + Math.sin(t * 0.4) * 0.3 + naSala * 7
     const camY = Math.cos(z * 0.09) * 0.6 + 0.4 + naSala * 2.5 - veloz * 0.9
     state.camera.position.set(camX, camY, camZ)
