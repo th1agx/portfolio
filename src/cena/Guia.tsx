@@ -71,6 +71,9 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     const vw = window.innerWidth
     const vh = window.innerHeight
     const rol = window.scrollY
+    // o roubo do cursor só acontece no começo da página (o retrato e o início do vale). Mais adiante o robô está a caminho de outro lugar
+    // (o furo do portal, o túnel) e a animação brigava com isso
+    const noComeco = rol < vh * 0.6
     const it = inter.current
 
     // 1. onde a rolagem quer o robô (entre duas âncoras)
@@ -135,6 +138,11 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
 
     // 2. o roubo do cursor sobrepõe tudo
     const r = it.roubo
+    if (r.fase && rol > vh * 1.4) {
+      r.fase = 0
+      r.feito = true
+      document.documentElement.classList.remove('cursor-roubado')
+    }
     const fatorAltura = Math.min(1, Math.max(0.62, vh / 760))
     const tam = (ALTURA * escala.current * fatorAltura) / 2
     if (r.fase === 1) {
@@ -176,9 +184,9 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     const centroY = pos.current.y - tam
     const dist = Math.hypot(it.ponteiro.x - centroX, it.ponteiro.y - centroY)
     it.ponteiro.perto = dist < 200 && !voando ? it.ponteiro.perto + dt : 0
-    const podeRoubar = r.fase === 0 && !r.feito && !document.documentElement.dataset.tunel && agora - inicio.current > 4 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && window.matchMedia('(pointer: fine)').matches
+    const podeRoubar = r.fase === 0 && !r.feito && noComeco && !document.documentElement.dataset.tunel && agora - inicio.current > 4 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches && window.matchMedia('(pointer: fine)').matches
     // ?roubar na URL força o roubo, só para conferir a animação
-    const forcar = r.fase === 0 && !r.feito && agora - inicio.current > 3 && location.search.includes('roubar')
+    const forcar = r.fase === 0 && !r.feito && noComeco && agora - inicio.current > 3 && location.search.includes('roubar')
     if (forcar || (podeRoubar && (it.ponteiro.perto > 1.4 || it.cliques >= 3))) {
       r.fase = 1
       r.inicio = agora
