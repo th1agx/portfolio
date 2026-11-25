@@ -104,7 +104,7 @@ export function Ideia() {
         <span className={s.tituloMascara}>
           <span className={`${s.tituloLinha} ${s.tituloLinha1}`}>
             {t.ideia.linha1}
-            <span className={s.ancoraTitulo} data-robo="sentar" aria-hidden />
+            <span className={s.ancoraTitulo} data-robo="sentar" data-robo-lado="direita" aria-hidden />
           </span>
         </span>
         <span className={s.tituloMascara}>
@@ -118,7 +118,7 @@ export function Ideia() {
         <p className={s.paragrafo}>
           {t.ideia.p2}
         </p>
-        <span className={s.ancoraBotao} data-robo="joinha" aria-hidden />
+        <span className={s.ancoraBotao} data-robo="joinha" data-robo-lado="direita" aria-hidden />
       </div>
       </div>
       {/* mais dois pontos do robô no vale: ele acompanha a caminhada pelos faróis */}

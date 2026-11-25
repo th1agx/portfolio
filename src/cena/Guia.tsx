@@ -58,6 +58,8 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
   const vooPreso = useRef({ el: null as HTMLElement | null, inicio: -10, x: 0, y: 0, dur: 0.8 })
   // entrada e saída das áreas sem robô (os projetos): um voo com tempo e arco, não uma perseguição que parece teletransporte
   const vooFolga = useRef({ antes: false, inicio: -10, x: 0, y: 0 })
+  // quanto o robô está presente (0 a 1): sobe e desce com suavização, para ele nunca aparecer ou sumir de uma vez
+  const presenca = useRef(0)
 
   const inicio = useRef(performance.now() / 1000)
   useFrame((_, dt) => {
@@ -72,9 +74,13 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     const it = inter.current
 
     // 1. onde a rolagem quer o robô (entre duas âncoras)
+    // em tela estreita, a âncora que cai sobre uma coluna de texto (data-robo-lado="direita") leva o robô para a faixa livre da direita
+    const estreita = vw < 700
+    const faixaDireita = vw - Math.max(34, (ALTURA * escala.current * Math.min(1, Math.max(0.62, vh / 760))) * 0.55)
     const pontos = lista.map((a) => {
       const r = a.el.getBoundingClientRect()
-      return { x: r.left, y: r.top, chegada: r.top + rol - vh * 0.6, a }
+      const x = estreita && a.el.dataset.roboLado === 'direita' ? faixaDireita : r.left
+      return { x, y: r.top, chegada: r.top + rol - vh * 0.6, a }
     })
     let i = 0
     while (i < pontos.length - 1 && rol >= pontos[i + 1]!.chegada) i++
@@ -222,6 +228,11 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     if (!folga && !r.fase && colado === 0) {
       const limite = vh - Math.max(1.15 * ALTURA * escala.current * fatorAltura, vh * 0.11)
       if (alvoY > limite) alvoY = limite
+      // nem cortado nas laterais: o corpo do robô tem de caber na tela (a âncora na margem o deixava meio para fora)
+      if (uf >= 1) {
+        const lateral = Math.min(vw / 2, tam * 0.9 + 6)
+        alvoX = Math.min(vw - lateral, Math.max(lateral, alvoX))
+      }
     }
     const sp = naBoca ? 1 - Math.exp(-45 * dt) : s
     pos.current.x += (alvoX - pos.current.x) * sp
@@ -245,10 +256,13 @@ function Robo({ ancoras, inter, dom, desenho }: { ancoras: { current: Ancora[] }
     g.position.set(pos.current.x, -(pos.current.y - tamanho), 0)
     g.rotation.set(0, 0.25, inclina.current)
     dissolve.current += ((document.documentElement.dataset.tunel ? 0 : 1) - dissolve.current) * (1 - Math.exp(-9 * dt))
-    if (dom.current.tela) dom.current.tela.style.opacity = dissolve.current.toFixed(3)
     const visivel = pos.current.y > -vh * 0.5 && pos.current.y < vh * 1.4 && dissolve.current > 0.02 && (!folga || uf < 1)
-    g.visible = visivel
-    desenho.current.visivel = visivel
+    // quando ele passa a ser visível (volta dos projetos, sai do túnel), a presença sobe em ~0,3 s em vez de ligar de uma vez
+    presenca.current += ((visivel ? 1 : 0) - presenca.current) * (1 - Math.exp(-dt * (visivel ? 9 : 14)))
+    if (dom.current.tela) dom.current.tela.style.opacity = (dissolve.current * presenca.current).toFixed(3)
+    const desenhar = visivel || presenca.current > 0.02
+    g.visible = desenhar
+    desenho.current.visivel = desenhar
 
     // 5. DOM que acompanha o robô: área clicável, balão de fala e o cursor carregado
     const d = dom.current
