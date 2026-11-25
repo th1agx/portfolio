@@ -10,7 +10,7 @@ import { vigiarContexto } from '@/cena/contexto'
 import { iniciarPortal } from '@/cena/portalTunel'
 import { bocaTela, chegadaContato, escalaDoRoboNaBoca, raioDaBocaNaTela } from '@/cena/trilhaTela'
 import s from './site.module.css'
-import { agendar, aguardar, sinalFeito } from './fila'
+import { agendar, aguardar, sinalFeito, sinalizar } from './fila'
 import { TEXTOS } from '@/content/textos'
 import { useIdioma, useTextos } from '@/content/idioma'
 
@@ -172,6 +172,8 @@ export function Trajetoria() {
         // sem WebGL, as molduras mostram a imagem parada
         if (!cena) cartoes.forEach((c) => (c.el.style.backgroundImage = `url(${c.imagem.toDataURL('image/jpeg', 0.9)})`))
         else molduras.forEach((m) => (m.dataset.gl = '1'))
+        // os cartões estão pintados: o menu (Cabecalho.tsx) sabe que trocar o idioma agora pede recarregar a página para pintá-los de novo
+        sinalizar('ate-aqui')
       },
     })
     // Renderização sob demanda: o canvas dos cartões e da trilha só desenha enquanto o fundo desta cena está visível
