@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import s from './site.module.css'
+import { criarSprites, type Sprites } from './ledSprite'
 
 // O botão do menu: os dois olhos do robô, como na pergunta do idioma (EscolhaOlhos.tsx), num tamanho de botão. Cada olho é uma matriz de
 // LEDs; parado, é a fenda inclinada do visor; ele olha para onde está o mouse, pisca de vez em quando e, com o mouse em cima ou o menu
@@ -37,6 +38,11 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
     let W = 0
     let H = 0
     let passo = 0
+    // sem mudança nos LEDs não há o que redesenhar (e o canvas redimensionado volta vazio)
+    let sujo = true
+    // o LED pré-desenhado (ledSprite.ts), em azul e em vermelho: com o menu aberto os dois se misturam pelo alfa
+    let azul: Sprites | null = null
+    let rubro: Sprites | null = null
     const medir = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2)
       W = cv.clientWidth
@@ -44,8 +50,11 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
       cv.width = Math.round(W * dpr)
       cv.height = Math.round(H * dpr)
       g.setTransform(dpr, 0, 0, dpr, 0, 0)
+      sujo = true
       // os dois olhos e o vão entre eles ocupam a largura toda
       passo = Math.min(W / (COLUNAS * 2 + 4), H / (LINHAS + 1.5))
+      azul = criarSprites(passo * 0.4, 2.4, 0.3, '70, 120, 255', '120, 165, 255', '235, 242, 255', 0.6, dpr)
+      rubro = criarSprites(passo * 0.4, 2.4, 0.3, '255, 40, 50', '255, 85, 90', '255, 222, 222', 0.6, dpr)
     }
     medir()
     addEventListener('resize', medir)
@@ -56,7 +65,10 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
       const r = botao.getBoundingClientRect()
       const cx = r.left + r.width / 2
       const cy = r.top + r.height / 2
-      alvo = { x: Math.max(-1, Math.min(1, (e.clientX - cx) / 320)), y: Math.max(-1, Math.min(1, (e.clientY - cy) / 240)) }
+      alvo = {
+        x: Math.max(-1, Math.min(1, (e.clientX - cx) / 320)),
+        y: Math.max(-1, Math.min(1, (e.clientY - cy) / 240)),
+      }
     }
     const entrou = () => (emCima.current = true)
     const saiu = () => (emCima.current = false)
@@ -90,7 +102,12 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
       return 1 - sm(0.0, 0.07, d)
     }
 
+    // sem mudança nos LEDs não há o que redesenhar; e 30 quadros por segundo bastam para uma matriz de LEDs (a thread principal do celular é curta)
     const quadro = (agora: number) => {
+      if (agora - t0 < 28) {
+        raf = requestAnimationFrame(quadro)
+        return
+      }
       const dt = Math.min(0.05, (agora - t0) / 1000)
       t0 = agora
       const quer = sorrir.current || emCima.current
@@ -100,11 +117,9 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
       olhar.x += (ax - olhar.x) * k
       olhar.y += (ay - olhar.y) * k
       sorriso += ((quer ? 1 : 0) - sorriso) * (1 - Math.exp(-dt * 9))
+      const antes = vermelho
       vermelho += ((sorrir.current ? 1 : 0) - vermelho) * (1 - Math.exp(-dt * 7))
-      const mix = (a: number, b: number) => Math.round(a + (b - a) * vermelho)
-      const halo = `${mix(70, 255)}, ${mix(120, 40)}, ${mix(255, 50)}`
-      const corpo = `${mix(120, 255)}, ${mix(165, 85)}, ${mix(255, 90)}`
-      const centro = `${mix(235, 255)}, ${mix(242, 222)}, ${mix(255, 222)}`
+      if (Math.abs(vermelho - antes) > 0.002) sujo = true
       if (!calmo) {
         if (agora > proximaPisca && piscaInicio < 0) piscaInicio = agora
         if (piscaInicio >= 0) {
@@ -118,47 +133,55 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
         }
       }
 
-      g.clearRect(0, 0, W, H)
-      const largura = COLUNAS * passo
-      const altura = LINHAS * passo
-      const vao = passo * 4
-      const topo = H / 2 - altura / 2
-      const x00 = W / 2 - vao / 2 - largura
-      const r = passo * 0.4
       for (let o = 0; o < 2; o++) {
         const olho = o === 0 ? -1 : 1
-        const x0 = o === 0 ? x00 : W / 2 + vao / 2
         const m = leds[o]!
         for (let j = 0; j < LINHAS; j++)
           for (let i = 0; i < COLUNAS; i++) {
             const n = j * COLUNAS + i
             const quero = forma((i + 0.5) / COLUNAS, (j + 0.5) / LINHAS, olho as -1 | 1)
             const b = m[n]!
-            m[n] = b + (quero - b) * (1 - Math.exp(-dt * (quero > b ? 22 : 7)))
+            const nv = b + (quero - b) * (1 - Math.exp(-dt * (quero > b ? 22 : 7)))
+            if (Math.abs(nv - b) > 0.0015) sujo = true
+            m[n] = nv
           }
-        g.globalCompositeOperation = 'lighter'
-        for (let j = 0; j < LINHAS; j++)
-          for (let i = 0; i < COLUNAS; i++) {
-            const b = m[j * COLUNAS + i]!
-            if (b < 0.02) continue
-            const px = x0 + (i + 0.5) * passo
-            const py = topo + (j + 0.5) * passo
-            g.fillStyle = `rgba(${halo}, ${(b * 0.3).toFixed(3)})`
-            g.beginPath()
-            g.arc(px, py, r * 2.4, 0, Math.PI * 2)
-            g.fill()
-            g.fillStyle = `rgba(${corpo}, ${b.toFixed(3)})`
-            g.beginPath()
-            g.arc(px, py, r, 0, Math.PI * 2)
-            g.fill()
-            if (b > 0.5) {
-              g.fillStyle = `rgba(${centro}, ${((b - 0.5) * 2).toFixed(3)})`
-              g.beginPath()
-              g.arc(px, py, r * 0.6, 0, Math.PI * 2)
-              g.fill()
+      }
+      if (sujo) {
+        sujo = false
+        g.clearRect(0, 0, W, H)
+        const largura = COLUNAS * passo
+        const altura = LINHAS * passo
+        const vao = passo * 4
+        const topo = H / 2 - altura / 2
+        const x00 = W / 2 - vao / 2 - largura
+        for (let o = 0; o < 2; o++) {
+          const olho = o === 0 ? -1 : 1
+          const x0 = o === 0 ? x00 : W / 2 + vao / 2
+          const m = leds[o]!
+          g.globalCompositeOperation = 'lighter'
+          const d = azul!.meia * 2
+          for (let j = 0; j < LINHAS; j++)
+            for (let i = 0; i < COLUNAS; i++) {
+              const b = m[j * COLUNAS + i]!
+              if (b < 0.02) continue
+              const px = x0 + (i + 0.5) * passo - azul!.meia
+              const py = topo + (j + 0.5) * passo - azul!.meia
+              for (const [sp, peso] of [
+                [azul!, 1 - vermelho],
+                [rubro!, vermelho],
+              ] as const) {
+                if (peso < 0.01) continue
+                g.globalAlpha = b * peso
+                g.drawImage(sp.corpo, px, py, d, d)
+                if (b > 0.5) {
+                  g.globalAlpha = (b - 0.5) * 2 * peso
+                  g.drawImage(sp.miolo, px, py, d, d)
+                }
+              }
             }
-          }
-        g.globalCompositeOperation = 'source-over'
+          g.globalAlpha = 1
+          g.globalCompositeOperation = 'source-over'
+        }
       }
       if (cv.clientWidth !== W || cv.clientHeight !== H) medir()
       raf = requestAnimationFrame(quadro)

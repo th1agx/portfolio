@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import s from './abertura.module.css'
+import { criarSprites, type Sprites } from './ledSprite'
 
 // Os olhos do robô do topo, como um visor de LEDs: cada olho é uma matriz de pontos (a mesma linguagem de matriz do site) e a expressão é
 // desenhada pelos pontos que acendem. Parado, é a fenda inclinada do visor de public/retrato/robo.webp; ela anda dentro da matriz seguindo
@@ -37,6 +38,9 @@ export default function EscolhaOlhos({ lado }: { lado: { current: Lado } }) {
     let W = 0
     let H = 0
     let passo = 0
+    // sem mudança nos LEDs não há o que redesenhar (e o canvas redimensionado volta vazio)
+    let sujo = true
+    let sprites: Sprites | null = null
     const medir = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2)
       W = cv.clientWidth
@@ -44,8 +48,11 @@ export default function EscolhaOlhos({ lado }: { lado: { current: Lado } }) {
       cv.width = Math.round(W * dpr)
       cv.height = Math.round(H * dpr)
       g.setTransform(dpr, 0, 0, dpr, 0, 0)
+      sujo = true
       // o tamanho de cada LED: os dois olhos juntos ocupam ~52% da largura (no máximo 780 px)
       passo = Math.min(W * 0.52, 780) / (COLUNAS * 2 + 6)
+      // o LED pré-desenhado (ledSprite.ts): halo azul, corpo azul vivo e o miolo quase branco
+      sprites = criarSprites(passo * 0.36, 2.6, 0.22, '42, 107, 255', '60, 115, 255', '225, 236, 255', 0.55, dpr)
     }
     medir()
     addEventListener('resize', medir)
@@ -53,7 +60,10 @@ export default function EscolhaOlhos({ lado }: { lado: { current: Lado } }) {
     let alvo = { x: 0, y: 0 }
     const mover = (e: PointerEvent) => {
       const alcance = Math.max(innerWidth, innerHeight) * 0.42
-      alvo = { x: Math.max(-1, Math.min(1, (e.clientX - innerWidth / 2) / alcance)), y: Math.max(-1, Math.min(1, (e.clientY - innerHeight / 2) / alcance)) }
+      alvo = {
+        x: Math.max(-1, Math.min(1, (e.clientX - innerWidth / 2) / alcance)),
+        y: Math.max(-1, Math.min(1, (e.clientY - innerHeight / 2) / alcance)),
+      }
     }
     addEventListener('pointermove', mover, { passive: true })
 
@@ -85,7 +95,12 @@ export default function EscolhaOlhos({ lado }: { lado: { current: Lado } }) {
       return 1 - sm(0.0, 0.035, d)
     }
 
+    // sem mudança nos LEDs não há o que redesenhar; e 30 quadros por segundo bastam para uma matriz de LEDs (a thread principal do celular é curta)
     const quadro = (agora: number) => {
+      if (agora - t0 < 28) {
+        raf = requestAnimationFrame(quadro)
+        return
+      }
       const dt = Math.min(0.05, (agora - t0) / 1000)
       t0 = agora
       const l = lado.current
@@ -107,15 +122,8 @@ export default function EscolhaOlhos({ lado }: { lado: { current: Lado } }) {
         }
       }
 
-      g.clearRect(0, 0, W, H)
-      const largura = COLUNAS * passo
-      const altura = LINHAS * passo
-      const vao = passo * 6
-      const topo = H * 0.46 - altura / 2
-      const r = passo * 0.36
       for (let o = 0; o < 2; o++) {
         const olho = o === 0 ? -1 : 1
-        const x0 = W / 2 + (olho === -1 ? -vao / 2 - largura : vao / 2)
         const m = leds[o]!
         for (let j = 0; j < LINHAS; j++)
           for (let i = 0; i < COLUNAS; i++) {
@@ -123,34 +131,42 @@ export default function EscolhaOlhos({ lado }: { lado: { current: Lado } }) {
             const quer = forma((i + 0.5) / COLUNAS, (j + 0.5) / LINHAS, olho as -1 | 1)
             // persistência do LED: acende rápido, apaga devagar
             const b = m[n]!
-            m[n] = b + (quer - b) * (1 - Math.exp(-dt * (quer > b ? 22 : 7)))
+            const nv = b + (quer - b) * (1 - Math.exp(-dt * (quer > b ? 22 : 7)))
+            if (Math.abs(nv - b) > 0.0015) sujo = true
+            m[n] = nv
           }
-        // só os LEDs acesos, com o brilho somado
-        g.globalCompositeOperation = 'lighter'
-        for (let j = 0; j < LINHAS; j++)
-          for (let i = 0; i < COLUNAS; i++) {
-            const b = m[j * COLUNAS + i]!
-            if (b < 0.02) continue
-            const px = x0 + (i + 0.5) * passo
-            const py = topo + (j + 0.5) * passo
-            // o halo azul em volta de cada LED aceso
-            g.fillStyle = `rgba(42, 107, 255, ${(b * 0.22).toFixed(3)})`
-            g.beginPath()
-            g.arc(px, py, r * 2.6, 0, Math.PI * 2)
-            g.fill()
-            // o LED: azul vivo, e o miolo quase branco quando está bem aceso
-            g.fillStyle = `rgba(60, 115, 255, ${b.toFixed(3)})`
-            g.beginPath()
-            g.arc(px, py, r, 0, Math.PI * 2)
-            g.fill()
-            if (b > 0.6) {
-              g.fillStyle = `rgba(225, 236, 255, ${((b - 0.6) * 2).toFixed(3)})`
-              g.beginPath()
-              g.arc(px, py, r * 0.55, 0, Math.PI * 2)
-              g.fill()
+      }
+      if (sujo) {
+        sujo = false
+        g.clearRect(0, 0, W, H)
+        const largura = COLUNAS * passo
+        const altura = LINHAS * passo
+        const vao = passo * 6
+        const topo = H * 0.46 - altura / 2
+        for (let o = 0; o < 2; o++) {
+          const olho = o === 0 ? -1 : 1
+          const x0 = W / 2 + (olho === -1 ? -vao / 2 - largura : vao / 2)
+          const m = leds[o]!
+          // só os LEDs acesos, com o brilho somado
+          g.globalCompositeOperation = 'lighter'
+          const sp = sprites!
+          const d = sp.meia * 2
+          for (let j = 0; j < LINHAS; j++)
+            for (let i = 0; i < COLUNAS; i++) {
+              const b = m[j * COLUNAS + i]!
+              if (b < 0.02) continue
+              const px = x0 + (i + 0.5) * passo - sp.meia
+              const py = topo + (j + 0.5) * passo - sp.meia
+              g.globalAlpha = b
+              g.drawImage(sp.corpo, px, py, d, d)
+              if (b > 0.6) {
+                g.globalAlpha = (b - 0.6) * 2
+                g.drawImage(sp.miolo, px, py, d, d)
+              }
             }
-          }
-        g.globalCompositeOperation = 'source-over'
+          g.globalAlpha = 1
+          g.globalCompositeOperation = 'source-over'
+        }
       }
       // a tela mudou de tamanho (a barra de rolagem some, a janela muda): o canvas acompanha
       if (cv.clientWidth !== W || cv.clientHeight !== H) medir()
