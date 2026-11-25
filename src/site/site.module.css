@@ -136,24 +136,24 @@
   transform: translateY(-100%);
 }
 
-/* menu: uma pílula que se estica do botão para a esquerda, com os links dentro */
+/* menu: abre para o lado, do botão (os olhos) para a esquerda, sem fundo: só os textos */
 .menu {
   --botao: max(42px, 3vw);
+  /* os dois olhos de LED, pequenos: pouco mais largos que o antigo círculo */
+  --olhos-l: calc(var(--botao) * 1.85);
+  --olhos-a: calc(var(--botao) * 0.68);
   justify-self: end;
   position: relative;
   display: flex;
   align-items: center;
-  padding: 4px;
-  border-radius: 999px;
-  color: #e8edf5;
-  background: rgba(6, 9, 29, 0);
-  transition: background-color 500ms var(--ease);
-}
-.menu[data-aberto='1'] {
-  background: #06091d;
+  color: var(--tinta);
+  /* sem fundo, o texto precisa ler sobre o retrato, o vale e o contato */
+  text-shadow:
+    0 0 14px rgba(0, 0, 50, 0.65),
+    0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* a gaveta: a largura vai de zero ao tamanho dos links (a pílula se estica) */
+/* a gaveta: a largura vai de zero ao tamanho dos links (a fila se estica para a esquerda) */
 .menuGaveta {
   display: grid;
   grid-template-columns: 0fr;
@@ -167,10 +167,10 @@
 .menuLinks {
   display: flex;
   align-items: center;
-  gap: clamp(16px, 1.8vw, 28px);
+  gap: clamp(18px, 2vw, 32px);
   min-width: 0;
   margin: 0;
-  padding: 0 clamp(16px, 1.6vw, 24px) 0 clamp(26px, 2.2vw, 34px);
+  padding: 0 clamp(12px, 1.2vw, 20px) 0 0;
   overflow: hidden;
   list-style: none;
   pointer-events: none;
@@ -188,7 +188,7 @@
 .menuItem {
   position: relative;
   display: block;
-  font-size: max(14px, 1.02vw);
+  font-size: max(15px, 1.1vw);
   font-weight: 500;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -197,126 +197,59 @@
 }
 .menu[data-aberto='1'] .menuItem {
   transform: none;
-  transition: transform 800ms var(--ease) calc(var(--i) * 55ms + 60ms);
+  transition: transform 800ms var(--ease) calc(var(--i) * 70ms + 60ms);
 }
-.menuItem a,
-.menuIdioma button {
+.menuItem a {
   color: inherit;
   text-decoration: none;
 }
 
 /* o item sob o mouse sobe um pouco */
-.menuItem a,
-.menuIdioma button {
+.menuItem a {
   display: inline-block;
-  transition:
-    translate 400ms var(--ease),
-    opacity 250ms;
+  transition: translate 400ms var(--ease);
 }
 .menuItem a:hover,
-.menuItem a:focus-visible,
-.menuIdioma button:hover,
-.menuIdioma button:focus-visible {
+.menuItem a:focus-visible {
   translate: 0 -3px;
 }
-.menuItem a:focus-visible,
-.menuIdioma button:focus-visible {
+.menuItem a:focus-visible {
   outline: none;
 }
 
-/* PT · EN: o idioma atual cheio, o outro esmaecido */
-.menuIdioma {
-  display: inline-flex;
-  gap: 10px;
-}
-.menuIdioma button {
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  opacity: 0.45;
-  transition:
-    opacity 250ms,
-    translate 400ms var(--ease);
-}
-.menuIdioma button[aria-pressed='true'],
-.menuIdioma button:hover,
-.menuIdioma button:focus-visible {
-  opacity: 1;
-}
-
-/* o botão: o círculo inteiro é clicável (antes só o miolo era, e o clique no anel não abria) */
+/* o botão: só os dois olhos de LED, sem círculo nem fundo; a caixa inteira é clicável */
 .menuBotao {
   flex: none;
   position: relative;
-  width: var(--botao);
-  height: var(--botao);
+  width: var(--olhos-l);
+  height: var(--olhos-a);
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: var(--tinta);
+  border-radius: 14px;
+  background: none;
   cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition:
-    background-color 500ms,
-    scale 400ms var(--ease);
 }
-.menuBotao:hover {
-  scale: 1.06;
+/* a área de clique passa da caixa dos olhos: errar a ponta por alguns pixels não pode deixar o clique cair na cena de baixo */
+.menuBotao::after {
+  content: '';
+  position: absolute;
+  inset: -16px -14px;
 }
 .menuBotao:focus-visible {
   outline: 2px solid var(--tinta);
   outline-offset: 3px;
 }
-
-/* o ícone: os dois olhos de LED do robô, inclinados para o centro; aberto, giram e formam um × */
-.menuIcone {
-  position: relative;
-  width: 22px;
-  height: 10px;
-}
-.menuIcone::before,
-.menuIcone::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  width: 9px;
-  height: 2.5px;
-  border-radius: 2px;
-  background: var(--fundo);
-  transition:
-    transform 550ms var(--ease),
-    left 550ms var(--ease),
-    width 550ms var(--ease),
-    background-color 500ms;
-}
-.menuIcone::before {
-  left: 0;
-  transform: rotate(14deg);
-}
-.menuIcone::after {
-  left: 13px;
-  transform: rotate(-14deg);
-}
-.menu[data-aberto='1'] .menuIcone::before,
-.menu[data-aberto='1'] .menuIcone::after {
-  left: 3px;
-  width: 16px;
-}
-.menu[data-aberto='1'] .menuIcone::before {
-  transform: rotate(45deg);
-}
-.menu[data-aberto='1'] .menuIcone::after {
-  transform: rotate(-45deg);
+.menuOlhos {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
-/* no celular a pílula vai até a margem; os itens que não cabem deslizam dentro dela, de lado */
+/* no celular a fila vai até a margem; os itens que não cabem deslizam, de lado */
 @media (max-width: 860px) {
   .menuGaveta {
-    max-width: calc(100vw - var(--margem) * 2 - var(--botao) - 8px);
+    max-width: calc(100vw - var(--margem) * 2 - var(--olhos-l) - 8px);
   }
   .menuLinks {
     overflow-x: auto;
@@ -365,6 +298,26 @@
   background: transparent;
   transform-origin: 50% 50%;
   will-change: transform;
+}
+
+/* o fundo do retrato: o mesmo azul, mas com profundidade. Uma luz atrás da cabeça, as bordas mais fundas e um grão fino que tira o aspecto de cor
+   chapada. Fica atrás do retrato (z-index negativo dentro do painel, que já é um contexto de empilhamento) e viaja com ele */
+.fundoRetrato {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 42% 58% at 50% 46%, rgba(50, 80, 255, 0.34) 0%, rgba(30, 40, 230, 0.14) 55%, transparent 100%),
+    radial-gradient(ellipse 85% 85% at 50% 50%, transparent 52%, rgba(0, 0, 36, 0.55) 100%);
+}
+.fundoRetrato::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.2 -0.1'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
 /* a assinatura TA, em branco por cima do painel enquanto ele viaja sobre o fundo azul; se apaga ao pousar */

@@ -108,14 +108,19 @@ export const projetos: Projeto[] = [
   },
 ]
 
-/** imagens de fundo da parede (as telas extras do English entram também) */
-export const imagensDaParede = [
-  ...projetos.map((p) => p.imagem.src),
-  arquivo('/projetos/english-1.jpg'),
-  arquivo('/projetos/english-2.jpg'),
-  arquivo('/projetos/english-3.jpg'),
-  arquivo('/projetos/english-4.jpg'),
-]
+/** as capas que têm texto desenhado na imagem ganham uma versão em inglês (as outras são capturas ou não têm texto) */
+const capaEmIngles = new Set(['mneme', 'tributax', 'devguard', 'forza'])
+
+/** imagens de fundo da parede, no idioma pedido (as telas extras do English entram também) */
+export function imagensDaParede(idioma: Idioma) {
+  return [
+    ...projetosDe(idioma).map((p) => p.imagem.src),
+    arquivo('/projetos/english-1.jpg'),
+    arquivo('/projetos/english-2.jpg'),
+    arquivo('/projetos/english-3.jpg'),
+    arquivo('/projetos/english-4.jpg'),
+  ]
+}
 
 // A versão em inglês: só o que muda de texto (nomes, imagens e endereços são os mesmos).
 type Traducao = Partial<Pick<Projeto, 'tipo' | 'frase' | 'sobre' | 'pilha'>> & { alt: string; rotulos?: string[] }
@@ -199,7 +204,7 @@ export function projetosDe(idioma: Idioma): Projeto[] {
       frase: t.frase ?? p.frase,
       sobre: t.sobre ?? p.sobre,
       pilha: t.pilha ?? p.pilha,
-      imagem: { ...p.imagem, alt: t.alt },
+      imagem: { src: capaEmIngles.has(p.id) ? p.imagem.src.replace(/.jpg$/, '-en.jpg') : p.imagem.src, alt: t.alt },
       links: p.links.map((l, i) => ({ ...l, rotulo: t.rotulos?.[i] ?? l.rotulo })),
     }
   })

@@ -1,15 +1,15 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { perfil } from '@/content/perfil'
-import { guardarParaRecarga, useIdioma, useTextos } from '@/content/idioma'
-import { sinalFeito } from './fila'
+import { useTextos } from '@/content/idioma'
+import { OlhosMenu } from './OlhosMenu'
 import s from './site.module.css'
 
-// Cabeçalho: a assinatura TA à esquerda e o botão do menu à direita. O botão é um círculo com dois traços inclinados, como os olhos de LED do
-// robô; aberto, os traços giram e viram um ×. O menu abre para o lado: uma pílula azul-escura se estica do botão para a esquerda e os links
-// sobem dentro dela, um de cada vez (o mais perto do botão primeiro); o da vez sobe um pouco.
-// No celular a pílula vai até a margem e os itens que não cabem deslizam dentro dela.
+// Cabeçalho: a assinatura TA à esquerda e o botão do menu à direita. O botão são os dois olhos de LED do robô (OlhosMenu.tsx), os mesmos da
+// pergunta do idioma: olham o mouse, piscam e sorriem com o mouse em cima ou com o menu aberto. O menu abre para o lado, sem fundo, só os
+// textos: Ideia, Trabalho e Contato sobem de dentro de uma máscara, o mais perto do botão primeiro. O idioma não se troca aqui: só se escolhe
+// na pergunta do começo (Abertura.tsx).
+// No celular a fila vai até a margem e os itens que não cabem deslizam de lado.
 // Esc ou clique fora fecham. As cores seguem as da seção que está embaixo. Só aparece na primeira tela e no contato (o <html> recebe
 // data-final); no meio do site sobe e some, para não passar por cima de nada.
 
@@ -23,8 +23,6 @@ const ALVOS: Record<string, () => number> = {
 
 export function Cabecalho() {
   const t = useTextos()
-  const idioma = useIdioma((s) => s.idioma)
-  const definir = useIdioma((s) => s.definir)
   const [aberto, setAberto] = useState(false)
   const [oculto, setOculto] = useState(false)
   const raiz = useRef<HTMLElement>(null)
@@ -58,55 +56,18 @@ export function Cabecalho() {
     window.dispatchEvent(new CustomEvent('rolagem:ir', { detail: Math.max(0, ALVOS[alvo]?.() ?? 0) }))
   }
 
-  const trocar = (novo: 'pt' | 'en') => {
-    if (novo === idioma) return
-    definir(novo)
-    // os cartões do "Até aqui" são imagens pintadas uma vez: se já foram pintados, recarrega para pintá-los de novo no idioma novo
-    // (sem perguntar o idioma outra vez)
-    if (sinalFeito('ate-aqui')) {
-      guardarParaRecarga(novo)
-      window.setTimeout(() => location.reload(), 250)
-    }
-  }
-
-  // os itens, da esquerda para a direita; --i conta a partir do botão, para o mais perto entrar primeiro
+  // os itens, da esquerda para a direita; --i conta a partir do botão, para o mais perto entrar primeiro (Contato, Trabalho, Ideia)
   const itens: { chave: string; no: React.ReactNode }[] = [
-    ...t.menu.secoes.map((sec) => ({
-      chave: sec.alvo,
-      no: (
-        <a href={`#${sec.alvo}`} onClick={ir(sec.alvo)}>
-          {sec.rotulo}
-        </a>
-      ),
-    })),
-    {
-      chave: 'github',
-      no: (
-        <a href={perfil.github} target="_blank" rel="noopener noreferrer">
-          GitHub
-        </a>
-      ),
-    },
-    {
-      chave: 'linkedin',
-      no: (
-        <a href={perfil.linkedin} target="_blank" rel="noopener noreferrer">
-          LinkedIn
-        </a>
-      ),
-    },
-    {
-      chave: 'idioma',
-      no: (
-        <span className={s.menuIdioma} role="group" aria-label={t.menu.idioma}>
-          {(['pt', 'en'] as const).map((i) => (
-            <button key={i} type="button" lang={i} aria-pressed={idioma === i} onClick={() => trocar(i)}>
-              {i.toUpperCase()}
-            </button>
-          ))}
-        </span>
-      ),
-    },
+    ...t.menu.secoes
+      .filter((sec) => sec.alvo !== 'trajetoria')
+      .map((sec) => ({
+        chave: sec.alvo,
+        no: (
+          <a href={`#${sec.alvo}`} onClick={ir(sec.alvo)}>
+            {sec.rotulo}
+          </a>
+        ),
+      })),
   ]
 
   return (
@@ -129,7 +90,7 @@ export function Cabecalho() {
         </ul>
         </div>
         <button type="button" className={s.menuBotao} aria-expanded={aberto} aria-controls="menu-links" onClick={() => setAberto((a) => !a)}>
-          <span className={s.menuIcone} aria-hidden />
+          <OlhosMenu aberto={aberto} ativo={!oculto || aberto} />
           <span className="visually-hidden">{aberto ? t.menu.fechar : t.menu.abrir}</span>
         </button>
       </nav>

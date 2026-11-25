@@ -118,6 +118,7 @@ export function Heroi() {
         aria-label={t.heroi.retrato}
         onClick={() => gsap.to(inteiro, { current: inteiro.current > 0.5 ? 0 : 1, duration: 1.5, ease: 'expo.inOut', overwrite: true })}
       >
+        <span className={s.fundoRetrato} aria-hidden />
         <Retrato inteiro={inteiro} />
         <span className={s.assinaturaViagem} data-assinatura aria-hidden />
       </div>

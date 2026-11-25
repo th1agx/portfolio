@@ -24,6 +24,7 @@ import {
   type Group,
 } from 'three'
 import { projetos, imagensDaParede } from '@/content/projetos'
+import { useIdiomaAtual } from '@/content/idioma'
 import { trilhaTela, fovObras } from './trilhaTela'
 import { Precompilar } from './Precompilar'
 
@@ -761,6 +762,7 @@ function Ceu({ chegada }: { chegada: { current: number } }) {
 function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; chegada: Ref; junta: Ref; ativo: (i: number) => void; abrir: (i: number) => void }) {
   const { camera, gl, size } = useThree()
   const ponto = useMemo(() => new Vector3(), [])
+  const idioma = useIdiomaAtual()
   const [texturas, setTexturas] = useState<Texture[] | null>(null)
   const { capas, caminho } = useMemo(() => lugares(projetos.length), [])
   const fades = useMemo(() => projetos.map(() => ({ current: 0 })), [])
@@ -828,11 +830,11 @@ function Mundo({ progresso, chegada, junta, ativo, abrir }: { progresso: Ref; ch
         return new Promise<Texture>((ok) => loader.load(src, (t) => ok(ajustar(t))))
       }
     }
-    Promise.all(imagensDaParede.map(carregar)).then((ts) => vivo && setTexturas(ts))
+    Promise.all(imagensDaParede(idioma).map(carregar)).then((ts) => vivo && setTexturas(ts))
     return () => {
       vivo = false
     }
-  }, [])
+  }, [idioma])
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, 0.05)
