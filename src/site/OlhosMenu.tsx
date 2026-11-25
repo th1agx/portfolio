@@ -5,7 +5,7 @@ import s from './site.module.css'
 
 // O botão do menu: os dois olhos do robô, como na pergunta do idioma (EscolhaOlhos.tsx), num tamanho de botão. Cada olho é uma matriz de
 // LEDs; parado, é a fenda inclinada do visor; ele olha para onde está o mouse, pisca de vez em quando e, com o mouse em cima ou o menu
-// aberto, vira o sorriso de olhos (^ ^). Cada LED tem persistência (acende rápido, apaga devagar), então as expressões se transformam
+// aberto, vira o sorriso de olhos (^ ^) e fica vermelho. Cada LED tem persistência (acende rápido, apaga devagar), então as expressões se transformam
 // umas nas outras. Canvas 2D; só desenha enquanto o cabeçalho está à vista.
 
 const COLUNAS = 13
@@ -67,6 +67,8 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
     const leds = [new Float32Array(COLUNAS * LINHAS), new Float32Array(COLUNAS * LINHAS)]
     const olhar = { x: 0, y: 0 }
     let sorriso = 0
+    // 0 = azul, 1 = vermelho: com o menu aberto os olhos ficam vermelhos
+    let vermelho = 0
     let pisca = 0
     let proximaPisca = performance.now() + 1800
     let piscaInicio = -1
@@ -98,6 +100,11 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
       olhar.x += (ax - olhar.x) * k
       olhar.y += (ay - olhar.y) * k
       sorriso += ((quer ? 1 : 0) - sorriso) * (1 - Math.exp(-dt * 9))
+      vermelho += ((sorrir.current ? 1 : 0) - vermelho) * (1 - Math.exp(-dt * 7))
+      const mix = (a: number, b: number) => Math.round(a + (b - a) * vermelho)
+      const halo = `${mix(70, 255)}, ${mix(120, 40)}, ${mix(255, 50)}`
+      const corpo = `${mix(120, 255)}, ${mix(165, 85)}, ${mix(255, 90)}`
+      const centro = `${mix(235, 255)}, ${mix(242, 222)}, ${mix(255, 222)}`
       if (!calmo) {
         if (agora > proximaPisca && piscaInicio < 0) piscaInicio = agora
         if (piscaInicio >= 0) {
@@ -136,16 +143,16 @@ export function OlhosMenu({ aberto, ativo }: { aberto: boolean; ativo: boolean }
             if (b < 0.02) continue
             const px = x0 + (i + 0.5) * passo
             const py = topo + (j + 0.5) * passo
-            g.fillStyle = `rgba(70, 120, 255, ${(b * 0.3).toFixed(3)})`
+            g.fillStyle = `rgba(${halo}, ${(b * 0.3).toFixed(3)})`
             g.beginPath()
             g.arc(px, py, r * 2.4, 0, Math.PI * 2)
             g.fill()
-            g.fillStyle = `rgba(120, 165, 255, ${b.toFixed(3)})`
+            g.fillStyle = `rgba(${corpo}, ${b.toFixed(3)})`
             g.beginPath()
             g.arc(px, py, r, 0, Math.PI * 2)
             g.fill()
             if (b > 0.5) {
-              g.fillStyle = `rgba(235, 242, 255, ${((b - 0.5) * 2).toFixed(3)})`
+              g.fillStyle = `rgba(${centro}, ${((b - 0.5) * 2).toFixed(3)})`
               g.beginPath()
               g.arc(px, py, r * 0.6, 0, Math.PI * 2)
               g.fill()
