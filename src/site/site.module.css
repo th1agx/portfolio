@@ -398,7 +398,9 @@
   position: sticky;
   top: 0;
   height: 100svh;
-  height: var(--tela, 100svh);
+  /* a altura máxima (barras do navegador recolhidas): constante, então a cena nunca é redimensionada nem estica quando a barra do iPhone
+     aparece e some, e nunca sobra faixa lisa embaixo; com a barra à mostra, só uns pixels de baixo ficam escondidos */
+  height: 100lvh;
   overflow: hidden;
 }
 
@@ -458,7 +460,9 @@
   display: block;
   width: 100%;
   height: 100svh;
-  height: var(--tela, 100svh);
+  /* a altura máxima (barras do navegador recolhidas): constante, então a cena nunca é redimensionada nem estica quando a barra do iPhone
+     aparece e some, e nunca sobra faixa lisa embaixo; com a barra à mostra, só uns pixels de baixo ficam escondidos */
+  height: 100lvh;
   /* o alto do céu já é o Deep Blue da página; a borda do canvas some num degradê */
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
   mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
@@ -1086,7 +1090,9 @@
   position: sticky;
   top: 0;
   height: 100svh;
-  height: var(--tela, 100svh);
+  /* a altura máxima (barras do navegador recolhidas): constante, então a cena nunca é redimensionada nem estica quando a barra do iPhone
+     aparece e some, e nunca sobra faixa lisa embaixo; com a barra à mostra, só uns pixels de baixo ficam escondidos */
+  height: 100lvh;
   overflow: hidden;
   /* ela fica por cima do fim dos projetos: não pode roubar o clique das capas (o contato liga de volta) */
   pointer-events: none;
@@ -1111,7 +1117,9 @@
   position: sticky;
   top: 0;
   height: 100svh;
-  height: var(--tela, 100svh);
+  /* a altura máxima (barras do navegador recolhidas): constante, então a cena nunca é redimensionada nem estica quando a barra do iPhone
+     aparece e some, e nunca sobra faixa lisa embaixo; com a barra à mostra, só uns pixels de baixo ficam escondidos */
+  height: 100lvh;
   overflow: hidden;
   background: #050508;
 }
@@ -1525,7 +1533,9 @@
   position: sticky;
   top: 0;
   height: 100svh;
-  height: var(--tela, 100svh);
+  /* a altura máxima (barras do navegador recolhidas): constante, então a cena nunca é redimensionada nem estica quando a barra do iPhone
+     aparece e some, e nunca sobra faixa lisa embaixo; com a barra à mostra, só uns pixels de baixo ficam escondidos */
+  height: 100lvh;
   overflow: hidden;
 }
 

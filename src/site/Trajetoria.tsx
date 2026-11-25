@@ -265,12 +265,13 @@ export function Trajetoria() {
         else delete raiz.dataset.cena
       }
     }
-    // o furo que se vê segue o alvo da rolagem com constante de tempo de ~0,5 s
+    // o furo que se vê segue o alvo da rolagem: ~0,5 s para abrir, ~0,15 s para fechar
     const suavizarAbre = (_t: number, dtMs: number) => {
       const dif = ab.alvo - ab.atual
       if (dif === 0) return
       if (Math.abs(dif) < 0.0004) ab.atual = ab.alvo
-      else ab.atual += dif * (1 - Math.exp(-(dtMs / 1000) * 2.0))
+      // abre devagar (0,5 s), mas fecha rápido: numa rolagem rápida para cima o furo ficava aberto por cima dos cartões por mais de 1 s
+      else ab.atual += dif * (1 - Math.exp(-(dtMs / 1000) * (dif < 0 ? 7.0 : 2.0)))
       aplicarAbre(ab.atual)
     }
     gsap.ticker.add(suavizarAbre)

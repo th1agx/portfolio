@@ -12,33 +12,6 @@ gsap.registerPlugin(ScrollTrigger)
 // Com movimento reduzido, a rolagem fica nativa e sem suavização.
 
 export function Rolagem() {
-  // A altura que o visitante enxerga agora. As cenas fixas eram de 100svh (a menor altura possível); no iPhone a barra do navegador
-  // some ao rolar, a tela cresce e sobrava uma faixa lisa embaixo de cada cena (vale, túnel). --tela acompanha window.innerHeight, que
-  // é a altura visível, com uma espera curta para não redimensionar as cenas a cada quadro da animação da barra.
-  useEffect(() => {
-    const raiz = document.documentElement
-    let ultimo = 0
-    let espera = 0
-    const aplicar = () => {
-      const h = Math.round(window.innerHeight)
-      if (Math.abs(h - ultimo) <= 1) return
-      ultimo = h
-      raiz.style.setProperty('--tela', `${h}px`)
-    }
-    const agendar = () => {
-      window.clearTimeout(espera)
-      espera = window.setTimeout(aplicar, 120)
-    }
-    aplicar()
-    addEventListener('resize', agendar)
-    window.visualViewport?.addEventListener('resize', agendar)
-    return () => {
-      window.clearTimeout(espera)
-      removeEventListener('resize', agendar)
-      window.visualViewport?.removeEventListener('resize', agendar)
-    }
-  }, [])
-
   useEffect(() => {
     // o menu pede para ir a uma posição (px da página); com rolagem nativa, o navegador suaviza
     const ir = (e: Event) => {

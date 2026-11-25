@@ -344,6 +344,7 @@ void main() {
 // azul fundo ao longe); sinais de luz correm por eles e, na chegada, eles nascem do núcleo para fora com a frente brilhando
 const V_LINHA = `${CABECA}
 uniform float uOpac;
+uniform float uPerto; // escurece os fios junto ao núcleo (1 = como está): na tela estreita eles se amontoam e a soma estoura em branco
 in vec4 aL;   // linha, u, brilho, semente
 in vec4 aH;   // direção da fibra no chão (x, z), abertura, é fibra (0 ou 1)
 out vec3 vCor;
@@ -382,7 +383,8 @@ void main() {
   float frente = uEntrada * 48.0;
   float chega = 1.0 - smoothstep(frente - 2.5, frente, pos);
   float brilhoFrente = uEntrada < 0.999 ? exp(-pow((frente - pos) / 1.6, 2.0)) * 2.4 : 0.0;
-  vA = uOpac * aL.z * p.w * (1.0 + sinal + onda(p.xyz) * 1.5 + perto * 2.0 + brilhoFrente) * chega * (aH.w > 0.5 ? 0.45 : 1.0);
+  float junto = mix(1.0, uPerto, 1.0 - smoothstep(0.0, 0.5, dn));
+  vA = junto * uOpac * aL.z * p.w * (1.0 + sinal + onda(p.xyz) * 1.5 + perto * 2.0 + brilhoFrente) * chega * (aH.w > 0.5 ? 0.45 : 1.0);
   vCor = calor(dn) * quente;
 }`
 const F_LINHA = `#version 300 es
@@ -524,7 +526,7 @@ export function criarFios(canvas: HTMLCanvasElement, op: OpcoesFios) {
   // partículas: distribuídas pelas linhas na proporção comprimento × brilho × peso
   const rnd = gerador(4242)
   const faixa = (a: number, b: number) => a + (b - a) * rnd()
-  const total = op.leve ? 70_000 : 240_000
+  const total = op.leve ? 150_000 : 240_000
   const partes = linhas.map((l) => l.comp * l.brilho * l.peso)
   const soma = partes.reduce((a, b) => a + b, 0)
   const aP = new Float32Array(total * 4)
@@ -542,9 +544,9 @@ export function criarFios(canvas: HTMLCanvasElement, op: OpcoesFios) {
   })
 
   // linhas: pares de vértices ao longo de cada uma (no leve, uma amostra sim, outra não); os fios fortes levam um feixe de fibras
-  const passo = op.leve ? 2 : 1
+  const passo = 1
   const segs = Math.floor((AMOSTRAS - 1) / passo)
-  const FIBRAS = op.leve ? 2 : 5
+  const FIBRAS = op.leve ? 4 : 5
   const fitas = linhas.reduce((t, l) => t + 1 + (l.forte ? FIBRAS : 0), 0)
   const aL = new Float32Array(fitas * segs * 2 * 4)
   const aH = new Float32Array(fitas * segs * 2 * 4)
@@ -565,7 +567,7 @@ export function criarFios(canvas: HTMLCanvasElement, op: OpcoesFios) {
   })
 
   // poeira (InflowParticles): 2000 pontos que entram pelos lados e sobem perto da coluna
-  const POEIRA = op.leve ? 900 : 2000
+  const POEIRA = op.leve ? 1500 : 2000
   const poeira = Array.from({ length: POEIRA }, () => ({ a: rnd() * Math.PI * 2, k: rnd(), v: faixa(0.6, 1.4), y: rnd(), tam: faixa(0.02, 0.05), cor: hex(['#e8edf5', '#9fb2ff', '#5a6dff', '#2f3cff'][(rnd() * 4) | 0]!) }))
   // clarões: correm por linhas sorteadas, mais fortes longe da coluna (flareColumn)
   const claroes = Array.from({ length: P.clarões }, () => ({ linha: (rnd() * NL) | 0, u: faixa(0.05, 0.45), idade: rnd() * P.clarãoVida, vida: P.clarãoVida * faixa(0.7, 1.3) }))
@@ -603,7 +605,7 @@ export function criarFios(canvas: HTMLCanvasElement, op: OpcoesFios) {
   const comuns = ['uLinhas', 'uVP', 'uCam', 'uRes', 'uPtr', 'uPtrR', 'uPres', 'uTempo', 'uEntrada', 'uOnda', 'uOndaForca']
   const L = {
     part: locs(pPart, [...comuns, 'uFluxo', 'uProj']),
-    linha: locs(pLinha, [...comuns, 'uOpac']),
+    linha: locs(pLinha, [...comuns, 'uOpac', 'uPerto']),
     luz: locs(pLuz, [...comuns, 'uProj']),
     ceu: locs(pCeu, ['uDir', 'uCima', 'uFrente', 'uNuc', 'uTan', 'uAsp', 'uTempo', 'uEntrada', 'uCeuA']),
   }
@@ -660,7 +662,7 @@ export function criarFios(canvas: HTMLCanvasElement, op: OpcoesFios) {
       pres += (alvoPres - pres) * (1 - Math.exp(-6 * dt))
       spx += (px - spx) * (1 - Math.exp(-16 * dt))
       spy += (py - spy) * (1 - Math.exp(-16 * dt))
-      const e = Math.min(window.devicePixelRatio || 1, op.leve ? 1.25 : 1.5)
+      const e = Math.min(window.devicePixelRatio || 1, op.leve ? 2 : 1.5)
       const w = Math.max(2, Math.round(W * e))
       const h = Math.max(2, Math.round(H * e))
       if (canvas.width !== w || canvas.height !== h) {
@@ -771,6 +773,7 @@ export function criarFios(canvas: HTMLCanvasElement, op: OpcoesFios) {
       }
       usar(pLinha, L.linha)
       gl.uniform1f(L.linha.uOpac!, 0.15)
+      gl.uniform1f(L.linha.uPerto!, op.leve ? 0.4 : 0.5)
       gl.bindVertexArray(vaoLinha)
       gl.drawArrays(gl.LINES, 0, m)
       usar(pPart, L.part)

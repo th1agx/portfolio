@@ -277,7 +277,15 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
   let versaoLida = -1
   let congelada = false
   const montar = () => {
-    const comeco = inicio.length >= 2 ? inicio : [{ x: W * 0.5, y: -H * 1.2 }, { x: W * 0.5, y: H * 0.35 }]
+    // a ponta da linha de cima (onde a câmera dos projetos estava) passa da altura do primeiro cartão: dali ao centro dele a curva tinha de
+    // voltar para o lado em poucos pixels e fazia um gancho. Sem esse rabo, a linha desce até o cartão com espaço para a curva
+    let topoLinha = inicio
+    if (marcosCartoes.length && inicio.length > 4) {
+      const limite = marcosCartoes[0]!.y - H * 0.35
+      const sobra = inicio.filter((p) => p.y <= limite)
+      if (sobra.length >= 3) topoLinha = sobra
+    }
+    const comeco = topoLinha.length >= 2 ? topoLinha : [{ x: W * 0.5, y: -H * 1.2 }, { x: W * 0.5, y: H * 0.35 }]
     const marcos = [...comeco, ...marcosCartoes, ...marcosFim]
     // curva suave (Catmull-Rom) amostrada a cada ~6 px
     caminho = []
@@ -287,12 +295,27 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
       const p2 = marcos[k + 1]!
       const p3 = marcos[Math.min(marcos.length - 1, k + 2)]!
       const passos = Math.max(2, Math.ceil(Math.hypot(p2.x - p1.x, p2.y - p1.y) / 6))
+      // Catmull-Rom centrípeta: os marcos têm espaços muito diferentes (14 px entre os da linha de cima, centenas até o cartão). Na
+      // versão uniforme a curva passava do ponto e voltava (um gancho, um V) onde o espaço mudava; na centrípeta ela não faz laço
+      const k0 = Math.sqrt(Math.max(Math.hypot(p1.x - p0.x, p1.y - p0.y), 1e-3))
+      const k1 = Math.sqrt(Math.max(Math.hypot(p2.x - p1.x, p2.y - p1.y), 1e-3))
+      const k2 = Math.sqrt(Math.max(Math.hypot(p3.x - p2.x, p3.y - p2.y), 1e-3))
+      const T0 = 0
+      const T1 = k0
+      const T2 = k0 + k1
+      const T3 = T2 + k2
+      const mistura = (u: { x: number; y: number }, v: { x: number; y: number }, ta: number, tb: number, t: number) => {
+        const w = (t - ta) / (tb - ta)
+        return { x: u.x + (v.x - u.x) * w, y: u.y + (v.y - u.y) * w }
+      }
       for (let s = 0; s < passos; s++) {
-        const t = s / passos
-        const t2 = t * t
-        const t3 = t2 * t
-        const f = (a: number, b: number, c: number, d: number) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3)
-        caminho.push({ x: f(p0.x, p1.x, p2.x, p3.x), y: f(p0.y, p1.y, p2.y, p3.y) })
+        const t = T1 + ((T2 - T1) * s) / passos
+        const A1 = mistura(p0, p1, T0, T1, t)
+        const A2 = mistura(p1, p2, T1, T2, t)
+        const A3 = mistura(p2, p3, T2, T3, t)
+        const B1 = mistura(A1, A2, T0, T2, t)
+        const B2 = mistura(A2, A3, T1, T3, t)
+        caminho.push(mistura(B1, B2, T1, T2, t))
       }
     }
     caminho.push(marcos[marcos.length - 1]!)
@@ -318,7 +341,9 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
     // o começo da trilha: enquanto o fundo desta cena ainda não cobriu a dos projetos, segue a linha deles
     // (as duas coincidem na troca); quando cobre, a forma congela e só anda com a faixa. Voltando para os
     // projetos (fundo some), ela solta de novo
-    if (estado.alfa < 0.02) congelada = false
+    // enquanto o fundo ainda não cobriu a cena dos projetos (alfa até 0,97) a trilha segue a linha de lá quadro a quadro, na subida e na volta:
+    // as duas coincidem e não há troca visível. Só com o fundo já cobrindo tudo a forma congela
+    if (estado.alfa <= 0.97) congelada = false
     if (!congelada && trilhaTela.versao !== versaoLida && trilhaTela.pontos.length >= 2) {
       versaoLida = trilhaTela.versao
       const pts = trilhaTela.pontos
@@ -332,7 +357,7 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
       inicio = poucos
       montar()
     }
-    if (estado.alfa > 0.7) congelada = true
+    if (estado.alfa > 0.97) congelada = true
     // velocidade da faixa (px/s) com ataque e soltura
     const v = (yAntes - topo) / dt
     yAntes = topo
@@ -415,10 +440,7 @@ export function iniciarAteAqui(canvas: HTMLCanvasElement, faixa: HTMLElement, ca
       gl.uniform1f(u(pTrilha, 'uMeia'), Math.min(8, Math.max(1.5, trilhaTela.meia)))
       gl.uniform1f(u(pTrilha, 'uDpr'), dpr)
       gl.uniform1f(u(pTrilha, 'uCabeca'), cabeca)
-      // a trilha só aparece quando a linha dos projetos já está na vista de cima (aí as duas coincidem); antes, as duas formas
-      // diferem e a linha aparecia em dobro ao voltar rolando
-      const casa = Math.min(1, Math.max(0, (trilhaTela.junta - 0.86) / 0.11))
-      gl.uniform1f(u(pTrilha, 'uAlfa'), estado.alfa * casa * casa * (3 - 2 * casa))
+      gl.uniform1f(u(pTrilha, 'uAlfa'), estado.alfa)
       gl.uniform1f(u(pTrilha, 'uTempo'), tempo)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, vis.length / 4)
     }
