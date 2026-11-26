@@ -1,8 +1,10 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
+import type { Visita } from '@/content/visitas'
+import { aparelhoDe, localDe, marcaDe, navegadorDe, origemDe } from './detalhes'
 
 // O contador de visitas. É a única parte do site que roda no servidor (o resto é gerado no build).
 //   POST /api/visitas   soma a visita de quem abriu o site (src/site/ContaVisita.tsx)
-//   GET  /api/visitas   devolve os números, só com a senha (src/site/PainelVisitas.tsx)
+//   GET  /api/visitas   devolve os números e as últimas visitas, só com a senha (src/site/PainelVisitas.tsx)
 //
 // Os números ficam num Redis da Upstash, ligado ao projeto pela Vercel. Variáveis de ambiente:
 //   KV_REST_API_URL e KV_REST_API_TOKEN (ou UPSTASH_REDIS_REST_URL e UPSTASH_REDIS_REST_TOKEN): criadas pela integração
@@ -11,10 +13,15 @@ import { createHash, timingSafeEqual } from 'node:crypto'
 //
 // "Pessoas": quantos navegadores diferentes vieram em cada dia, somados. Nada de cookie nem de dado pessoal guardado: o endereço e o
 // navegador viram um resumo embaralhado com o dia e um segredo do servidor, que não dá para desfazer e é apagado em dois dias.
+//
+// "Últimas visitas": cidade aproximada (informada pela Vercel), de onde veio, tipo de aparelho, navegador e hora. O endereço de IP não
+// entra. Ficam as 100 mais recentes, por no máximo 90 dias. Um link com ?de=nome (thiagoantunes.com/?de=empresa) aparece com o nome.
 
 export const dynamic = 'force-dynamic'
 
 const DOIS_DIAS = 172800
+const NOVENTA_DIAS = 7776000
+const GUARDADAS = 100
 const TENTATIVAS = 10 // senhas erradas por endereço antes de bloquear por 15 minutos
 const ROBOS = /bot|crawl|spider|slurp|lighthouse|headless|pagespeed|preview|monitor|curl|wget|python-requests/i
 
@@ -56,6 +63,12 @@ export async function POST(pedido: Request) {
   if (!navegador || ROBOS.test(navegador) || (origem && origem !== 'same-origin')) return resposta(204)
   const b = banco()
   if (!b) return resposta(503)
+  // o que a página conta sobre a chegada: o site anterior e a marca do link; qualquer coisa fora disso é ignorada
+  let chegada: { origem?: unknown; de?: unknown } = {}
+  try {
+    const texto = await pedido.text()
+    if (texto && texto.length < 2000) chegada = (JSON.parse(texto) as typeof chegada) ?? {}
+  } catch {}
   try {
     const dia = hoje()
     const quem = resumo(`${dia}|${endereco(pedido)}|${navegador}|${b.token}`).toString('hex').slice(0, 32)
@@ -68,6 +81,27 @@ export async function POST(pedido: Request) {
       ['SETNX', 'visitas:desde', dia],
     ])
     if (nova === 1) await redis(b, [['INCR', 'visitas:pessoas']])
+    // entra na lista uma vez por dia por navegador, e de novo se ele chegar por um link com outra marca (recarregar não repete)
+    const de = marcaDe(chegada.de)
+    const [inedita] = await redis(b, [
+      ['SADD', `visitas:listadas:${dia}`, `${quem}|${de}`],
+      ['EXPIRE', `visitas:listadas:${dia}`, DOIS_DIAS],
+    ])
+    if (inedita === 1) {
+      const visita: Visita = {
+        quando: Date.now(),
+        ...localDe(pedido.headers),
+        origem: origemDe(chegada.origem, pedido.headers.get('host')),
+        de,
+        aparelho: aparelhoDe(navegador),
+        navegador: navegadorDe(navegador),
+      }
+      await redis(b, [
+        ['LPUSH', 'visitas:ultimas', JSON.stringify(visita)],
+        ['LTRIM', 'visitas:ultimas', 0, GUARDADAS - 1],
+        ['EXPIRE', 'visitas:ultimas', NOVENTA_DIAS],
+      ])
+    }
     return resposta(204)
   } catch (e) {
     console.error('visitas: não foi possível contar', e)
@@ -96,18 +130,29 @@ export async function GET(pedido: Request) {
       return resposta(401, { erro: 'senha' })
     }
     const dia = hoje()
-    const [pessoas, acessos, pessoasHoje, acessosHoje, desde] = await redis(b, [
+    const [pessoas, acessos, pessoasHoje, acessosHoje, desde, lista] = await redis(b, [
       ['GET', 'visitas:pessoas'],
       ['GET', 'visitas:acessos'],
       ['SCARD', `visitas:quem:${dia}`],
       ['GET', `visitas:acessos:${dia}`],
       ['GET', 'visitas:desde'],
+      ['LRANGE', 'visitas:ultimas', 0, GUARDADAS - 1],
     ])
+    const limite = Date.now() - NOVENTA_DIAS * 1000
+    const ultimas = (Array.isArray(lista) ? lista : []).flatMap((item) => {
+      try {
+        const v = JSON.parse(String(item)) as Visita
+        return v.quando > limite ? [v] : []
+      } catch {
+        return []
+      }
+    })
     return resposta(200, {
       pessoas: Number(pessoas ?? 0),
       acessos: Number(acessos ?? 0),
       hoje: { pessoas: Number(pessoasHoje ?? 0), acessos: Number(acessosHoje ?? 0) },
       desde: typeof desde === 'string' ? desde : null,
+      ultimas,
     })
   } catch (e) {
     console.error('visitas: não foi possível ler', e)

@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { arquivo } from '@/content/caminho'
+import type { Numeros, Visita } from '@/content/visitas'
 
 // O painel do dono do site: abre pelo ponto final da frase do contato (FiosContato.tsx), pede a senha e mostra quantas pessoas e quantos
-// acessos o site já teve. A senha é conferida no servidor e não fica guardada na página: ao fechar, é esquecida.
-
-type Numeros = { pessoas: number; acessos: number; hoje: { pessoas: number; acessos: number }; desde: string | null }
+// acessos o site já teve, e de onde vieram as últimas visitas. A senha é conferida no servidor e não fica guardada na página: ao fechar, é esquecida.
 
 const ERROS: Record<number, string> = {
   401: 'Senha incorreta.',
@@ -15,6 +14,22 @@ const ERROS: Record<number, string> = {
 }
 
 const numero = (n: number) => n.toLocaleString('pt-BR')
+const horario = (t: number) => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+
+/** "Belo Horizonte, MG"; fora do Brasil, com o nome do país */
+const local = (v: Visita) => {
+  let pais = ''
+  if (v.pais && v.pais !== 'BR') {
+    try {
+      pais = new Intl.DisplayNames(['pt-BR'], { type: 'region' }).of(v.pais) ?? v.pais
+    } catch {
+      pais = v.pais
+    }
+  }
+  return [v.cidade, v.regiao, pais].filter(Boolean).join(', ') || (v.pais === 'BR' ? 'Brasil' : 'Local desconhecido')
+}
+
+const veio = (v: Visita) => [v.de && `link "${v.de}"`, v.origem ? `veio de ${v.origem}` : !v.de && 'acesso direto'].filter(Boolean).join(' · ')
 
 export function PainelVisitas({ aberto, fechar }: { aberto: boolean; fechar: () => void }) {
   const caixa = useRef<HTMLDialogElement>(null)
@@ -80,6 +95,25 @@ export function PainelVisitas({ aberto, fechar }: { aberto: boolean; fechar: () 
               {dados.desde ? `Contando desde ${dados.desde.split('-').reverse().join('/')}. ` : 'Nenhuma visita contada ainda. '}
               Quem volta em outro dia conta de novo em "pessoas".
             </p>
+            {dados.ultimas.length > 0 && (
+              <>
+                <h4>Últimas visitas</h4>
+                <ol className="visitas-lista" tabIndex={0}>
+                  {dados.ultimas.map((v, i) => (
+                    <li key={`${v.quando}-${i}`}>
+                      <span className="visitas-quem">
+                        <strong>{local(v)}</strong>
+                        <time dateTime={new Date(v.quando).toISOString()}>{horario(v.quando)}</time>
+                      </span>
+                      <span>{veio(v)}</span>
+                      <span>
+                        {v.aparelho} · {v.navegador}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            )}
           </>
         ) : (
           <form onSubmit={ver}>
