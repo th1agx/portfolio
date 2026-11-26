@@ -11,12 +11,14 @@ import { IdiomaDoc } from '@/site/IdiomaDoc'
 // só o topo continua na Cabinet Grotesk
 const inter = Inter_Tight({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-inter', display: 'swap' })
 
+// na aba do navegador, só o nome; no cartão de link compartilhado, o nome com a profissão
+const nome = 'Thiago Antunes'
 const titulo = 'Thiago Antunes, engenheiro de software'
 const descricao = 'Sistemas de empresa, integrações e regras que mostram por que decidiram.'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.url),
-  title: titulo,
+  title: nome,
   description: descricao,
   applicationName: 'Thiago Antunes',
   authors: [{ name: 'Thiago Antunes', url: SITE.url }],

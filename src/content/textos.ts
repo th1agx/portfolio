@@ -71,7 +71,7 @@ const pt = {
   som: { ligar: 'Ligar a música', desligar: 'Desligar a música' },
   guia: 'Robô guia. Clique para ele reagir.',
   doc: {
-    titulo: 'Thiago Antunes, engenheiro de software',
+    titulo: 'Thiago Antunes',
     descricao: 'Sistemas de empresa, integrações e regras que mostram por que decidiram.',
   },
 }
@@ -147,7 +147,7 @@ const en: Textos = {
   som: { ligar: 'Turn music on', desligar: 'Turn music off' },
   guia: 'Guide robot. Click to make it react.',
   doc: {
-    titulo: 'Thiago Antunes, software engineer',
+    titulo: 'Thiago Antunes',
     descricao: 'Business systems, integrations and rules that show why they decided.',
   },
 }
