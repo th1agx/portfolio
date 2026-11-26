@@ -1,6 +1,7 @@
 import { perfil } from '@/content/perfil'
 import { SITE } from '@/content/site'
 import { Cabecalho } from '@/site/Cabecalho'
+import { ContaVisita } from '@/site/ContaVisita'
 import { Heroi } from '@/site/Heroi'
 import { GuiaRobo } from '@/site/GuiaRobo'
 import { Ideia } from '@/site/Ideia'
@@ -36,6 +37,7 @@ export default function Page() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c') }} />
       <PularLink />
+      <ContaVisita />
       <Rolagem />
       <Temas />
       <Cabecalho />

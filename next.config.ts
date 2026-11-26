@@ -5,7 +5,6 @@ import type { NextConfig } from 'next'
 const base = process.env.PAGES_BASE_PATH ?? ''
 
 const config: NextConfig = {
-  output: 'export',
   basePath: base,
   env: { NEXT_PUBLIC_BASE_PATH: base },
   images: { unoptimized: true },

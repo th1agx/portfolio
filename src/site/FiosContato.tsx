@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { PainelVisitas } from './PainelVisitas'
 import { perfil } from '@/content/perfil'
 import { chegadaContato } from '@/cena/trilhaTela'
 import { useTextos } from '@/content/idioma'
@@ -18,6 +19,7 @@ const LINKS = [
 ]
 
 export function FiosContato() {
+  const [visitas, setVisitas] = useState(false)
   const t = useTextos()
   const tela = useRef<HTMLCanvasElement>(null)
   const hud = useRef<HTMLDivElement>(null)
@@ -187,7 +189,13 @@ export function FiosContato() {
         <span className="legenda-vinheta" aria-hidden />
         <div className="legenda-painel">
           <p className="legenda-linha">
-            <span>{t.contato.chamada}</span>
+            <span>
+              {t.contato.chamada.slice(0, -1)}
+              {/* o ponto final abre o painel de visitas, que pede senha. De propósito não é um botão: o cursor não reage e o Tab não passa */}
+              <span className="legenda-ponto" onClick={() => setVisitas(true)}>
+                {t.contato.chamada.slice(-1)}
+              </span>
+            </span>
           </p>
           <p className="legenda-links">
             {LINKS.map(({ nome, href, Icone }) => (
@@ -210,6 +218,7 @@ export function FiosContato() {
           </p>
         </div>
       </div>
+      <PainelVisitas aberto={visitas} fechar={() => setVisitas(false)} />
     </>
   )
 }

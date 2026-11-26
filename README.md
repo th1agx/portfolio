@@ -61,7 +61,7 @@ O site defende uma ideia: **sistemas que se explicam**. É a mesma regra dos pro
 
 | Camada | O quê | Para quê |
 |---|---|---|
-| Base | **Next.js 16** (exportação estática), **React 19**, **TypeScript** | páginas estáticas servidas pela Vercel, sem servidor próprio |
+| Base | **Next.js 16**, **React 19**, **TypeScript** | páginas geradas no build e servidas pela Vercel; só o contador de visitas roda no servidor |
 | 3D | **three.js 0.186**, **React Three Fiber 9**, **drei**, **postprocessing** | o mundo dos projetos, o túnel, o robô e o retrato |
 | Shaders | **GLSL** escrito à mão e **WebGL 2 puro** | o vale em raymarch, os cartões do "Até aqui", a íris da abertura, o fluido do retrato |
 | Movimento | **GSAP 3** com **ScrollTrigger**, **Lenis** | a rolagem suave e tudo o que anda preso a ela |
@@ -143,7 +143,9 @@ npm run build
 npm start
 ```
 
-**Publicação.** O repositório está conectado à Vercel: cada push na `main` roda `next build` (`output: 'export'`, configurado em [`vercel.json`](vercel.json) e [`next.config.ts`](next.config.ts)) e o resultado vai ao ar em [thiagoantunes.com](https://thiagoantunes.com/), na raiz do domínio.
+**Publicação.** O repositório está conectado à Vercel: cada push na `main` roda `next build` (ver [`vercel.json`](vercel.json) e [`next.config.ts`](next.config.ts)) e o resultado vai ao ar em [thiagoantunes.com](https://thiagoantunes.com/), na raiz do domínio.
+
+**Contador de visitas.** [`src/app/api/visitas/route.ts`](src/app/api/visitas/route.ts) guarda os números num Redis da Upstash. Na Vercel: em *Storage*, criar um banco **Upstash for Redis** ligado ao projeto (isso cria `KV_REST_API_URL` e `KV_REST_API_TOKEN`); em *Settings → Environment Variables*, criar `VISITAS_SENHA`; depois publicar de novo. Sem essas variáveis o site funciona igual, só não conta.
 
 O banner animado e o diagrama da arquitetura deste README saem de [`tools/readme-svg.mjs`](tools/readme-svg.mjs) (`node tools/readme-svg.mjs`), com o retrato e a fonte do site embutidos.
 
