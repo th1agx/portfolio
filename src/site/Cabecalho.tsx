@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTextos } from '@/content/idioma'
 import { OlhosMenu } from './OlhosMenu'
+import { BotaoSom } from './Som'
 import s from './site.module.css'
 
 // Cabeçalho: a assinatura TA à esquerda e o botão do menu à direita. O botão são os dois olhos de LED do robô (OlhosMenu.tsx), os mesmos da
@@ -56,8 +57,10 @@ export function Cabecalho() {
     window.dispatchEvent(new CustomEvent('rolagem:ir', { detail: Math.max(0, ALVOS[alvo]?.() ?? 0) }))
   }
 
-  // os itens, da esquerda para a direita; --i conta a partir do botão, para o mais perto entrar primeiro (Contato, Trabalho, Ideia)
+  // os itens, da esquerda para a direita; --i conta a partir do botão, para o mais perto entrar primeiro (Contato, Trabalho, Ideia e, na
+  // ponta, a música, que liga e desliga sem fechar o menu)
   const itens: { chave: string; no: React.ReactNode }[] = [
+    { chave: 'som', no: <BotaoSom /> },
     ...t.menu.secoes
       .filter((sec) => sec.alvo !== 'trajetoria')
       .map((sec) => ({

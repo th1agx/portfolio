@@ -1,46 +1,42 @@
-/* o botão da música (Som.tsx): quatro barras que dançam enquanto toca e deitam quando está desligada. Um disco escuro por trás, para
-   aparecer tanto no azul do topo quanto sobre os cartões claros */
+/* o botão da música, um item do menu (Som.tsx): só quatro barras, sem fundo como o resto do menu, que dançam enquanto toca e deitam
+   quando está desligada */
 .botao {
-  position: fixed;
-  left: max(14px, calc(var(--margem) - 10px), env(safe-area-inset-left, 0px));
-  bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 10px));
-  z-index: 55;
-  display: grid;
+  display: inline-grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  border: 1px solid rgba(232, 237, 245, 0.18);
-  border-radius: 50%;
-  background: rgba(5, 5, 24, 0.55);
-  color: #e8edf5;
+  height: 1.3em;
+  min-width: 28px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: inherit;
   cursor: pointer;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  transition:
-    border-color 250ms,
-    box-shadow 250ms;
+  vertical-align: middle;
+  transition: translate 400ms var(--ease);
 }
 
 .botao:hover,
 .botao:focus-visible {
-  border-color: #5566ff;
-  box-shadow: 0 0 16px rgba(0, 0, 240, 0.6);
+  translate: 0 -3px;
   outline: none;
+}
+
+.botao:focus-visible .barras {
+  filter: drop-shadow(0 0 5px #5566ff);
 }
 
 .barras {
   display: flex;
   align-items: center;
   gap: 3px;
-  height: 16px;
+  height: 15px;
 }
 
 .barras i {
   width: 2px;
-  height: 16px;
+  height: 15px;
   border-radius: 2px;
   background: currentColor;
+  box-shadow: 0 0 10px rgba(0, 0, 50, 0.65);
   transform: scaleY(0.15);
   transition: transform 300ms;
 }

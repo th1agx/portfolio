@@ -255,9 +255,22 @@
     overflow-x: auto;
     overflow-y: hidden;
     scrollbar-width: none;
+    /* mais juntos, para a música e os três links caberem ao lado dos olhos */
+    gap: clamp(7px, 2.4vw, 20px);
+    padding-right: 6px;
   }
   .menuLinks::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* telas bem estreitas (360 px): olhos e letras um pouco menores */
+@media (max-width: 380px) {
+  .menu {
+    --botao: 36px;
+  }
+  .menuItem {
+    font-size: 14px;
   }
 }
 
