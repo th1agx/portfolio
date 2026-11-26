@@ -145,7 +145,7 @@ npm start
 
 **Publicação.** O repositório está conectado à Vercel: cada push na `main` roda `next build` (ver [`vercel.json`](vercel.json) e [`next.config.ts`](next.config.ts)) e o resultado vai ao ar em [thiagoantunes.com](https://thiagoantunes.com/), na raiz do domínio.
 
-**Contador de visitas.** [`src/app/api/visitas/route.ts`](src/app/api/visitas/route.ts) guarda os números num Redis da Upstash. Na Vercel: em *Storage*, criar um banco **Upstash for Redis** ligado ao projeto (isso cria `KV_REST_API_URL` e `KV_REST_API_TOKEN`); em *Settings → Environment Variables*, criar `VISITAS_SENHA`; depois publicar de novo. Sem essas variáveis o site funciona igual, só não conta. O painel também lista as últimas visitas (cidade aproximada, origem, aparelho, navegador e hora, sem guardar o IP); um link como `thiagoantunes.com/?de=empresa` aparece na lista com essa marca.
+**Contador de visitas.** [`src/app/api/visitas/route.ts`](src/app/api/visitas/route.ts) guarda os números num Redis da Upstash. Na Vercel: em *Storage*, criar um banco **Upstash for Redis** ligado ao projeto (isso cria `KV_REST_API_URL` e `KV_REST_API_TOKEN`); em *Settings → Environment Variables*, criar `VISITAS_SENHA`; depois publicar de novo. Sem essas variáveis o site funciona igual, só não conta. O painel também lista as últimas visitas (cidade aproximada, origem, aparelho, navegador e hora, sem guardar o IP); um link como `thiagoantunes.com/?de=empresa` aparece na lista com essa marca. Digitar a senha certa num navegador marca aquele aparelho como o do dono, e ele deixa de ser contado.
 
 O banner animado e o diagrama da arquitetura deste README saem de [`tools/readme-svg.mjs`](tools/readme-svg.mjs) (`node tools/readme-svg.mjs`), com o retrato e a fonte do site embutidos.
 

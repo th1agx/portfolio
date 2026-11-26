@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { arquivo } from '@/content/caminho'
-import type { Numeros, Visita } from '@/content/visitas'
+import { gravarMarca, lerMarca, type Marca, type Numeros, type Visita } from '@/content/visitas'
 
 // O painel do dono do site: abre pelo ponto final da frase do contato (FiosContato.tsx), pede a senha e mostra quantas pessoas e quantos
 // acessos o site já teve, e de onde vieram as últimas visitas. A senha é conferida no servidor e não fica guardada na página: ao fechar, é esquecida.
@@ -37,6 +37,7 @@ export function PainelVisitas({ aberto, fechar }: { aberto: boolean; fechar: () 
   const [dados, setDados] = useState<Numeros | null>(null)
   const [erro, setErro] = useState('')
   const [buscando, setBuscando] = useState(false)
+  const [marca, setMarca] = useState<Marca>(null)
 
   useEffect(() => {
     const d = caixa.current
@@ -59,12 +60,22 @@ export function PainelVisitas({ aberto, fechar }: { aberto: boolean; fechar: () 
     setErro('')
     try {
       const r = await fetch(arquivo('/api/visitas'), { headers: { Authorization: `Bearer ${encodeURIComponent(senha)}` }, cache: 'no-store' })
-      if (r.ok) setDados((await r.json()) as Numeros)
-      else setErro(ERROS[r.status] ?? 'Não foi possível ler os números agora.')
+      if (r.ok) {
+        setDados((await r.json()) as Numeros)
+        // senha certa: este aparelho é do dono e deixa de ser contado (a não ser que o dono já tenha pedido para contar)
+        if (lerMarca() === null) gravarMarca('dono')
+        setMarca(lerMarca())
+      } else setErro(ERROS[r.status] ?? 'Não foi possível ler os números agora.')
     } catch {
       setErro('Sem conexão com o servidor.')
     }
     setBuscando(false)
+  }
+
+  const alternar = () => {
+    const nova = marca === 'dono' ? 'contar' : 'dono'
+    gravarMarca(nova)
+    setMarca(lerMarca())
   }
 
   return (
@@ -95,6 +106,12 @@ export function PainelVisitas({ aberto, fechar }: { aberto: boolean; fechar: () 
               {dados.desde ? `Contando desde ${dados.desde.split('-').reverse().join('/')}. ` : 'Nenhuma visita contada ainda. '}
               Quem volta em outro dia conta de novo em "pessoas".
             </p>
+            <div className="visitas-aparelho">
+              <span>{marca === 'dono' ? 'Este aparelho não é mais contado.' : 'Este aparelho está sendo contado.'}</span>
+              <button type="button" onClick={alternar}>
+                {marca === 'dono' ? 'Voltar a contar' : 'Não contar'}
+              </button>
+            </div>
             {dados.ultimas.length > 0 && (
               <>
                 <h4>Últimas visitas</h4>

@@ -467,6 +467,25 @@ html.mira-ativa .visitas button:enabled {
   outline-offset: 2px;
 }
 
+.visitas-aparelho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  color: #e8edf5;
+  font-size: 13px;
+}
+
+.visitas .visitas-aparelho button {
+  padding: 6px 12px;
+  border: 1px solid rgba(232, 237, 245, 0.25);
+  background: none;
+  color: #e8edf5;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 .visitas button.visitas-fechar {
   justify-self: end;
   background: none;

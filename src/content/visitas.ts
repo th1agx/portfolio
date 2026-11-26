@@ -18,3 +18,23 @@ export type Numeros = {
   desde: string | null // AAAA-MM-DD
   ultimas: Visita[]
 }
+
+// A marca do aparelho do dono, guardada no navegador: 'dono' = não é contado; 'contar' = o dono pediu para voltar a contar este aparelho.
+// É gravada quando a senha do painel está certa (PainelVisitas.tsx) e lida antes de contar (ContaVisita.tsx).
+const CHAVE = 'visitas-aparelho'
+export type Marca = 'dono' | 'contar' | null
+
+export const lerMarca = (): Marca => {
+  try {
+    const v = localStorage.getItem(CHAVE)
+    return v === 'dono' || v === 'contar' ? v : null
+  } catch {
+    return null
+  }
+}
+
+export const gravarMarca = (marca: 'dono' | 'contar') => {
+  try {
+    localStorage.setItem(CHAVE, marca)
+  } catch {}
+}
