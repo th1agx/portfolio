@@ -8,6 +8,7 @@ import { Ideia } from '@/site/Ideia'
 import { PularLink } from '@/site/PularLink'
 import { Projetos } from '@/site/Projetos'
 import { Rolagem } from '@/site/Rolagem'
+import { Som } from '@/site/Som'
 import { Temas } from '@/site/Temas'
 import { Trajetoria } from '@/site/Trajetoria'
 
@@ -38,6 +39,7 @@ export default function Page() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(dadosEstruturados).replace(/</g, '\\u003c') }} />
       <PularLink />
       <ContaVisita />
+      <Som />
       <Rolagem />
       <Temas />
       <Cabecalho />

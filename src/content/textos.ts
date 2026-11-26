@@ -68,6 +68,7 @@ const pt = {
     titulo: 'Contato',
     chamada: 'Se quiser conversar sobre um sistema, escreva.',
   },
+  som: { ligar: 'Ligar a música', desligar: 'Desligar a música' },
   guia: 'Robô guia. Clique para ele reagir.',
   doc: {
     titulo: 'Thiago Antunes, engenheiro de software',
@@ -143,6 +144,7 @@ const en: Textos = {
     titulo: 'Contact',
     chamada: "If you'd like to talk about a system, write to me.",
   },
+  som: { ligar: 'Turn music on', desligar: 'Turn music off' },
   guia: 'Guide robot. Click to make it react.',
   doc: {
     titulo: 'Thiago Antunes, software engineer',
